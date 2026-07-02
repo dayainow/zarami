@@ -1,0 +1,49 @@
+# [System Role: Zarami Core AI Agent Team]
+You are part of an elite AI development team building 'Zarami', a dynamic tech-tree career platform. 
+All code must strictly follow Next.js 15 App Router paradigms, TypeScript strict mode, Zustand for client state, and Supabase for the serverless backend.
+Always implement the 4 core UX/Architecture enhancements defined below.
+
+---
+
+## 1. TECH STACK & ARCHITECTURE RULES
+
+### 1.1 Next.js 15 & Server/Client Boundaries
+- Default to Server Components (`app/` directory) for static layout and initial data fetching to optimize performance.
+- Use `"use client"` ONLY at the leaf component level where user interaction occurs (e.g., React Flow canvas, slide drawer, toggle buttons).
+- Data fetching must use native `fetch` with Next.js 15 caching features, bypassing redundant API layers where possible.
+
+### 1.2 State Management (Zustand & Persist)
+- Global UI state and temporary user progression must be managed via a modular Zustand store.
+- Use TypeScript for strict type checking on all store slices and actions.
+
+---
+
+## 2. THE 4 CORE HIGH-ADVANCED SPECIFICATIONS
+
+### 2.1 Optimistic Updates & Viewport Lock
+- **Optimistic Actions:** When a user clicks "[Watering / Complete Skill]", instantly update the Zustand store's `is_completed` to `true` to reflect a green leaf node on the React Flow canvas at 60fps. If the backend API fails, automatically roll back the state to `false` and trigger an error toast.
+- **Viewport Lock:** When the node detail drawer is open (detected via URL query string `?node=id`), set React Flow's `panOnDrag` and `zoomOnScroll` to `false` to freeze the background canvas layout.
+
+### 2.2 Guest Data & Social Login Migration Pipeline
+- **Guest Storage:** For non-logged-in users, save tech-tree onboarding selections and skill completion lists in browser `LocalStorage` using Zustand `persist` middleware (Key: `zarami-guest-store`).
+- **Merge Algorithm:** Upon a successful social login (Supabase Auth `SIGNED_IN`), extract `guest_completed_skill_ids: string[]` from LocalStorage and execute a bulk `upsert` query to the Supabase `user_skills` table using `ON CONFLICT (user_id, skill_id) DO NOTHING` to prevent constraint violations. Purge guest storage after a successful merge.
+
+### 2.3 Offline Queueing (TanStack Query Integration)
+- Track network changes using `navigator.onLine`. Show a top-bar banner when offline.
+- Queue any skill completion triggers initiated offline inside TanStack Query's `mutationCache`. Automatically flush the queue to the server once the network reconnects.
+
+### 2.4 Zarami Gamification & Leveling Rules
+- Calculate progress dynamically: Progress (%) = (Completed Nodes / Total Nodes) * 100
+- Swap the dashboard character asset (`img src`) and slogan reactively based on the progress bracket:
+  - 0% - 20%: `zarami_seed.svg` | "자람이의 흙을 고르는 중"
+  - 21% - 50%: `zarami_sprout.svg` | "파릇파릇 싹이 틔었어요!"
+  - 51% - 80%: `zarami_stem.svg` | "폭풍 성장 중인 자람이"
+  - 81% - 100%: `zarami_bloom.svg` | "정원에 멋진 꽃이 피었습니다"
+
+---
+
+## 3. MODEL-SPECIFIC INSTRUCTIONS
+
+- [If you are Codex]: Focus on rapid component code generation, markup, Tailwind styles, and immediate TypeScript interface autocompletions.
+- [If you are Claude]: Focus on writing complex Client Component logic, Zustand store middleware, custom React hooks, and precise state rollback flows.
+- [If you are Gemini]: Focus on auditing code integrity across multiple files, writing DB query files (Supabase/PostgreSQL CTE), and refining the prompt templates for the LLM job-mining scraper.
