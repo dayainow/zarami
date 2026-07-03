@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "reactflow/dist/style.css";
+import "@xyflow/react/dist/style.css";
 import "./globals.css";
 
 import { OfflineBanner } from "@/components/OfflineBanner";

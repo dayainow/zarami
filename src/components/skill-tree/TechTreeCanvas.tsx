@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useMemo, type MouseEvent } from "react";
-import ReactFlow, {
+import { ReactFlow,
   Background,
   BackgroundVariant,
   Controls,
@@ -14,7 +14,7 @@ import ReactFlow, {
   type NodeProps,
   type OnNodesChange,
   type ReactFlowInstance,
-} from "reactflow";
+} from "@xyflow/react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { useSkillStore } from "@/stores/useSkillStore";

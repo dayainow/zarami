@@ -14,10 +14,10 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.109.0",
     "@tanstack/react-query": "^5.101.2",
+    "@xyflow/react": "^12.11.1",
     "next": "15.5.20",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "reactflow": "^11.11.4",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
