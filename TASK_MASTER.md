@@ -20,13 +20,10 @@
 - [x] KAN-2: Vercel 프로덕션 배포 및 CI 연동
 - [x] KAN-3: 유저 프로필 및 통계 대시보드 화면
 - [x] KAN-4: 스킬 노드 어드민(Admin) 편집기
-- [ ] KAN-5: 다크 모드 토글 및 UI 폴리싱
+- [x] KAN-5: 다크 모드 토글 및 UI 폴리싱
+
+🎉 **V2.0 릴리즈 로드맵이 모두 성공적으로 완료되었습니다!**
 
 ## [현재 진행 중인 작업]
 
-- **[KAN-5] 다크 모드 토글 및 UI 폴리싱** (담당: 고속 UI 빌더 Codex)
-  - 목표: Light/Dark 모드 완벽 대응 및 '글래스모피즘(Glassmorphism)' 스타일 기반 화사한 UI 폴리싱
-  - `next-themes`의 `ThemeProvider` 세팅 (`app/layout.tsx` 등)
-  - `ThemeToggle` 컴포넌트 생성 및 헤더 배치
-  - 앱 전반(`ProfileClient`, `AdminEditorClient`, `DashboardClient` 등)의 하드코딩된 다크 테마 컬러를 `bg-slate-50 dark:bg-slate-950` 등 라이트/다크 대응 형태로 전면 교체
-  - 블러(backdrop-blur) 및 부드러운 애니메이션(transition) 효과 추가
+- **현재 배포 대기 중인 작업 없음 (V2.0 릴리즈 완료)**
