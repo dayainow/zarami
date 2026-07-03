@@ -12,6 +12,8 @@ import { ReactFlow,
   type Edge,
   type Node,
   type NodeProps,
+  type OnConnect,
+  type OnEdgesChange,
   type OnNodesChange,
   type ReactFlowInstance,
 } from "@xyflow/react";
@@ -25,7 +27,12 @@ type TechTreeCanvasProps = {
   edges?: SkillTreeEdge[];
   onNodeSelect?: (node: SkillTreeNode) => void;
   onInit?: (instance: ReactFlowInstance<SkillTreeNode, SkillTreeEdge>) => void;
-  onNodesChange?: OnNodesChange;
+  onNodesChange?: OnNodesChange<SkillTreeNode>;
+  onEdgesChange?: OnEdgesChange<SkillTreeEdge>;
+  onConnect?: OnConnect;
+  /** Admin editor mode: enables node dragging/connecting and skips the
+   * guest-facing drawer on node click (the caller owns selection instead). */
+  interactive?: boolean;
   className?: string;
 };
 
@@ -147,6 +154,9 @@ export function TechTreeCanvas({
   onNodeSelect,
   onInit,
   onNodesChange,
+  onEdgesChange,
+  onConnect,
+  interactive = false,
   className,
 }: TechTreeCanvasProps) {
   const isDrawerOpen = useSkillStore((state) => state.isDrawerOpen);
@@ -161,10 +171,12 @@ export function TechTreeCanvas({
 
   const handleNodeClick = useCallback(
     (_event: MouseEvent, node: Node<SkillNodeData>) => {
-      openDrawer(node.id);
+      if (!interactive) {
+        openDrawer(node.id);
+      }
       onNodeSelect?.(node);
     },
-    [onNodeSelect, openDrawer],
+    [interactive, onNodeSelect, openDrawer],
   );
 
   return (
@@ -184,14 +196,16 @@ export function TechTreeCanvas({
         fitViewOptions={fitViewOptions}
         minZoom={0.2}
         maxZoom={1.6}
-        panOnDrag={!isDrawerOpen}
-        zoomOnScroll={!isDrawerOpen}
-        zoomOnPinch={!isDrawerOpen}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={!isDrawerOpen}
+        panOnDrag={interactive || !isDrawerOpen}
+        zoomOnScroll={interactive || !isDrawerOpen}
+        zoomOnPinch={interactive || !isDrawerOpen}
+        nodesDraggable={interactive}
+        nodesConnectable={interactive}
+        elementsSelectable={interactive || !isDrawerOpen}
         onNodeClick={handleNodeClick}
         onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         onInit={onInit}
         proOptions={proOptions}
         className="touch-none"
@@ -204,8 +218,8 @@ export function TechTreeCanvas({
           className="opacity-50"
         />
         <MiniMap
-          pannable={!isDrawerOpen}
-          zoomable={!isDrawerOpen}
+          pannable={interactive || !isDrawerOpen}
+          zoomable={interactive || !isDrawerOpen}
           nodeColor={(node) => {
             const status = (node.data as SkillNodeData | undefined)?.status ?? "available";
             if (status === "completed") return "#10b981";
