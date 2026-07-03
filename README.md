@@ -55,3 +55,11 @@ npm run update-trend
 3. `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `ANTHROPIC_API_KEY`는 Vercel에는 필요 없습니다 — 배치 스크립트는 Vercel이 아닌 GitHub Actions에서 실행되므로 해당 값들은 GitHub 저장소 Secrets에만 등록하면 됩니다.
 4. 실제 Supabase 프로젝트에 `supabase/migrations`의 스키마를 적용합니다: `npx supabase link --project-ref <ref>` 후 `npx supabase db push`.
 5. 배포 전 로컬에서 최종 점검: `npm run build && npx tsc --noEmit && npm run lint`.
+
+## 🛠️ AI 연동 및 자동화 워크플로우 (Jira & Claude Code)
+
+프로젝트 고도화 관리를 위해 Jira와 AI 코딩 어시스턴트를 활용한 자동화 워크플로우가 세팅되어 있습니다.
+
+1. `.env.local.example`에 명시된 `JIRA_*` 환경 변수 4가지를 `.env.local`에 복사하고 자신의 Jira 자격 증명으로 채웁니다.
+2. `CLAUDE.md` 파일에 정의된 프롬프트 양식에 따라 Claude Code (또는 Gemini, Cursor 등 터미널 제어 권한이 있는 AI)에게 지시를 내리면, AI가 직접 Jira API를 호출해 티켓 상태를 업데이트하고 코드를 작성하여 Pull Request까지 생성해줍니다.
+3. 세부 프롬프트 템플릿과 Jira 이슈 타입 ID 등은 프로젝트 최상단의 `CLAUDE.md`를 참고해 주세요!
