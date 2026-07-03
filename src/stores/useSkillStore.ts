@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 type UserSkillRow = {
   user_id: string;
   skill_id: string;
+  is_completed: true;
 };
 
 type GuestPersistedState = {
@@ -39,6 +40,12 @@ type SkillStore = GuestPersistedState & {
   isMigrating: boolean;
   migrateGuestDataToSupabase: (userId: string) => Promise<{ migratedCount: number }>;
   resetGuestState: () => void;
+
+  // Authoritative server -> client sync, run on every signed-in session
+  // (initial load and fresh sign-in alike) so a returning user's progress
+  // isn't left at whatever the local guest cache happened to contain.
+  hydrateCompletedSkillIds: (skillIds: string[]) => void;
+  hydrateFromSupabase: (userId: string) => Promise<void>;
 };
 
 // localStorage doesn't exist while this module is evaluated during SSR;
@@ -107,6 +114,7 @@ export const useSkillStore = create<SkillStore>()(
         const rows: UserSkillRow[] = completedSkillIds.map((skillId) => ({
           user_id: userId,
           skill_id: skillId,
+          is_completed: true,
         }));
 
         const supabase = createClient();
@@ -141,6 +149,27 @@ export const useSkillStore = create<SkillStore>()(
           toastError: null,
         });
         useSkillStore.persist.clearStorage();
+      },
+
+      hydrateCompletedSkillIds: (skillIds) => {
+        set({ completedSkillIds: skillIds });
+      },
+
+      hydrateFromSupabase: async (userId) => {
+        const supabase = createClient();
+        const { error, data } = await supabase
+          .from("user_skills")
+          .select("skill_id")
+          .eq("user_id", userId)
+          .eq("is_completed", true);
+
+        if (error) {
+          set({ toastError: "진행 상태를 불러오지 못했습니다." });
+          return;
+        }
+
+        const skillIds = (data ?? []).map((row) => (row as { skill_id: string }).skill_id);
+        get().hydrateCompletedSkillIds(skillIds);
       },
     }),
     {

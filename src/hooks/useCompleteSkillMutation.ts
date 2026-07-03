@@ -38,7 +38,7 @@ export function useCompleteSkillMutation() {
       const { error } = await supabase
         .from("user_skills")
         .upsert(
-          { user_id: userId, skill_id: skillId },
+          { user_id: userId, skill_id: skillId, is_completed: true },
           { onConflict: "user_id,skill_id", ignoreDuplicates: true },
         );
 

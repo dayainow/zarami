@@ -12,8 +12,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        void useSkillStore.getState().migrateGuestDataToSupabase(session.user.id);
+      // `INITIAL_SESSION` fires once on mount for an already-signed-in
+      // user (e.g. page reload) - it is distinct from `SIGNED_IN`, which
+      // only fires on a fresh sign-in. Handle both so a returning user's
+      // progress is always pulled from Supabase, not left empty.
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+        const userId = session.user.id;
+        void (async () => {
+          if (event === "SIGNED_IN") {
+            await useSkillStore.getState().migrateGuestDataToSupabase(userId);
+          }
+          await useSkillStore.getState().hydrateFromSupabase(userId);
+        })();
       }
 
       if (event === "SIGNED_OUT") {

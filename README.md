@@ -14,3 +14,44 @@
 ## 기술 스택 (Tech Stack)
 - **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS, React Flow v11, Zustand
 - **Backend & DB**: Supabase (PostgreSQL, GoTrue Auth)
+- **Data 파이프라인**: TanStack Query(오프라인 뮤테이션 큐잉), Anthropic API + GitHub Actions(주간 채용 트렌드 배치)
+
+## 로컬 실행 (Getting Started)
+
+```bash
+npm install
+cp .env.local.example .env.local   # 값 채우기 (아래 환경 변수 참고)
+npm run dev                        # http://localhost:3000
+```
+
+로컬 Supabase 환경이 필요하면 Docker 실행 후:
+
+```bash
+npx supabase start   # supabase/migrations 의 스키마를 로컬 DB에 적용
+```
+
+### 환경 변수
+
+| 변수 | 사용처 | 비고 |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | 브라우저/서버 Supabase 클라이언트 | 클라이언트 번들에 노출됨 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저/서버 Supabase 클라이언트 | 클라이언트 번들에 노출됨 |
+| `SUPABASE_URL` | `scripts/update-trend.ts` (배치 스크립트 전용) | 서버 전용, 클라이언트에 노출 금지 |
+| `SUPABASE_SERVICE_ROLE_KEY` | `scripts/update-trend.ts` (배치 스크립트 전용) | RLS 우회 — 서버 전용, 클라이언트에 노출 금지 |
+| `ANTHROPIC_API_KEY` | `scripts/update-trend.ts` (배치 스크립트 전용) | 서버 전용 |
+
+### 주간 채용 트렌드 배치 (수동 실행)
+
+```bash
+npm run update-trend
+```
+
+`.github/workflows/job-trend-pipeline.yml`이 매주 월요일 00:00 KST에 동일한 스크립트를 자동 실행합니다 — GitHub 저장소 Secrets에 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `LLM_API_KEY`(Anthropic API 키)를 등록해야 합니다.
+
+## 배포 (Deployment, Vercel 기준)
+
+1. Vercel에 저장소를 연결하고 빌드 커맨드는 기본값(`next build`)을 사용합니다.
+2. Vercel 프로젝트 환경 변수에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 등록합니다(Production/Preview 모두).
+3. `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `ANTHROPIC_API_KEY`는 Vercel에는 필요 없습니다 — 배치 스크립트는 Vercel이 아닌 GitHub Actions에서 실행되므로 해당 값들은 GitHub 저장소 Secrets에만 등록하면 됩니다.
+4. 실제 Supabase 프로젝트에 `supabase/migrations`의 스키마를 적용합니다: `npx supabase link --project-ref <ref>` 후 `npx supabase db push`.
+5. 배포 전 로컬에서 최종 점검: `npm run build && npx tsc --noEmit && npm run lint`.
