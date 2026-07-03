@@ -1,7 +1,7 @@
 # 🌿 자람이 (Zarami)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdayainow%2Fzarami)
-**🚀 Live Demo:** [https://zarami.vercel.app](https://zarami.vercel.app) *(배포 후 실제 URL로 변경해주세요)*
+**🚀 Live Demo:** [https://zarami-iota.vercel.app](https://zarami-iota.vercel.app)
 **개인화 동적 기술트리 기반 커리어 가이드 서비스**
 
 주니어 프론트엔드 개발자가 미들/시니어 레벨로 성장하는 과정에서 겪는 '학습 방향성 상실' 문제를 해결하기 위한 개인화 동적 로드맵 플랫폼입니다. 
