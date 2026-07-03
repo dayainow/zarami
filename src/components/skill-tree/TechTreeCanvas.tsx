@@ -38,11 +38,11 @@ type TechTreeCanvasProps = {
 
 const statusClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
   completed:
-    "border-emerald-400/70 bg-emerald-50 text-emerald-950 shadow-emerald-100 dark:bg-emerald-950 dark:text-emerald-100",
+    "border-emerald-300/80 bg-emerald-50/80 text-emerald-950 shadow-emerald-100 backdrop-blur-xl dark:border-emerald-400/50 dark:bg-emerald-950/70 dark:text-emerald-100 dark:shadow-emerald-950/20",
   available:
-    "border-sky-400 bg-white text-slate-950 shadow-sky-100 dark:bg-slate-900 dark:text-slate-50 dark:shadow-sky-950/40",
+    "border-sky-300/80 bg-white/85 text-slate-950 shadow-sky-100 backdrop-blur-xl dark:border-sky-400/60 dark:bg-slate-900/75 dark:text-slate-50 dark:shadow-sky-950/40",
   locked:
-    "border-slate-200 bg-slate-50 text-slate-400 shadow-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-500",
+    "border-slate-200/80 bg-slate-100/70 text-slate-400 shadow-slate-100 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/65 dark:text-slate-500",
 };
 
 const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
@@ -76,8 +76,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       type="button"
       className={[
         "group relative w-72 rounded-lg border px-4 py-3 text-left shadow-sm transition duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-950",
-        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-950" : "",
+        "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950" : "",
         isCompleted ? "opacity-40" : "",
         isNextAction
           ? "animate-pulse border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]"
@@ -127,7 +127,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           ) : null}
         </div>
         {typeof data.level === "number" ? (
-          <span className="shrink-0 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+          <span className="shrink-0 rounded-md bg-slate-900/90 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-slate-100 dark:text-slate-950">
             Lv.{data.level}
           </span>
         ) : null}
@@ -182,7 +182,7 @@ export function TechTreeCanvas({
   return (
     <section
       className={[
-        "h-[calc(100vh-4rem)] min-h-[560px] w-full overflow-hidden bg-slate-950 dark:bg-black",
+        "h-[calc(100vh-4rem)] min-h-[560px] w-full overflow-hidden bg-slate-50 transition-colors duration-300 dark:bg-slate-950",
         className ?? "",
       ].join(" ")}
       aria-label="기술트리 캔버스"
@@ -211,11 +211,11 @@ export function TechTreeCanvas({
         className="touch-none"
       >
         <Background
-          color="#475569"
+          color="#94a3b8"
           gap={32}
           size={1}
           variant={BackgroundVariant.Dots}
-          className="opacity-50"
+          className="opacity-60 dark:opacity-45"
         />
         <MiniMap
           pannable={interactive || !isDrawerOpen}
@@ -226,11 +226,11 @@ export function TechTreeCanvas({
             if (status === "locked") return "#cbd5e1";
             return "#0ea5e9";
           }}
-          className="!border !border-white/10 !bg-slate-900/90"
+          className="!border !border-slate-200/80 !bg-white/75 !shadow-lg !backdrop-blur-2xl dark:!border-white/10 dark:!bg-slate-900/80"
         />
         <Controls
           showInteractive={false}
-          className="!border !border-white/10 !bg-slate-900/90 [&_button]:!border-white/10 [&_button]:!bg-slate-900 [&_button]:!text-white hover:[&_button]:!bg-slate-800"
+          className="!border !border-slate-200/80 !bg-white/75 !shadow-lg !backdrop-blur-2xl [&_button]:!border-slate-200/80 [&_button]:!bg-white/70 [&_button]:!text-slate-700 hover:[&_button]:!bg-slate-100 dark:!border-white/10 dark:!bg-slate-900/80 dark:[&_button]:!border-white/10 dark:[&_button]:!bg-slate-900/80 dark:[&_button]:!text-white dark:hover:[&_button]:!bg-slate-800"
         />
       </ReactFlow>
     </section>

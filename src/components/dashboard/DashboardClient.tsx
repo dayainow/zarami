@@ -98,18 +98,25 @@ export function DashboardClient() {
   const progress = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white dark:bg-black">
-      <div className="absolute inset-x-0 top-0 z-20 border-b border-white/10 bg-slate-950/80 px-5 py-4 backdrop-blur-md">
+    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
+      <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-5 py-4 pr-20 shadow-sm shadow-slate-900/5 backdrop-blur-2xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Zarami Dashboard</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">기술트리 성장 캔버스</h1>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+              Zarami Dashboard
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+              기술트리 성장 캔버스
+            </h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-2 w-40 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+              <div
+                className="h-full rounded-full bg-emerald-500 shadow-[0_0_16px_rgba(16,185,129,0.35)] transition-all dark:bg-emerald-400"
+                style={{ width: `${progress}%` }}
+              />
             </div>
-            <span className="text-sm font-semibold text-slate-200">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {completedCount}/{totalCount} 완료
             </span>
           </div>
@@ -117,10 +124,14 @@ export function DashboardClient() {
       </div>
 
       {toastError ? (
-        <div className="absolute left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-red-300/30 bg-red-950/90 px-4 py-3 text-sm text-red-100 shadow-xl">
+        <div className="absolute left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-red-200/80 bg-white/85 px-4 py-3 text-sm text-red-700 shadow-xl shadow-red-950/10 backdrop-blur-2xl dark:border-red-300/30 dark:bg-red-950/80 dark:text-red-100">
           <div className="flex items-center justify-between gap-4">
             <span>{toastError}</span>
-            <button type="button" onClick={dismissToast} className="font-semibold text-red-200 hover:text-white">
+            <button
+              type="button"
+              onClick={dismissToast}
+              className="font-semibold text-red-600 transition hover:text-red-800 dark:text-red-200 dark:hover:text-white"
+            >
               닫기
             </button>
           </div>
