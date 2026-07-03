@@ -80,22 +80,57 @@ KAN-6 상태를 "진행 중"으로 바꿔줘.
 (.env의 Jira 인증 정보 사용)
 ```
 
-## 📋 3. 커밋 및 PR 규칙
+## 📋 3. GitHub 업무 가이드 (Jira 연동)
 
-### 커밋 메시지 템플릿
+### 브랜치 전략
 ```text
-feat: 기능 추가 [KAN-이슈번호]
-fix: 버그 수정 [KAN-이슈번호]
-refactor: 리팩토링 [KAN-이슈번호]
+main              ← 배포 브랜치
+story/X-X-이슈명  ← 작업 브랜치
+fix/이슈명
 ```
-- 작성 예시:
-  - `feat: 필터 칩 데이터 쿼리 연결 [KAN-18]`
-  - `fix: 핫스팟 핀 좌표 오프셋 수정 [KAN-26]`
+
+### 업무 흐름
+```text
+브랜치 생성 (git checkout -b)
+    ↓
+구현 + /code-review
+    ↓
+커밋 (Conventional Commits 규칙 적용)
+    ↓
+PR 생성 (gh pr create)
+    ↓
+머지 (PR이 머지되면 Jira 이슈가 자동으로 Done 처리되도록 GitHub-Jira 연동 활용)
+```
+
+### 사전 설정 (최초 1회)
+```bash
+brew install gh
+gh auth login
+# 토큰 스코프: repo, read:org
+```
+
+### 자주 쓰는 명령어
+```bash
+gh pr list
+gh pr status
+gh issue list
+gh auth status
+```
+
+### 커밋 메시지
+```text
+feat: 설명
+fix: 설명
+refactor: 설명
+ci: 설명
+```
+- 커밋 메시지에 `[KAN-이슈번호]`를 포함하면 Jira와 커밋 내역이 연결됩니다. (선택)
 
 ### PR(Pull Request) 제목
 ```text
-[KAN-6] Story 1-3 필터 칩 / 정렬 구현
+[KAN-XX] [KAN-XX] 이슈명
 ```
+- PR 제목에 Jira 태스크 키를 포함시키면 GitHub-Jira 연동 기능에 의해 티켓 상태가 자동으로 변경됩니다.
 
 ## 🔢 4. Jira 이슈 타입 ID 참고 표
 | 이슈 타입 | ID | 용도 |
