@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { addEdge, useEdgesState, useNodesState, type Connection } from "@xyflow/react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -39,6 +39,9 @@ export function AdminEditorClient() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  const [email, setEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   // MVP guard: this editor only exports JSON to the clipboard (no DB writes),
   // but it's still internal tooling, so require a signed-in session rather
@@ -61,13 +64,22 @@ export function AdminEditorClient() {
     };
   }, []);
 
-  const handleLogin = useCallback(() => {
+  const handleLogin = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setIsSending(true);
     const supabase = createClient();
-    void supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.href },
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
     });
-  }, []);
+    setIsSending(false);
+    if (!error) {
+      setEmailSent(true);
+    } else {
+      alert("로그인 이메일 전송에 실패했습니다.");
+    }
+  }, [email]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -137,13 +149,29 @@ export function AdminEditorClient() {
             스킬 노드 편집기는 로그인한 사용자만 이용할 수 있습니다.
           </p>
           {authStatus === "signed-out" ? (
-            <button
-              type="button"
-              onClick={handleLogin}
-              className="mt-4 rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300"
-            >
-              로그인하기
-            </button>
+            <div className="mt-6 flex flex-col items-center">
+              {emailSent ? (
+                <p className="text-sm font-bold text-emerald-400">✅ 이메일로 로그인 링크를 보냈습니다!</p>
+              ) : (
+                <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="이메일 주소 입력"
+                    required
+                    className="w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="w-full rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300 disabled:opacity-50"
+                  >
+                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
+                  </button>
+                </form>
+              )}
+            </div>
           ) : (
             <p className="mt-4 text-xs text-slate-500">확인 중...</p>
           )}

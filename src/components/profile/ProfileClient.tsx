@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { buildCompletedSkillIdSet, dashboardSkillNodes } from "@/data/skill-tree";
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
@@ -40,6 +40,9 @@ type SessionUser = {
 
 export function ProfileClient() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [email, setEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const userId = sessionUser?.id ?? null;
   const { data: stats, isLoading: isHeatmapLoading, isError: isHeatmapError } = useProfileStats(userId);
@@ -75,12 +78,21 @@ export function ProfileClient() {
   const placeholderHeatmap = useMemo(() => buildEmptyHeatmap(), []);
   const heatmapDays = stats?.heatmap ?? placeholderHeatmap;
 
-  const handleLogin = () => {
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setIsSending(true);
     const supabase = createClient();
-    void supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.href },
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
     });
+    setIsSending(false);
+    if (!error) {
+      setEmailSent(true);
+    } else {
+      alert("로그인 이메일 전송에 실패했습니다.");
+    }
   };
 
   return (
@@ -145,15 +157,29 @@ export function ProfileClient() {
           ) : null}
 
           {!userId ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-slate-950/60">
-              <p className="text-sm text-slate-200">로그인하면 잔디 기록을 볼 수 있어요</p>
-              <button
-                type="button"
-                onClick={handleLogin}
-                className="rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300"
-              >
-                로그인하기
-              </button>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-slate-950/60 p-6 backdrop-blur-sm">
+              <p className="text-sm font-semibold text-slate-200">로그인하면 잔디 기록을 볼 수 있어요</p>
+              {emailSent ? (
+                <p className="mt-2 text-sm text-emerald-400">✅ 이메일로 로그인 링크를 보냈습니다!</p>
+              ) : (
+                <form onSubmit={handleLogin} className="mt-2 flex w-full max-w-xs flex-col gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="이메일 주소 입력"
+                    required
+                    className="w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="w-full rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300 disabled:opacity-50"
+                  >
+                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
+                  </button>
+                </form>
+              )}
             </div>
           ) : null}
         </section>
