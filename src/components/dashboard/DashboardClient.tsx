@@ -49,7 +49,7 @@ export function DashboardClient() {
       const prerequisiteIds = node.data.prerequisiteIds ?? [];
       const isCompleted = completedSet.has(node.id);
       const prerequisitesCompleted =
-        prerequisiteIds.length === 0 || prerequisiteIds.every((skillId) => completedSet.has(skillId));
+        prerequisiteIds.length === 0 || prerequisiteIds.every((skillId: string) => completedSet.has(skillId));
       const isNextAction = !isCompleted && prerequisiteIds.length > 0 && prerequisitesCompleted;
       const status: SkillNodeData["status"] = isCompleted
         ? "completed"

@@ -24,7 +24,7 @@ type TechTreeCanvasProps = {
   nodes?: SkillTreeNode[];
   edges?: SkillTreeEdge[];
   onNodeSelect?: (node: SkillTreeNode) => void;
-  onInit?: (instance: ReactFlowInstance<SkillNodeData>) => void;
+  onInit?: (instance: ReactFlowInstance<SkillTreeNode, SkillTreeEdge>) => void;
   onNodesChange?: OnNodesChange;
   className?: string;
 };
@@ -59,7 +59,7 @@ const fitViewOptions = {
 
 const proOptions = { hideAttribution: true };
 
-const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillNodeData>) {
+const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTreeNode>) {
   const status = data.status ?? "available";
   const isCompleted = data.is_completed === true || status === "completed";
   const isNextAction = data.isNextAction === true && !isCompleted;
