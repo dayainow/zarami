@@ -16,8 +16,9 @@ import ReactFlow, {
   type ReactFlowInstance,
 } from "reactflow";
 
-import { useSkillStore } from "../../stores/useSkillStore";
-import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "../../types/skill-tree";
+import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
+import { useSkillStore } from "@/stores/useSkillStore";
+import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 type TechTreeCanvasProps = {
   nodes?: SkillTreeNode[];
@@ -28,87 +29,13 @@ type TechTreeCanvasProps = {
   className?: string;
 };
 
-const defaultNodes: SkillTreeNode[] = [
-  {
-    id: "frontend-foundation",
-    type: "skill",
-    position: { x: 0, y: 0 },
-    data: {
-      id: "frontend-foundation",
-      title: "Frontend Foundation",
-      description: "HTML, CSS, JavaScript fundamentals",
-      category: "Core",
-      level: 1,
-      status: "completed",
-    },
-  },
-  {
-    id: "react",
-    type: "skill",
-    position: { x: 320, y: -120 },
-    data: {
-      id: "react",
-      title: "React",
-      description: "Components, hooks, state composition",
-      category: "Frontend",
-      level: 2,
-      status: "available",
-    },
-  },
-  {
-    id: "nextjs",
-    type: "skill",
-    position: { x: 640, y: -120 },
-    data: {
-      id: "nextjs",
-      title: "Next.js",
-      description: "App Router, server components, caching",
-      category: "Frontend",
-      level: 3,
-      status: "locked",
-    },
-  },
-  {
-    id: "state-management",
-    type: "skill",
-    position: { x: 320, y: 120 },
-    data: {
-      id: "state-management",
-      title: "State Management",
-      description: "Zustand, optimistic UI, persistence",
-      category: "Architecture",
-      level: 2,
-      status: "available",
-    },
-  },
-];
-
-const defaultEdges: SkillTreeEdge[] = [
-  {
-    id: "frontend-foundation-react",
-    source: "frontend-foundation",
-    target: "react",
-    type: "smoothstep",
-    animated: true,
-  },
-  {
-    id: "react-nextjs",
-    source: "react",
-    target: "nextjs",
-    type: "smoothstep",
-  },
-  {
-    id: "frontend-foundation-state-management",
-    source: "frontend-foundation",
-    target: "state-management",
-    type: "smoothstep",
-  },
-];
-
 const statusClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
-  completed: "border-emerald-400 bg-emerald-50 text-emerald-950 shadow-emerald-100",
-  available: "border-sky-400 bg-white text-slate-950 shadow-sky-100",
-  locked: "border-slate-200 bg-slate-50 text-slate-400 shadow-slate-100",
+  completed:
+    "border-emerald-400/70 bg-emerald-50 text-emerald-950 shadow-emerald-100 dark:bg-emerald-950 dark:text-emerald-100",
+  available:
+    "border-sky-400 bg-white text-slate-950 shadow-sky-100 dark:bg-slate-900 dark:text-slate-50 dark:shadow-sky-950/40",
+  locked:
+    "border-slate-200 bg-slate-50 text-slate-400 shadow-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-500",
 };
 
 const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
@@ -134,17 +61,35 @@ const proOptions = { hideAttribution: true };
 
 const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillNodeData>) {
   const status = data.status ?? "available";
+  const isCompleted = data.is_completed === true || status === "completed";
+  const isNextAction = data.isNextAction === true && !isCompleted;
 
   return (
     <button
       type="button"
       className={[
-        "group relative w-64 rounded-lg border px-4 py-3 text-left shadow-sm transition",
-        "hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2",
-        selected ? "ring-2 ring-sky-500 ring-offset-2" : "",
+        "group relative w-72 rounded-lg border px-4 py-3 text-left shadow-sm transition duration-200",
+        "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-950",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-950" : "",
+        isCompleted ? "opacity-40" : "",
+        isNextAction
+          ? "animate-pulse border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]"
+          : "",
         statusClassName[status],
       ].join(" ")}
     >
+      {isNextAction ? (
+        <div className="absolute -right-3 -top-3 z-10 rounded-md border border-amber-200 bg-amber-300 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow-lg">
+          Next Action
+        </div>
+      ) : null}
+      {data.isCelebrating ? (
+        <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-lg">
+          <span className="absolute left-5 top-4 h-2 w-2 animate-bounce rounded-full bg-sky-300" />
+          <span className="absolute right-8 top-7 h-2.5 w-2.5 animate-ping rounded-full bg-emerald-300" />
+          <span className="absolute bottom-4 left-1/2 h-2 w-2 animate-bounce rounded-full bg-amber-300 [animation-delay:120ms]" />
+        </div>
+      ) : null}
       <Handle
         type="target"
         position={Position.Left}
@@ -155,22 +100,38 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillNod
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
             {data.category ? (
-              <span className="truncate text-xs font-medium uppercase tracking-wide text-slate-500">
+              <span className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 {data.category}
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2 truncate text-base font-semibold">{data.title}</h3>
+          <h3 className={["mt-2 truncate text-base font-semibold", isCompleted ? "line-through" : ""].join(" ")}>
+            {data.title}
+          </h3>
           {data.description ? (
-            <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{data.description}</p>
+            <p
+              className={[
+                "mt-1 line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-300",
+                isCompleted ? "line-through" : "",
+              ].join(" ")}
+            >
+              {data.description}
+            </p>
           ) : null}
         </div>
         {typeof data.level === "number" ? (
-          <span className="shrink-0 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white">
+          <span className="shrink-0 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
             Lv.{data.level}
           </span>
         ) : null}
       </div>
+      {isNextAction ? (
+        <div className="mt-3 grid grid-cols-3 gap-1.5">
+          <span className="h-1.5 rounded-full bg-amber-300" />
+          <span className="h-1.5 rounded-full bg-sky-300" />
+          <span className="h-1.5 rounded-full bg-emerald-300" />
+        </div>
+      ) : null}
       <Handle
         type="source"
         position={Position.Right}
@@ -181,8 +142,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillNod
 });
 
 export function TechTreeCanvas({
-  nodes = defaultNodes,
-  edges = defaultEdges,
+  nodes = dashboardSkillNodes,
+  edges = dashboardSkillEdges,
   onNodeSelect,
   onInit,
   onNodesChange,
@@ -209,7 +170,7 @@ export function TechTreeCanvas({
   return (
     <section
       className={[
-        "h-[calc(100vh-4rem)] min-h-[560px] w-full overflow-hidden bg-slate-950",
+        "h-[calc(100vh-4rem)] min-h-[560px] w-full overflow-hidden bg-slate-950 dark:bg-black",
         className ?? "",
       ].join(" ")}
       aria-label="기술트리 캔버스"

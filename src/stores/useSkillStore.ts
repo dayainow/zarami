@@ -5,8 +5,6 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 
 import { createClient } from "@/utils/supabase/client";
 
-const supabase = createClient();
-
 type UserSkillRow = {
   user_id: string;
   skill_id: string;
@@ -26,15 +24,21 @@ type SkillStore = GuestPersistedState & {
   setDrawerOpen: (isDrawerOpen: boolean) => void;
 
   // 2.1 Optimistic Updates: instant completion + rollback-on-failure toast.
+  // Split into two pure, synchronous steps so a TanStack Query `useMutation`
+  // can drive them from its `onMutate`/`onError` lifecycle (see
+  // src/hooks/useCompleteSkillMutation.ts) while the network transaction
+  // itself is queued/retried by TanStack instead of living in the store.
   toastError: string | null;
   dismissToast: () => void;
   isSkillCompleted: (skillId: string) => boolean;
-  completeSkillOptimistic: (skillId: string, userId: string | null) => Promise<void>;
+  applySkillCompletion: (skillId: string) => string[] | null;
+  rollbackSkillCompletion: (previousCompletedSkillIds: string[], message: string) => void;
 
   // 2.2 Guest Data & Social Login Migration Pipeline.
   setOnboardingSelections: (selections: string[]) => void;
   isMigrating: boolean;
   migrateGuestDataToSupabase: (userId: string) => Promise<{ migratedCount: number }>;
+  resetGuestState: () => void;
 };
 
 // localStorage doesn't exist while this module is evaluated during SSR;
@@ -70,32 +74,25 @@ export const useSkillStore = create<SkillStore>()(
       dismissToast: () => set({ toastError: null }),
       isSkillCompleted: (skillId) => get().completedSkillIds.includes(skillId),
 
-      completeSkillOptimistic: async (skillId, userId) => {
-        if (get().completedSkillIds.includes(skillId)) {
-          return;
+      applySkillCompletion: (skillId) => {
+        const previousCompletedSkillIds = get().completedSkillIds;
+        if (previousCompletedSkillIds.includes(skillId)) {
+          return null;
         }
 
-        set((state) => ({
-          completedSkillIds: [...state.completedSkillIds, skillId],
+        set({
+          completedSkillIds: [...previousCompletedSkillIds, skillId],
           toastError: null,
-        }));
+        });
 
-        if (!userId) {
-          // Guest mode: `persist` middleware already wrote this to LocalStorage.
-          return;
-        }
+        return previousCompletedSkillIds;
+      },
 
-        const payload: UserSkillRow = { user_id: userId, skill_id: skillId };
-        const { error } = await supabase
-          .from("user_skills")
-          .upsert(payload, { onConflict: "user_id,skill_id", ignoreDuplicates: true });
-
-        if (error) {
-          set((state) => ({
-            completedSkillIds: state.completedSkillIds.filter((id) => id !== skillId),
-            toastError: "스킬 완료 저장에 실패했습니다. 다시 시도해주세요.",
-          }));
-        }
+      rollbackSkillCompletion: (previousCompletedSkillIds, message) => {
+        set({
+          completedSkillIds: previousCompletedSkillIds,
+          toastError: message,
+        });
       },
 
       isMigrating: false,
@@ -112,6 +109,7 @@ export const useSkillStore = create<SkillStore>()(
           skill_id: skillId,
         }));
 
+        const supabase = createClient();
         const { error } = await supabase
           .from("user_skills")
           .upsert(rows, { onConflict: "user_id,skill_id", ignoreDuplicates: true });
@@ -132,6 +130,17 @@ export const useSkillStore = create<SkillStore>()(
         useSkillStore.persist.clearStorage();
 
         return { migratedCount: rows.length };
+      },
+
+      resetGuestState: () => {
+        set({
+          completedSkillIds: [],
+          onboardingSelections: [],
+          selectedSkillId: null,
+          isDrawerOpen: false,
+          toastError: null,
+        });
+        useSkillStore.persist.clearStorage();
       },
     }),
     {

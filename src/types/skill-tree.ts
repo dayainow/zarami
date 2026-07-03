@@ -8,6 +8,13 @@ export type SkillNodeData = {
   description?: string;
   category?: string;
   level?: number;
+  prerequisiteIds?: string[];
+  questMarkdown?: string;
+  checklist?: string[];
+  estimatedMinutes?: number;
+  is_completed?: boolean;
+  isNextAction?: boolean;
+  isCelebrating?: boolean;
   status?: SkillStatus;
 };
 
