@@ -24,7 +24,8 @@
 
 ## [현재 진행 중인 작업]
 
-- **[KAN-3] 유저 프로필 및 통계 대시보드 화면** (담당: 메인 엔지니어 Claude 3.5 Sonnet)
-  - `/profile` 페이지 UI 마크업
-  - `useProfileStats` 데이터 Fetching 훅 구현
-  - 잔디 심기(Heatmap) 및 반려식물 진화 UI 구현
+- **[KAN-4] 스킬 노드 어드민(Admin) 편집기** (담당: 메인 엔지니어 Claude 3.5 Sonnet)
+  - 목표: 빠른 MVP 구현을 위해 **옵션 A (JSON Export 방식)** 채택
+  - `/admin` 페이지 및 `AdminEditorClient` UI 구현
+  - `TechTreeCanvas` 재사용 (어드민 모드에서 드래그/연결 활성화)
+  - 우측 속성 편집 패널 구현 및 JSON 복사 버튼 연동
