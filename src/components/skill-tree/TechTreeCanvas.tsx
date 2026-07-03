@@ -24,7 +24,7 @@ type TechTreeCanvasProps = {
   edges?: SkillTreeEdge[];
   onNodeSelect?: (node: SkillTreeNode) => void;
   onInit?: (instance: ReactFlowInstance<SkillNodeData>) => void;
-  onNodesChange?: OnNodesChange<SkillNodeData>;
+  onNodesChange?: OnNodesChange;
   className?: string;
 };
 

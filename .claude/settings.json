@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm view *)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-dobedub-Documents-source-project-zarami/fd5af36b-dcfb-4b4d-9eec-d03e0d0adaba/scratchpad)",
+      "Bash(rm -rf next-scaffold)",
+      "Bash(npx --yes create-next-app@15.5.20 next-scaffold --typescript --tailwind --eslint --app --src-dir --import-alias @/* --use-npm --disable-git --yes)",
+      "Bash(cp -R /private/tmp/claude-501/-Users-dobedub-Documents-source-project-zarami/fd5af36b-dcfb-4b4d-9eec-d03e0d0adaba/scratchpad/next-scaffold/public /Users/dobedub/Documents/source/project/zarami/public)",
+      "Bash(cp -R /private/tmp/claude-501/-Users-dobedub-Documents-source-project-zarami/fd5af36b-dcfb-4b4d-9eec-d03e0d0adaba/scratchpad/next-scaffold/src/app/. /Users/dobedub/Documents/source/project/zarami/src/app/)",
+      "Bash(npx supabase *)"
+    ]
+  }
+}
