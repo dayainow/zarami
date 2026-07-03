@@ -1,0 +1,90 @@
+name: CI/CD Harness
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DEPLOYMENT_URL: ${{ vars.DEPLOYMENT_URL }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run deploy
+
+      - name: Capture deployment URL
+        if: always()
+        run: |
+          if [ -f deployment-url.txt ]; then
+            echo "DEPLOYMENT_URL=$(cat deployment-url.txt)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Upload HTML test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-cd-harness-test-report
+          path: test-report.html
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write run summary
+        if: always()
+        run: |
+          {
+            echo "## CI/CD Harness"
+            echo ""
+            echo "- Status: ${{ job.status }}"
+            echo "- Branch: ${{ github.ref_name }}"
+            echo "- Commit: ${{ github.sha }}"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "- Deployment: $DEPLOYMENT_URL"
+            fi
+            echo ""
+            echo "Download the HTML report from this run's Artifacts section when available."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        run: |
+          STATUS="${{ job.status }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="CI/CD Harness ${STATUS} for ${{ github.repository }} on ${{ github.ref_name }}. Run: ${RUN_URL}"
+          if [ -n "$DEPLOYMENT_URL" ]; then
+            MESSAGE="${MESSAGE} Deployment: ${DEPLOYMENT_URL}"
+          fi
+          curl -X POST -H "Content-type: application/json" --data "{\"text\":\"${MESSAGE}\"}" "$SLACK_WEBHOOK_URL" || echo "Slack notification failed"
+
+      - name: Notify Discord
+        if: always() && env.DISCORD_WEBHOOK_URL != ''
+        run: |
+          STATUS="${{ job.status }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="CI/CD Harness ${STATUS} for ${{ github.repository }} on ${{ github.ref_name }}. Run: ${RUN_URL}"
+          if [ -n "$DEPLOYMENT_URL" ]; then
+            MESSAGE="${MESSAGE} Deployment: ${DEPLOYMENT_URL}"
+          fi
+          curl -X POST -H "Content-type: application/json" --data "{\"content\":\"${MESSAGE}\"}" "$DISCORD_WEBHOOK_URL" || echo "Discord notification failed"
