@@ -24,8 +24,9 @@
 
 ## [현재 진행 중인 작업]
 
-- **[KAN-4] 스킬 노드 어드민(Admin) 편집기** (담당: 메인 엔지니어 Claude 3.5 Sonnet)
-  - 목표: 빠른 MVP 구현을 위해 **옵션 A (JSON Export 방식)** 채택
-  - `/admin` 페이지 및 `AdminEditorClient` UI 구현
-  - `TechTreeCanvas` 재사용 (어드민 모드에서 드래그/연결 활성화)
-  - 우측 속성 편집 패널 구현 및 JSON 복사 버튼 연동
+- **[KAN-5] 다크 모드 토글 및 UI 폴리싱** (담당: 고속 UI 빌더 Codex)
+  - 목표: Light/Dark 모드 완벽 대응 및 '글래스모피즘(Glassmorphism)' 스타일 기반 화사한 UI 폴리싱
+  - `next-themes`의 `ThemeProvider` 세팅 (`app/layout.tsx` 등)
+  - `ThemeToggle` 컴포넌트 생성 및 헤더 배치
+  - 앱 전반(`ProfileClient`, `AdminEditorClient`, `DashboardClient` 등)의 하드코딩된 다크 테마 컬러를 `bg-slate-50 dark:bg-slate-950` 등 라이트/다크 대응 형태로 전면 교체
+  - 블러(backdrop-blur) 및 부드러운 애니메이션(transition) 효과 추가
