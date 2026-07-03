@@ -5,19 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
-import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
+import { buildCompletedSkillIdSet, dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
-
-function buildCompletedSet(completedSkillIds: string[]) {
-  return new Set([
-    ...completedSkillIds,
-    ...dashboardSkillNodes
-      .filter((node) => node.data.is_completed === true)
-      .map((node) => node.id),
-  ]);
-}
 
 export function DashboardClient() {
   const router = useRouter();
@@ -42,7 +33,7 @@ export function DashboardClient() {
     closeDrawer();
   }, [closeDrawer, nodeIds, openDrawer, selectedNodeId]);
 
-  const completedSet = useMemo(() => buildCompletedSet(completedSkillIds), [completedSkillIds]);
+  const completedSet = useMemo(() => buildCompletedSkillIdSet(completedSkillIds), [completedSkillIds]);
 
   const nodes = useMemo<SkillTreeNode[]>(() => {
     return dashboardSkillNodes.map((node) => {

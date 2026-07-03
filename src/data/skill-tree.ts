@@ -1,5 +1,17 @@
 import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
+// Shared by DashboardClient and ProfileClient so "completed" always means
+// the same thing in both places: store-tracked completions unioned with
+// nodes that ship pre-completed in the static skill tree.
+export function buildCompletedSkillIdSet(completedSkillIds: string[]): Set<string> {
+  return new Set([
+    ...completedSkillIds,
+    ...dashboardSkillNodes
+      .filter((node) => node.data.is_completed === true)
+      .map((node) => node.id),
+  ]);
+}
+
 export const dashboardSkillNodes: SkillTreeNode[] = [
   {
     id: "web-foundation",
