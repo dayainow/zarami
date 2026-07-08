@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, type MouseEvent } from "react";
+import { memo, useCallback, useMemo, useState, type MouseEvent } from "react";
 import { ReactFlow,
   Background,
   BackgroundVariant,
@@ -17,7 +17,7 @@ import { ReactFlow,
   type OnNodesChange,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { CheckCircle2, Lock } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Lock } from "lucide-react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -75,8 +75,12 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   const categoryColor = getCategoryColor(data.category);
 
   return (
-    <button
-      type="button"
+    // A div, not a <button>: the branch collapse/expand toggle below needs
+    // its own interactive element nested inside, and browsers strip nested
+    // interactive semantics from anything inside a real <button>.
+    <div
+      role="button"
+      tabIndex={0}
       className={[
         "group relative w-72 rounded-lg border border-l-4 px-4 py-3 text-left shadow-sm transition duration-200",
         "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
@@ -161,7 +165,34 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         position={Position.Right}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
-    </button>
+      {data.hasChildren ? (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={data.isCollapsed ? "하위 브랜치 펼치기" : "하위 브랜치 접기"}
+          title={data.isCollapsed ? "하위 브랜치 펼치기" : "하위 브랜치 접기"}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onToggleCollapse?.(data.id);
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.stopPropagation();
+              event.preventDefault();
+              data.onToggleCollapse?.(data.id);
+            }
+          }}
+          className="absolute -right-3 top-1/2 z-30 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 shadow-md transition hover:scale-110 hover:text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+        >
+          {data.isCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 });
 
@@ -216,6 +247,71 @@ export function TechTreeCanvas({
     [edges, nodes],
   );
 
+  // Branch collapse/expand: lets large trees hide a subtree behind its root
+  // node instead of overwhelming the canvas. Collapse state lives here (not
+  // in caller state) since it's purely a view concern over whatever
+  // nodes/edges the caller passes in.
+  const childrenMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const edge of edges) {
+      const children = map.get(edge.source) ?? [];
+      children.push(edge.target);
+      map.set(edge.source, children);
+    }
+    return map;
+  }, [edges]);
+
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+
+  const toggleCollapse = useCallback((nodeId: string) => {
+    setCollapsedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
+  }, []);
+
+  const hiddenNodeIds = useMemo(() => {
+    const hidden = new Set<string>();
+    const queue = [...collapsedIds];
+    while (queue.length > 0) {
+      const current = queue.pop();
+      if (!current) continue;
+      for (const childId of childrenMap.get(current) ?? []) {
+        if (!hidden.has(childId)) {
+          hidden.add(childId);
+          queue.push(childId);
+        }
+      }
+    }
+    return hidden;
+  }, [collapsedIds, childrenMap]);
+
+  const visibleNodes = useMemo<SkillTreeNode[]>(
+    () =>
+      nodes
+        .filter((node) => !hiddenNodeIds.has(node.id))
+        .map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            hasChildren: (childrenMap.get(node.id)?.length ?? 0) > 0,
+            isCollapsed: collapsedIds.has(node.id),
+            onToggleCollapse: toggleCollapse,
+          },
+        })),
+    [nodes, hiddenNodeIds, childrenMap, collapsedIds, toggleCollapse],
+  );
+
+  const visibleEdges = useMemo(
+    () => styledEdges.filter((edge) => !hiddenNodeIds.has(edge.source) && !hiddenNodeIds.has(edge.target)),
+    [styledEdges, hiddenNodeIds],
+  );
+
   const handleNodeClick = useCallback(
     (_event: MouseEvent, node: Node<SkillNodeData>) => {
       if (!interactive) {
@@ -235,8 +331,8 @@ export function TechTreeCanvas({
       aria-label="기술트리 캔버스"
     >
       <ReactFlow
-        nodes={nodes}
-        edges={styledEdges}
+        nodes={visibleNodes}
+        edges={visibleEdges}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={edgeOptions}
         fitView

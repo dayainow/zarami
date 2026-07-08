@@ -17,6 +17,10 @@ export type SkillNodeData = {
   isCelebrating?: boolean;
   isTrending?: boolean;
   status?: SkillStatus;
+  /** Branch collapse/expand (computed by TechTreeCanvas, not caller-supplied). */
+  hasChildren?: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: (nodeId: string) => void;
 };
 
 export type SkillTreeNode = Node<SkillNodeData>;
