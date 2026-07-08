@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { CheckCircle2, Download, LayoutGrid, Plus, Save, Sparkles, Target } from "lucide-react";
+import { CheckCircle2, Download, LayoutGrid, Plus, Save, Sparkles, Target, Trash2 } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
@@ -161,6 +161,19 @@ export function ManageTreeClient() {
     setSelectedNodeId(rootNode.id);
   }, [setEdges, setNodes]);
 
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNodeId) return;
+    if (!window.confirm("이 노드를 삭제하시겠습니까? 연결된 화살표도 함께 삭제됩니다.")) {
+      return;
+    }
+
+    setNodes((currentNodes) => currentNodes.filter((node) => node.id !== selectedNodeId));
+    setEdges((currentEdges) =>
+      currentEdges.filter((edge) => edge.source !== selectedNodeId && edge.target !== selectedNodeId),
+    );
+    setSelectedNodeId(null);
+  }, [selectedNodeId, setEdges, setNodes]);
+
   const handleConnect = useCallback(
     (connection: Connection) => {
       if (connection.source === connection.target) {
@@ -200,6 +213,33 @@ export function ManageTreeClient() {
       },
     );
   }, [edges, nodes, saveTreeMutation]);
+
+  // Debounced auto-save so edits aren't lost if the user navigates away
+  // without remembering to click [저장]. Skipped while the tree is still
+  // loading or empty (onboarding screen) - there's nothing worth saving yet.
+  useEffect(() => {
+    if (isTreeLoading || nodes.length === 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      saveTreeMutation.mutate(
+        { nodes, edges },
+        {
+          onSuccess: () => {
+            setSaveState("saved");
+            window.setTimeout(() => setSaveState("idle"), 1800);
+          },
+          onError: () => {
+            setSaveState("error");
+            window.setTimeout(() => setSaveState("idle"), 1800);
+          },
+        },
+      );
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [nodes, edges, isTreeLoading, saveTreeMutation]);
 
   const data = selectedNode?.data;
 
@@ -442,6 +482,15 @@ export function ManageTreeClient() {
               {data.is_completed ? "완료 취소" : "완료로 표시"}
             </button>
 
+            <button
+              type="button"
+              onClick={handleDeleteNode}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50/60 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+              노드 삭제
+            </button>
+
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
               목표 제목
               <input
@@ -489,10 +538,10 @@ export function ManageTreeClient() {
             </div>
 
             <section className="rounded-xl border border-white/70 bg-white/55 p-4 text-sm text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              <p className="font-semibold text-slate-950 dark:text-white">저장 안내</p>
+              <p className="font-semibold text-slate-950 dark:text-white">자동 저장 안내</p>
               <p className="mt-2 leading-6">
-                상단의 [저장] 버튼을 눌러야 지금까지 편집한 노드/엣지가 내 계정에 저장됩니다. 자동
-                저장은 아직 지원하지 않습니다.
+                편집을 멈추면 잠시 후 자동으로 저장됩니다. 바로 저장하고 싶다면 상단의 [저장] 버튼을
+                눌러주세요.
               </p>
             </section>
           </div>
