@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { Download, LayoutGrid, Plus, Save, Sparkles, Target } from "lucide-react";
+import { CheckCircle2, Download, LayoutGrid, Plus, Save, Sparkles, Target } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
@@ -423,6 +423,25 @@ export function ManageTreeClient() {
           </p>
         ) : (
           <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+            <button
+              type="button"
+              onClick={() =>
+                updateSelectedNodeData({
+                  is_completed: !data.is_completed,
+                  status: !data.is_completed ? "completed" : "available",
+                })
+              }
+              className={[
+                "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition",
+                data.is_completed
+                  ? "border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+                  : "bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300",
+              ].join(" ")}
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+              {data.is_completed ? "완료 취소" : "완료로 표시"}
+            </button>
+
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
               목표 제목
               <input
