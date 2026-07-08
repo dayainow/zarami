@@ -12,7 +12,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="app-sidebar fixed inset-y-0 left-0 z-[70] hidden border-r border-white/70 bg-white/72 px-3 py-4 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl transition-[width,background-color,border-color] duration-300 md:flex dark:border-white/10 dark:bg-slate-950/78 dark:shadow-black/30"
+      className="app-sidebar fixed inset-y-0 left-0 z-[70] hidden overflow-x-hidden border-r border-white/70 bg-white/72 px-3 py-4 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl transition-[width,background-color,border-color] duration-300 md:flex dark:border-white/10 dark:bg-slate-950/78 dark:shadow-black/30"
     >
       <div className="flex h-full flex-col">
         <Link
