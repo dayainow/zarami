@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { scrapeWantedJobs } from "./scrape-wanted";
+import { scrapeJumpitJobs } from "./scrape-jumpit";
 
 type Database = {
   public: {
@@ -123,11 +124,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log("실제 원티드(Wanted) 채용 공고를 스크래핑합니다...");
-  // Scrape backend (872) and frontend (669) jobs
-  const backendJobs = await scrapeWantedJobs(872, 10);
-  const frontendJobs = await scrapeWantedJobs(669, 10);
-  const allJobs = [...backendJobs, ...frontendJobs];
+  console.log("실제 채용 공고(원티드, 점핏)를 스크래핑합니다...");
+  // Scrape backend (872 for wanted, 1 for jumpit) and frontend (669 for wanted, 2 for jumpit)
+  const wantedBackend = await scrapeWantedJobs(872, 10);
+  const wantedFrontend = await scrapeWantedJobs(669, 10);
+  const jumpitBackend = await scrapeJumpitJobs(1, 10);
+  const jumpitFrontend = await scrapeJumpitJobs(2, 10);
+  
+  const allJobs = [...wantedBackend, ...wantedFrontend, ...jumpitBackend, ...jumpitFrontend];
   
   if (allJobs.length === 0) {
     console.log("스크래핑된 채용 공고가 없습니다.");
