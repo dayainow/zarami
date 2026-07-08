@@ -3,11 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
 
+import { Sidebar } from "@/components/layout/Sidebar";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,8 +38,8 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <OfflineBanner />
-              <ThemeToggle />
-              {children}
+              <Sidebar />
+              <div className="min-h-screen pl-20">{children}</div>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

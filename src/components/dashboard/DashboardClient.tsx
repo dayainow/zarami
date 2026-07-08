@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -12,8 +12,7 @@ import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-
 
 export function DashboardClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedNodeId = searchParams.get("node");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const userId = useSupabaseUserId();
   const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const openDrawer = useSkillStore((state) => state.openDrawer);
@@ -23,6 +22,19 @@ export function DashboardClient() {
   const [celebratingSkillId, setCelebratingSkillId] = useState<string | null>(null);
 
   const nodeIds = useMemo(() => new Set(dashboardSkillNodes.map((node) => node.id)), []);
+
+  useEffect(() => {
+    const syncSelectedNodeFromUrl = () => {
+      setSelectedNodeId(new URLSearchParams(window.location.search).get("node"));
+    };
+
+    syncSelectedNodeFromUrl();
+    window.addEventListener("popstate", syncSelectedNodeFromUrl);
+
+    return () => {
+      window.removeEventListener("popstate", syncSelectedNodeFromUrl);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedNodeId && nodeIds.has(selectedNodeId)) {
@@ -76,12 +88,14 @@ export function DashboardClient() {
 
   const handleNodeSelect = useCallback(
     (node: SkillTreeNode) => {
+      setSelectedNodeId(node.id);
       router.push(`/dashboard?node=${node.id}`, { scroll: false });
     },
     [router],
   );
 
   const handleCloseDrawer = useCallback(() => {
+    setSelectedNodeId(null);
     closeDrawer();
     router.push("/dashboard", { scroll: false });
   }, [closeDrawer, router]);
@@ -99,7 +113,7 @@ export function DashboardClient() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
-      <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-5 py-4 pr-20 shadow-sm shadow-slate-900/5 backdrop-blur-2xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
+      <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-6 py-4 shadow-sm shadow-slate-900/5 backdrop-blur-2xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">

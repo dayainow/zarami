@@ -33,3 +33,20 @@ body {
 ::selection {
   background: rgba(56, 189, 248, 0.28);
 }
+
+.app-sidebar {
+  width: 5rem;
+}
+
+.app-sidebar:hover,
+.app-sidebar:focus-within {
+  width: 16rem;
+}
+
+.app-sidebar:hover .app-sidebar-label,
+.app-sidebar:focus-within .app-sidebar-label,
+.app-sidebar:hover .app-sidebar-theme > span:last-child,
+.app-sidebar:focus-within .app-sidebar-theme > span:last-child {
+  opacity: 1;
+  transform: translateX(0);
+}
