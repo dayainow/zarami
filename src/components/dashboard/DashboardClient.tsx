@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronRight, TreePine } from "lucide-react";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { buildCompletedSkillIdSet, dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { useUserTree } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
@@ -15,6 +18,7 @@ export function DashboardClient() {
   const router = useRouter();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const userId = useSupabaseUserId();
+  const { data: myTree, isLoading: isMyTreeLoading } = useUserTree(userId);
   const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const openDrawer = useSkillStore((state) => state.openDrawer);
   const closeDrawer = useSkillStore((state) => state.closeDrawer);
@@ -124,6 +128,9 @@ export function DashboardClient() {
   const totalCount = dashboardSkillNodes.length;
   const progress = Math.round((completedCount / totalCount) * 100);
 
+  const myTreeTotalCount = myTree?.nodes.length ?? 0;
+  const myTreeCompletedCount = myTree?.nodes.filter((node) => node.data.is_completed).length ?? 0;
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
       <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-6 py-4 shadow-sm shadow-slate-900/5 backdrop-blur-2xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
@@ -146,6 +153,34 @@ export function DashboardClient() {
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {completedCount}/{totalCount} 완료
             </span>
+
+            <div className="h-6 w-px bg-slate-200/80 dark:bg-white/10" />
+
+            {!userId ? (
+              <Link
+                href="/manage-tree"
+                className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              >
+                <TreePine className="h-4 w-4" aria-hidden />
+                로그인하고 내 트리 만들기
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            ) : isMyTreeLoading ? null : (
+              <Link
+                href="/manage-tree"
+                className="flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              >
+                <TreePine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden />
+                {myTreeTotalCount === 0 ? (
+                  "내 트리 시작하기"
+                ) : (
+                  <>
+                    내 트리 {myTreeCompletedCount}/{myTreeTotalCount}
+                  </>
+                )}
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            )}
           </div>
         </div>
       </div>
