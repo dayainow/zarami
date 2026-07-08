@@ -14,6 +14,7 @@ import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import { useSaveUserTree, useUserTree } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
+import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 function createBlankRootNode(): SkillTreeNode {
@@ -63,6 +64,7 @@ export function ManageTreeClient() {
     useMagicLinkAuth();
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(userId);
   const saveTreeMutation = useSaveUserTree(userId);
+  const recordActivity = useStreakStore((state) => state.recordActivity);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>([]);
@@ -465,12 +467,16 @@ export function ManageTreeClient() {
           <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const willBeCompleted = !data.is_completed;
                 updateSelectedNodeData({
-                  is_completed: !data.is_completed,
-                  status: !data.is_completed ? "completed" : "available",
-                })
-              }
+                  is_completed: willBeCompleted,
+                  status: willBeCompleted ? "completed" : "available",
+                });
+                if (willBeCompleted) {
+                  recordActivity();
+                }
+              }}
               className={[
                 "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition",
                 data.is_completed

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, TreePine } from "lucide-react";
+import { ChevronRight, Flame, TreePine } from "lucide-react";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -12,6 +12,7 @@ import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
 import { useUserTree } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
+import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 export function DashboardClient() {
@@ -24,6 +25,8 @@ export function DashboardClient() {
   const closeDrawer = useSkillStore((state) => state.closeDrawer);
   const toastError = useSkillStore((state) => state.toastError);
   const dismissToast = useSkillStore((state) => state.dismissToast);
+  const currentStreak = useStreakStore((state) => state.currentStreak);
+  const recordActivity = useStreakStore((state) => state.recordActivity);
   const [celebratingSkillId, setCelebratingSkillId] = useState<string | null>(null);
 
   const nodeIds = useMemo(() => new Set(dashboardSkillNodes.map((node) => node.id)), []);
@@ -117,12 +120,16 @@ export function DashboardClient() {
     router.push("/dashboard", { scroll: false });
   }, [closeDrawer, router]);
 
-  const handleCompleteEffect = useCallback((skillId: string) => {
-    setCelebratingSkillId(skillId);
-    window.setTimeout(() => {
-      setCelebratingSkillId((currentSkillId) => (currentSkillId === skillId ? null : currentSkillId));
-    }, 1400);
-  }, []);
+  const handleCompleteEffect = useCallback(
+    (skillId: string) => {
+      setCelebratingSkillId(skillId);
+      recordActivity();
+      window.setTimeout(() => {
+        setCelebratingSkillId((currentSkillId) => (currentSkillId === skillId ? null : currentSkillId));
+      }, 1400);
+    },
+    [recordActivity],
+  );
 
   const completedCount = completedSet.size;
   const totalCount = dashboardSkillNodes.length;
@@ -153,6 +160,13 @@ export function DashboardClient() {
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {completedCount}/{totalCount} 완료
             </span>
+
+            {currentStreak > 0 ? (
+              <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                <Flame className="h-4 w-4" aria-hidden />
+                {currentStreak}일 연속
+              </span>
+            ) : null}
 
             <div className="h-6 w-px bg-slate-200/80 dark:bg-white/10" />
 
