@@ -3,7 +3,7 @@ name: CI/CD Harness
 on:
   push:
     branches:
-      - main
+      - '**'
   pull_request:
 
 jobs:

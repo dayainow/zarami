@@ -58,6 +58,20 @@ export function useMagicLinkAuth() {
     }
   };
 
+  const handleTestLogin = async () => {
+    setIsSending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "test@example.com",
+      password: "testpassword123",
+    });
+    setIsSending(false);
+
+    if (error) {
+      alert("테스트 계정 로그인에 실패했습니다. Supabase 대시보드에서 test@example.com / testpassword123 계정을 생성해주세요.");
+    }
+  };
+
   return {
     userId: sessionUser?.id ?? null,
     userEmail: sessionUser?.email ?? null,
@@ -67,5 +81,6 @@ export function useMagicLinkAuth() {
     isSending,
     emailSent,
     handleLogin,
+    handleTestLogin,
   };
 }

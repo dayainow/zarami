@@ -90,6 +90,11 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           Next Action
         </div>
       ) : null}
+      {data.isTrending ? (
+        <div className="absolute -left-3 -top-3 z-10 flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-lg shadow-rose-500/30">
+          <span className="text-[10px]">🔥</span> 트렌드
+        </div>
+      ) : null}
       {data.isCelebrating ? (
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-lg">
           <span className="absolute left-5 top-4 h-2 w-2 animate-bounce rounded-full bg-sky-300" />

@@ -98,7 +98,7 @@ function createGoalNode(index: number): SkillTreeNode {
 }
 
 export function ManageTreeClient() {
-  const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, authChecked } =
+  const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, handleTestLogin, authChecked } =
     useMagicLinkAuth();
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(userId);
   const saveTreeMutation = useSaveUserTree(userId);
@@ -108,6 +108,35 @@ export function ManageTreeClient() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("goal-root");
   const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const handleAIGenerate = useCallback(async () => {
+    const promptText = window.prompt("어떤 커리어를 목표로 하시나요? (예: 풀스택 개발자, 데이터 엔지니어 등)");
+    if (!promptText || promptText.trim() === "") return;
+
+    setIsGeneratingAI(true);
+    try {
+      const response = await fetch("/api/generate-tree", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptText }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate");
+      }
+
+      const data = await response.json();
+      setNodes(data.nodes);
+      setEdges(data.edges);
+      setSelectedNodeId(data.nodes[0]?.id ?? null);
+    } catch (error: any) {
+      alert("AI 생성 중 오류가 발생했습니다: " + error.message);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [setNodes, setEdges]);
 
   // Hydrate from the user's saved tree exactly once when it first arrives -
   // a later background refetch must not clobber in-progress local edits.
@@ -207,23 +236,40 @@ export function ManageTreeClient() {
                   이메일로 로그인 링크를 보냈습니다!
                 </p>
               ) : (
-                <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(event) => setLoginEmail(event.target.value)}
-                    placeholder="이메일 주소 입력"
-                    required
-                    className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
-                  />
+                <div className="flex w-full flex-col gap-4">
+                  <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(event) => setLoginEmail(event.target.value)}
+                      placeholder="이메일 주소 입력"
+                      required
+                      className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSending}
+                      className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
+                    >
+                      {isSending ? "전송 중..." : "매직 링크로 로그인"}
+                    </button>
+                  </form>
+                  
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                    <span className="shrink-0 px-3 text-xs text-slate-400">또는</span>
+                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                  </div>
+                  
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleTestLogin}
                     disabled={isSending}
-                    className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-200 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   >
-                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
+                    테스트 계정으로 바로 로그인
                   </button>
-                </form>
+                </div>
               )}
             </div>
           )}
@@ -249,6 +295,15 @@ export function ManageTreeClient() {
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAIGenerate}
+                disabled={isGeneratingAI}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-500 px-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
+              >
+                <span>✨</span>
+                {isGeneratingAI ? "생성 중..." : "AI 자동 생성"}
+              </button>
               <button
                 type="button"
                 onClick={handleAddNode}

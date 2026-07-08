@@ -15,6 +15,7 @@ export type SkillNodeData = {
   is_completed?: boolean;
   isNextAction?: boolean;
   isCelebrating?: boolean;
+  isTrending?: boolean;
   status?: SkillStatus;
 };
 

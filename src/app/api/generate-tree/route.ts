@@ -1,0 +1,161 @@
+import { NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+
+import { createClient } from "@supabase/supabase-js";
+
+import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
+});
+
+const getSystemPrompt = (trendingSkillsText: string) => `
+You are an expert career counselor and tech lead. The user will give you a career goal or skill they want to learn.
+Your task is to generate a learning roadmap as a Directed Acyclic Graph (nodes and edges).
+Create exactly 5 to 7 key nodes representing the learning progression.
+
+Here are the currently HIGH-DEMAND skills in the job market based on recent hiring trends:
+${trendingSkillsText || "(No specific trend data available right now)"}
+
+When designing the roadmap, prioritize and heavily incorporate these trending skills if they are relevant to the user's goal.
+
+Output ONLY valid JSON matching this schema:
+{
+  "nodes": [
+    {
+      "id": "unique-node-id",
+      "data": {
+        "title": "Short title",
+        "description": "Brief explanation",
+        "category": "Core/Action/Goal/etc",
+        "level": number (1 for the starting node, 2 for next step, etc. up to 4),
+        "estimatedMinutes": number,
+        "isTrending": boolean (Set to true ONLY IF this skill is directly related to the high-demand trends provided above)
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "source-node-id",
+      "target": "target-node-id"
+    }
+  ]
+}
+The nodes must form a valid tree/graph where edges point from a lower level to a higher level.
+Level 1 should be the starting point (prerequisite).
+Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw JSON object.
+`;
+
+export async function POST(req: Request) {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: "ANTHROPIC_API_KEY is not configured." },
+        { status: 500 }
+      );
+    }
+
+    const { prompt } = await req.json();
+
+    if (!prompt) {
+      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+    }
+
+    // Fetch trending skills from Supabase
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
+    let trendingSkillsText = "";
+    try {
+      const { data } = await supabase
+        .from("skills")
+        .select("title, trend_score")
+        .in("trend_score", ["High", "Medium"]);
+      
+      if (data && data.length > 0) {
+        trendingSkillsText = data
+          .map((s) => `- ${s.title} (Demand: ${s.trend_score})`)
+          .join("\n");
+      }
+    } catch (dbError) {
+      console.error("Failed to fetch trending skills:", dbError);
+    }
+
+    const message = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 2000,
+      temperature: 0.7,
+      system: getSystemPrompt(trendingSkillsText),
+      messages: [
+        {
+          role: "user",
+          content: `Career Goal: ${prompt}`,
+        },
+      ],
+    });
+
+    const contentBlock = message.content.find((block) => block.type === "text");
+    if (!contentBlock || contentBlock.type !== "text") {
+      throw new Error("Invalid response from Claude");
+    }
+
+    const rawJson = contentBlock.text.trim();
+    const parsed = JSON.parse(rawJson) as {
+      nodes: { id: string; data: any }[];
+      edges: { source: string; target: string }[];
+    };
+
+    // Calculate positions based on levels
+    const levelCounts: Record<number, number> = {};
+    const levelYOffsets: Record<number, number> = {};
+
+    parsed.nodes.forEach((n) => {
+      const lvl = n.data.level || 1;
+      levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
+    });
+
+    // Initialize Y offsets to center the nodes
+    Object.keys(levelCounts).forEach((lvlStr) => {
+      const lvl = Number(lvlStr);
+      const count = levelCounts[lvl];
+      const spacing = 180;
+      const startY = -((count - 1) * spacing) / 2;
+      levelYOffsets[lvl] = startY;
+    });
+
+    const finalNodes: SkillTreeNode[] = parsed.nodes.map((n) => {
+      const lvl = n.data.level || 1;
+      const x = (lvl - 1) * 360;
+      const y = levelYOffsets[lvl];
+      levelYOffsets[lvl] += 180;
+
+      return {
+        id: n.id,
+        type: "skill",
+        position: { x, y: y + 80 }, // +80 to add some initial top margin
+        data: {
+          ...n.data,
+          id: n.id,
+          status: lvl === 1 ? "available" : "locked",
+        },
+      };
+    });
+
+    const finalEdges: SkillTreeEdge[] = parsed.edges.map((e) => ({
+      id: `${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      type: "smoothstep",
+      animated: true,
+    }));
+
+    return NextResponse.json({ nodes: finalNodes, edges: finalEdges });
+  } catch (error) {
+    console.error("Generate Tree Error:", error);
+    return NextResponse.json(
+      { error: "Failed to generate career tree" },
+      { status: 500 }
+    );
+  }
+}
