@@ -115,6 +115,74 @@ export const dashboardSkillNodes: SkillTreeNode[] = [
       checklist: ["navigator.onLine 감지", "큐 중복 방지", "재연결 flush 처리"],
     },
   },
+  {
+    id: "http-api-design",
+    type: "skill",
+    position: { x: -340, y: 220 },
+    data: {
+      id: "http-api-design",
+      title: "HTTP·REST API 설계",
+      description: "요청/응답 계약과 리소스 중심 API를 설계합니다.",
+      category: "Backend",
+      level: 2,
+      estimatedMinutes: 60,
+      prerequisiteIds: ["web-foundation"],
+      questMarkdown:
+        "## 실무 퀘스트\n\n스킬 완료 API를 리소스 중심으로 설계하고 상태 코드와 에러 응답 형식을 통일합니다.\n\n### 리뷰 포인트\n\n- URL이 명사(리소스) 중심인가\n- 멱등성이 필요한 요청에 PUT을 쓰는가\n- 에러 응답 스키마가 일관적인가",
+      checklist: ["리소스별 엔드포인트 설계", "상태 코드 규칙 정의", "에러 응답 스키마 통일"],
+    },
+  },
+  {
+    id: "database-modeling",
+    type: "skill",
+    position: { x: -680, y: -60 },
+    data: {
+      id: "database-modeling",
+      title: "데이터베이스 모델링",
+      description: "정규화와 인덱스 설계로 안정적인 스키마를 만듭니다.",
+      category: "Backend",
+      level: 3,
+      estimatedMinutes: 75,
+      prerequisiteIds: ["http-api-design"],
+      questMarkdown:
+        "## 실무 퀘스트\n\nuser_skills처럼 복합 unique 제약이 필요한 테이블을 설계하고 조회 패턴에 맞는 인덱스를 추가합니다.\n\n### 검수 기준\n\n- 정규화 수준이 조회/쓰기 패턴에 적절한가\n- 외래키와 ON DELETE 정책이 명확한가\n- 자주 쓰는 WHERE 절에 인덱스가 있는가",
+      checklist: ["ERD 초안 작성", "복합 unique 제약 설계", "인덱스 계획 수립"],
+    },
+  },
+  {
+    id: "auth-security",
+    type: "skill",
+    position: { x: -680, y: 500 },
+    data: {
+      id: "auth-security",
+      title: "인증과 API 보안",
+      description: "세션/토큰 인증과 권한 검사로 API를 보호합니다.",
+      category: "Security",
+      level: 3,
+      estimatedMinutes: 70,
+      prerequisiteIds: ["http-api-design"],
+      questMarkdown:
+        "## 실무 퀘스트\n\n매직 링크 로그인처럼 토큰 기반 세션을 검증하고, 본인 소유가 아닌 리소스 접근을 차단하는 권한 검사를 추가합니다.\n\n### 검수 기준\n\n- 만료/위조 토큰이 거부되는가\n- 다른 사용자 데이터 접근이 차단되는가\n- 민감 정보가 응답/로그에 노출되지 않는가",
+      checklist: ["토큰 검증 로직 작성", "리소스 소유권 검사", "민감 정보 로깅 점검"],
+    },
+  },
+  {
+    id: "cicd-deploy",
+    type: "skill",
+    position: { x: -340, y: 780 },
+    data: {
+      id: "cicd-deploy",
+      title: "CI/CD 배포 파이프라인",
+      description: "테스트 자동화와 무중단 배포 파이프라인을 구축합니다.",
+      category: "DevOps",
+      level: 4,
+      estimatedMinutes: 85,
+      prerequisiteIds: ["database-modeling", "auth-security"],
+      questMarkdown:
+        "## 실무 퀘스트\n\n푸시 시 빌드/테스트가 자동 실행되고, main 브랜치 배포 전에 실패한 파이프라인은 머지를 막도록 구성합니다.\n\n### UX 기준\n\n- 실패한 테스트가 배포를 막는가\n- 배포 실패 시 이전 버전으로 롤백 가능한가\n- 파이프라인 상태가 팀에 바로 보이는가",
+      checklist: ["빌드/테스트 자동화", "배포 전 게이트 설정", "롤백 절차 문서화"],
+    },
+  },
 ];
 
 export const dashboardSkillEdges: SkillTreeEdge[] = [
@@ -154,6 +222,37 @@ export const dashboardSkillEdges: SkillTreeEdge[] = [
     id: "supabase-progress-offline-queue",
     source: "supabase-progress",
     target: "offline-queue",
+    type: "smoothstep",
+  },
+  {
+    id: "web-foundation-http-api-design",
+    source: "web-foundation",
+    target: "http-api-design",
+    type: "smoothstep",
+    animated: true,
+  },
+  {
+    id: "http-api-design-database-modeling",
+    source: "http-api-design",
+    target: "database-modeling",
+    type: "smoothstep",
+  },
+  {
+    id: "http-api-design-auth-security",
+    source: "http-api-design",
+    target: "auth-security",
+    type: "smoothstep",
+  },
+  {
+    id: "database-modeling-cicd-deploy",
+    source: "database-modeling",
+    target: "cicd-deploy",
+    type: "smoothstep",
+  },
+  {
+    id: "auth-security-cicd-deploy",
+    source: "auth-security",
+    target: "cicd-deploy",
     type: "smoothstep",
   },
 ];
