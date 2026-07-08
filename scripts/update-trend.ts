@@ -3,6 +3,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { scrapeWantedJobs } from "./scrape-wanted";
 import { scrapeJumpitJobs } from "./scrape-jumpit";
 
+// Mock WebSocket for Node.js 20 compatibility since we don't use Supabase Realtime
+if (typeof globalThis.WebSocket === "undefined") {
+  globalThis.WebSocket = class {} as any;
+}
+
 type Database = {
   public: {
     Tables: {
@@ -70,7 +75,7 @@ async function analyzeTrendScores(
   const skillCatalog = skills.map((skill) => `${skill.id}: ${skill.title}`).join("\n");
   
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-3.5-flash",
     systemInstruction: "당신은 실제 채용 공고 텍스트를 분석해 기술 스택의 수요 빈도를 채점하는 어시스턴트입니다. 주어진 스킬 카탈로그의 각 항목이 채용 공고들에서 얼마나 자주, 중요하게 언급되는지 분석하여 High, Medium, Low 중 하나로 평가하십시오. 카탈로그에 없는 스킬은 절대로 만들어내지 말고 카탈로그 ID를 정확히 유지하십시오.",
     generationConfig: {
       responseMimeType: "application/json",
@@ -93,21 +98,27 @@ async function bulkUpdateTrendScores(
   scores: { skill_id: string; trend_score: string }[],
 ): Promise<number> {
   const knownSkillIds = new Set(skills.map((skill) => skill.id));
-  const rows = scores
-    .filter((score) => knownSkillIds.has(score.skill_id))
-    .map((score) => ({ id: score.skill_id, trend_score: score.trend_score }));
+  const validScores = scores.filter((score) => knownSkillIds.has(score.skill_id));
 
-  if (rows.length === 0) {
+  if (validScores.length === 0) {
     return 0;
   }
 
-  const { error } = await supabaseAdmin.from("skills").upsert(rows, { onConflict: "id" });
+  // Use update instead of upsert to avoid NOT NULL constraint errors on 'title' and 'category'
+  await Promise.all(
+    validScores.map(async (score) => {
+      const { error } = await supabaseAdmin
+        .from("skills")
+        .update({ trend_score: score.trend_score })
+        .eq("id", score.skill_id);
+        
+      if (error) {
+        throw new Error(`Failed to update ${score.skill_id}: ${error.message}`);
+      }
+    })
+  );
 
-  if (error) {
-    throw new Error(`Failed to bulk update trend_score: ${error.message}`);
-  }
-
-  return rows.length;
+  return validScores.length;
 }
 
 async function main(): Promise<void> {
