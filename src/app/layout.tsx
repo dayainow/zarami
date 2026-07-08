@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
 
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -39,7 +40,8 @@ export default function RootLayout({
             <AuthProvider>
               <OfflineBanner />
               <Sidebar />
-              <div className="min-h-screen pl-20">{children}</div>
+              <MobileTabBar />
+              <div className="min-h-screen pb-16 md:pb-0 md:pl-20">{children}</div>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
