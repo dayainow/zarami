@@ -8,12 +8,15 @@ import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 const NODE_WIDTH = 288;
 const NODE_HEIGHT = 130;
 
-export type LayoutDirection = "LR" | "TB";
+export type LayoutDirection = "LR" | "TB" | "BT";
 
 export function getLayoutedElements(
   nodes: SkillTreeNode[],
   edges: SkillTreeEdge[],
-  direction: LayoutDirection = "LR",
+  // Bottom-to-top: prerequisites take root at the bottom and the tree grows
+  // upward, matching the "성장 캔버스" (growth canvas) metaphor and reading
+  // as a natural vertical scroll on mobile.
+  direction: LayoutDirection = "BT",
 ): { nodes: SkillTreeNode[]; edges: SkillTreeEdge[] } {
   if (nodes.length === 0) {
     return { nodes, edges };

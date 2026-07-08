@@ -74,7 +74,7 @@ export function ManageTreeClient() {
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
 
   const handleAutoLayout = useCallback(() => {
-    setNodes((currentNodes) => getLayoutedElements(currentNodes, edges, "LR").nodes);
+    setNodes((currentNodes) => getLayoutedElements(currentNodes, edges, "BT").nodes);
     window.setTimeout(() => {
       reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
     }, 50);
@@ -101,7 +101,7 @@ export function ManageTreeClient() {
       }
 
       const data = await response.json();
-      const layouted = getLayoutedElements(data.nodes, data.edges, "LR");
+      const layouted = getLayoutedElements(data.nodes, data.edges, "BT");
       setNodes(layouted.nodes);
       setEdges(layouted.edges);
       window.setTimeout(() => {

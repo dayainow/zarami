@@ -112,7 +112,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       ) : null}
       <Handle
         type="target"
-        position={Position.Left}
+        position={Position.Bottom}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
       <div className="flex items-start justify-between gap-3">
@@ -162,7 +162,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       ) : null}
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Top}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
       {data.hasChildren ? (
@@ -183,7 +183,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
               data.onToggleCollapse?.(data.id);
             }
           }}
-          className="absolute -right-3 top-1/2 z-30 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 shadow-md transition hover:scale-110 hover:text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+          className="absolute -top-3 left-1/2 z-30 flex h-6 w-6 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 shadow-md transition hover:scale-110 hover:text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
         >
           {data.isCollapsed ? (
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />

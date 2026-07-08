@@ -7,6 +7,7 @@ import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { buildCompletedSkillIdSet, dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
@@ -48,7 +49,7 @@ export function DashboardClient() {
   const completedSet = useMemo(() => buildCompletedSkillIdSet(completedSkillIds), [completedSkillIds]);
 
   const nodes = useMemo<SkillTreeNode[]>(() => {
-    return dashboardSkillNodes.map((node) => {
+    const withStatus = dashboardSkillNodes.map((node) => {
       const prerequisiteIds = node.data.prerequisiteIds ?? [];
       const isCompleted = completedSet.has(node.id);
       const prerequisitesCompleted =
@@ -71,6 +72,10 @@ export function DashboardClient() {
         },
       };
     });
+
+    // Grow the tree bottom-up from completed roots instead of the data
+    // file's fixed positions, so the canvas reads as a plant growing upward.
+    return getLayoutedElements(withStatus, dashboardSkillEdges, "BT").nodes;
   }, [celebratingSkillId, completedSet]);
 
   const edges = useMemo<SkillTreeEdge[]>(() => {
