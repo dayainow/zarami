@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { Download, LayoutGrid, Plus, Save, Target } from "lucide-react";
+import { Download, LayoutGrid, Plus, Save, Sparkles, Target } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
@@ -16,8 +16,8 @@ import { useSaveUserTree, useUserTree } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
-const initialManageNodes: SkillTreeNode[] = [
-  {
+function createBlankRootNode(): SkillTreeNode {
+  return {
     id: "goal-root",
     type: "skill",
     position: { x: 0, y: 80 },
@@ -32,54 +32,8 @@ const initialManageNodes: SkillTreeNode[] = [
       questMarkdown: "## 목표 정의\n\n원하는 직무, 프로젝트, 학습 결과를 구체적으로 작성합니다.",
       checklist: ["목표 문장 작성", "완료 기준 정의", "첫 행동 정하기"],
     },
-  },
-  {
-    id: "goal-action-1",
-    type: "skill",
-    position: { x: 360, y: -80 },
-    data: {
-      id: "goal-action-1",
-      title: "첫 번째 실행 노드",
-      description: "목표를 향해 바로 시작할 수 있는 작은 행동입니다.",
-      category: "Action",
-      level: 2,
-      prerequisiteIds: ["goal-root"],
-      estimatedMinutes: 45,
-      status: "available",
-    },
-  },
-  {
-    id: "goal-action-2",
-    type: "skill",
-    position: { x: 360, y: 240 },
-    data: {
-      id: "goal-action-2",
-      title: "검증 산출물 만들기",
-      description: "포트폴리오, 회고, 배포 링크처럼 확인 가능한 결과를 만듭니다.",
-      category: "Proof",
-      level: 2,
-      prerequisiteIds: ["goal-root"],
-      estimatedMinutes: 60,
-      status: "locked",
-    },
-  },
-];
-
-const initialManageEdges: SkillTreeEdge[] = [
-  {
-    id: "goal-root-goal-action-1",
-    source: "goal-root",
-    target: "goal-action-1",
-    type: "smoothstep",
-    animated: true,
-  },
-  {
-    id: "goal-root-goal-action-2",
-    source: "goal-root",
-    target: "goal-action-2",
-    type: "smoothstep",
-  },
-];
+  };
+}
 
 function createGoalNode(index: number): SkillTreeNode {
   const id =
@@ -110,12 +64,13 @@ export function ManageTreeClient() {
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(userId);
   const saveTreeMutation = useSaveUserTree(userId);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>(initialManageNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>(initialManageEdges);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>("goal-root");
+  const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>([]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [onboardingGoal, setOnboardingGoal] = useState("");
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
 
   const handleAutoLayout = useCallback(() => {
@@ -125,8 +80,11 @@ export function ManageTreeClient() {
     }, 50);
   }, [edges, setNodes]);
 
-  const handleAIGenerate = useCallback(async () => {
-    const promptText = window.prompt("어떤 커리어를 목표로 하시나요? (예: 풀스택 개발자, 데이터 엔지니어 등)");
+  // `promptOverride` lets the onboarding form pass its typed goal directly;
+  // the toolbar's "AI 자동 생성" button (for an already-populated tree) still
+  // falls back to a native prompt() since it has no dedicated input of its own.
+  const handleAIGenerate = useCallback(async (promptOverride?: string) => {
+    const promptText = promptOverride ?? window.prompt("어떤 커리어를 목표로 하시나요? (예: 풀스택 개발자, 데이터 엔지니어 등)");
     if (!promptText || promptText.trim() === "") return;
 
     setIsGeneratingAI(true);
@@ -195,6 +153,13 @@ export function ManageTreeClient() {
     setNodes((currentNodes) => [...currentNodes, nextNode]);
     setSelectedNodeId(nextNode.id);
   }, [nodes.length, setNodes]);
+
+  const handleStartBlank = useCallback(() => {
+    const rootNode = createBlankRootNode();
+    setNodes([rootNode]);
+    setEdges([]);
+    setSelectedNodeId(rootNode.id);
+  }, [setEdges, setNodes]);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -297,6 +262,64 @@ export function ManageTreeClient() {
     );
   }
 
+  // A brand-new (or emptied) tree leads with AI generation instead of a
+  // fixed demo starter - describing a goal is the primary entry point,
+  // with "직접 만들기" as the explicit opt-out for manual editing.
+  if (!isTreeLoading && nodes.length === 0) {
+    return (
+      <main className="grid min-h-screen w-full place-items-center bg-slate-50 px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
+        <div className="w-full max-w-lg rounded-2xl border border-white/70 bg-white/75 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 dark:bg-indigo-400 dark:text-slate-950">
+            <Sparkles className="h-6 w-6" aria-hidden />
+          </span>
+          <h1 className="mt-4 text-xl font-bold text-slate-950 dark:text-white">첫 트리를 만들어볼까요?</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            어떤 커리어를 목표로 하시나요? AI가 목표에 맞는 스킬 트리 초안을 자동으로 만들어드립니다.
+          </p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleAIGenerate(onboardingGoal);
+            }}
+            className="mt-6 flex flex-col gap-3"
+          >
+            <input
+              type="text"
+              value={onboardingGoal}
+              onChange={(event) => setOnboardingGoal(event.target.value)}
+              placeholder="예: 풀스택 개발자, 데이터 엔지니어, iOS 개발자..."
+              disabled={isGeneratingAI}
+              className="w-full rounded-lg border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+            />
+            <button
+              type="submit"
+              disabled={isGeneratingAI || onboardingGoal.trim() === ""}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-500 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden />
+              {isGeneratingAI ? "생성 중..." : "AI로 로드맵 생성하기"}
+            </button>
+          </form>
+
+          <div className="relative flex items-center py-4">
+            <div className="flex-grow border-t border-slate-200 dark:border-white/10" />
+            <span className="shrink-0 px-3 text-xs text-slate-400">또는</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-white/10" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleStartBlank}
+            disabled={isGeneratingAI}
+            className="text-sm font-semibold text-slate-500 underline-offset-4 transition hover:text-slate-700 hover:underline disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            직접 처음부터 만들기
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen w-full flex-col overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white xl:h-screen xl:flex-row">
       <section className="relative flex min-h-[620px] min-w-0 flex-1">
@@ -316,7 +339,7 @@ export function ManageTreeClient() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleAIGenerate}
+                onClick={() => void handleAIGenerate()}
                 disabled={isGeneratingAI}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-500 px-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
               >
