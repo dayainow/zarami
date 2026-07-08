@@ -98,8 +98,8 @@ export function DashboardClient() {
         ...edge,
         animated: Boolean(edge.animated || isNextAction),
         style: {
-          strokeWidth: isNextAction ? 3 : isActivated ? 2.5 : 2,
-          stroke: isNextAction ? "#fbbf24" : isActivated ? "#10b981" : "#64748b",
+          strokeWidth: isNextAction ? 3 : isActivated ? 2.5 : 2.25,
+          stroke: isNextAction ? "#fbbf24" : isActivated ? "#10b981" : "#94a3b8",
           filter: isActivated ? "drop-shadow(0 0 4px rgba(16, 185, 129, 0.65))" : undefined,
         },
       };

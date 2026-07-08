@@ -40,11 +40,11 @@ type TechTreeCanvasProps = {
 
 const statusClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
   completed:
-    "border-emerald-300/80 bg-emerald-50/80 text-emerald-950 shadow-emerald-100 backdrop-blur-xl dark:border-emerald-400/50 dark:bg-emerald-950/70 dark:text-emerald-100 dark:shadow-emerald-950/20",
+    "border-emerald-300 bg-emerald-50/90 text-emerald-950 shadow-emerald-100 backdrop-blur-xl dark:border-emerald-400/70 dark:bg-emerald-950/90 dark:text-emerald-50 dark:shadow-emerald-950/30",
   available:
-    "border-sky-300/80 bg-white/85 text-slate-950 shadow-sky-100 backdrop-blur-xl dark:border-sky-400/60 dark:bg-slate-900/75 dark:text-slate-50 dark:shadow-sky-950/40",
+    "border-sky-300 bg-white/95 text-slate-950 shadow-sky-100 backdrop-blur-xl dark:border-sky-400 dark:bg-slate-800/95 dark:text-white dark:shadow-sky-950/40",
   locked:
-    "border-slate-200/80 bg-slate-100/70 text-slate-400 shadow-slate-100 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/65 dark:text-slate-500",
+    "border-slate-300 bg-slate-100/85 text-slate-500 shadow-slate-100 backdrop-blur-xl dark:border-slate-600 dark:bg-slate-800/85 dark:text-slate-400",
 };
 
 const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
@@ -85,10 +85,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         "group relative w-72 rounded-lg border border-l-4 px-4 py-3 text-left shadow-sm transition duration-200",
         "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
         selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950" : "",
-        isCompleted ? "opacity-40" : "",
-        isNextAction
-          ? "animate-pulse border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]"
-          : "",
+        isCompleted ? "opacity-90" : "",
+        isNextAction ? "border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]" : "",
         statusClassName[status],
         categoryColor.border,
       ].join(" ")}
@@ -121,7 +119,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
             {isCompleted ? (
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
             ) : status === "locked" ? (
-              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
+              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
             ) : (
               <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
             )}
