@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addEdge, useEdgesState, useNodesState, type Connection } from "@xyflow/react";
-import { Download, Plus, Target } from "lucide-react";
+import { Download, Plus, Save, Target } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
+import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
+import { useSaveUserTree, useUserTree } from "@/hooks/useUserTree";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 const initialManageNodes: SkillTreeNode[] = [
@@ -96,10 +98,32 @@ function createGoalNode(index: number): SkillTreeNode {
 }
 
 export function ManageTreeClient() {
+  const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, authChecked } =
+    useMagicLinkAuth();
+  const { data: savedTree, isLoading: isTreeLoading } = useUserTree(userId);
+  const saveTreeMutation = useSaveUserTree(userId);
+
   const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>(initialManageNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>(initialManageEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("goal-root");
   const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+
+  // Hydrate from the user's saved tree exactly once when it first arrives -
+  // a later background refetch must not clobber in-progress local edits.
+  const hasHydratedFromServer = useRef(false);
+  useEffect(() => {
+    if (hasHydratedFromServer.current || !savedTree) {
+      return;
+    }
+    hasHydratedFromServer.current = true;
+
+    if (savedTree.nodes.length > 0) {
+      setNodes(savedTree.nodes);
+      setEdges(savedTree.edges);
+      setSelectedNodeId(savedTree.nodes[0]?.id ?? null);
+    }
+  }, [savedTree, setEdges, setNodes]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -148,7 +172,65 @@ export function ManageTreeClient() {
     }
   }, [edges, nodes]);
 
+  const handleSave = useCallback(() => {
+    saveTreeMutation.mutate(
+      { nodes, edges },
+      {
+        onSuccess: () => {
+          setSaveState("saved");
+          window.setTimeout(() => setSaveState("idle"), 1800);
+        },
+        onError: () => {
+          setSaveState("error");
+          window.setTimeout(() => setSaveState("idle"), 1800);
+        },
+      },
+    );
+  }, [edges, nodes, saveTreeMutation]);
+
   const data = selectedNode?.data;
+
+  if (!authChecked || !userId) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-50 px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
+        <div className="max-w-sm rounded-xl border border-white/70 bg-white/75 p-6 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+          <h1 className="text-lg font-bold text-slate-950 dark:text-white">로그인이 필요합니다</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            내 트리는 계정별로 저장됩니다. 로그인 후 이용해주세요.
+          </p>
+          {!authChecked ? (
+            <p className="mt-4 text-xs text-slate-500 dark:text-slate-500">확인 중...</p>
+          ) : (
+            <div className="mt-6 flex flex-col items-center">
+              {emailSent ? (
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  이메일로 로그인 링크를 보냈습니다!
+                </p>
+              ) : (
+                <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(event) => setLoginEmail(event.target.value)}
+                    placeholder="이메일 주소 입력"
+                    required
+                    className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
+                  >
+                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen w-full flex-col overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white xl:h-screen xl:flex-row">
@@ -162,6 +244,9 @@ export function ManageTreeClient() {
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 내 트리 관리
               </h1>
+              {isTreeLoading ? (
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">저장된 트리 불러오는 중...</p>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -171,6 +256,21 @@ export function ManageTreeClient() {
               >
                 <Plus className="h-4 w-4" aria-hidden />
                 노드 추가
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saveTreeMutation.isPending}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+              >
+                <Save className="h-4 w-4" aria-hidden />
+                {saveState === "saved"
+                  ? "저장됨!"
+                  : saveState === "error"
+                    ? "저장 실패"
+                    : saveTreeMutation.isPending
+                      ? "저장 중..."
+                      : "저장"}
               </button>
               <button
                 type="button"
@@ -262,10 +362,10 @@ export function ManageTreeClient() {
             </div>
 
             <section className="rounded-xl border border-white/70 bg-white/55 p-4 text-sm text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              <p className="font-semibold text-slate-950 dark:text-white">다음 단계</p>
+              <p className="font-semibold text-slate-950 dark:text-white">저장 안내</p>
               <p className="mt-2 leading-6">
-                KAN-7에서 개인 트리 저장소와 동기화되면 이 화면의 노드/엣지 상태가 계정별 데이터로
-                저장됩니다.
+                상단의 [저장] 버튼을 눌러야 지금까지 편집한 노드/엣지가 내 계정에 저장됩니다. 자동
+                저장은 아직 지원하지 않습니다.
               </p>
             </section>
           </div>
