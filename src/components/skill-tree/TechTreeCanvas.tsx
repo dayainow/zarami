@@ -19,6 +19,7 @@ import { ReactFlow,
 } from "@xyflow/react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
+import { getCategoryColor } from "@/lib/categoryColors";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
@@ -70,12 +71,13 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   const status = data.status ?? "available";
   const isCompleted = data.is_completed === true || status === "completed";
   const isNextAction = data.isNextAction === true && !isCompleted;
+  const categoryColor = getCategoryColor(data.category);
 
   return (
     <button
       type="button"
       className={[
-        "group relative w-72 rounded-lg border px-4 py-3 text-left shadow-sm transition duration-200",
+        "group relative w-72 rounded-lg border border-l-4 px-4 py-3 text-left shadow-sm transition duration-200",
         "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
         selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950" : "",
         isCompleted ? "opacity-40" : "",
@@ -83,6 +85,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           ? "animate-pulse border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]"
           : "",
         statusClassName[status],
+        categoryColor.border,
       ].join(" ")}
     >
       {isNextAction ? (
@@ -112,7 +115,9 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
             {data.category ? (
-              <span className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <span
+                className={`truncate rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryColor.badge}`}
+              >
                 {data.category}
               </span>
             ) : null}
