@@ -76,15 +76,23 @@ export function DashboardClient() {
   const edges = useMemo<SkillTreeEdge[]>(() => {
     const nextActionIds = new Set(nodes.filter((node) => node.data.isNextAction).map((node) => node.id));
 
-    return dashboardSkillEdges.map((edge) => ({
-      ...edge,
-      animated: Boolean(edge.animated || nextActionIds.has(edge.target)),
-      style: {
-        strokeWidth: nextActionIds.has(edge.target) ? 3 : 2,
-        stroke: nextActionIds.has(edge.target) ? "#fbbf24" : "#64748b",
-      },
-    }));
-  }, [nodes]);
+    return dashboardSkillEdges.map((edge) => {
+      const isNextAction = nextActionIds.has(edge.target);
+      // A completed source lights the edge up like a cleared skill-tree path,
+      // unless the amber "next action" highlight already claims this edge.
+      const isActivated = !isNextAction && completedSet.has(edge.source);
+
+      return {
+        ...edge,
+        animated: Boolean(edge.animated || isNextAction),
+        style: {
+          strokeWidth: isNextAction ? 3 : isActivated ? 2.5 : 2,
+          stroke: isNextAction ? "#fbbf24" : isActivated ? "#10b981" : "#64748b",
+          filter: isActivated ? "drop-shadow(0 0 4px rgba(16, 185, 129, 0.65))" : undefined,
+        },
+      };
+    });
+  }, [completedSet, nodes]);
 
   const handleNodeSelect = useCallback(
     (node: SkillTreeNode) => {

@@ -17,6 +17,7 @@ import { ReactFlow,
   type OnNodesChange,
   type ReactFlowInstance,
 } from "@xyflow/react";
+import { CheckCircle2, Lock } from "lucide-react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -113,7 +114,13 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
+            {isCompleted ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+            ) : status === "locked" ? (
+              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
+            ) : (
+              <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
+            )}
             {data.category ? (
               <span
                 className={`truncate rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryColor.badge}`}
@@ -179,6 +186,36 @@ export function TechTreeCanvas({
     [],
   );
 
+  // Glow edges that flow out of a completed node, so a finished path visibly
+  // lights up. Callers (e.g. DashboardClient's Next Action highlight) may
+  // already set an explicit edge.style - respect that instead of overriding it.
+  const styledEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        if (edge.style) {
+          return edge;
+        }
+        const sourceNode = nodes.find((node) => node.id === edge.source);
+        const isActivated = sourceNode?.data.is_completed === true;
+        if (!isActivated) {
+          return edge;
+        }
+        return {
+          ...edge,
+          style: {
+            strokeWidth: 2.5,
+            stroke: "#10b981",
+            filter: "drop-shadow(0 0 4px rgba(16, 185, 129, 0.65))",
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "#10b981",
+          },
+        };
+      }),
+    [edges, nodes],
+  );
+
   const handleNodeClick = useCallback(
     (_event: MouseEvent, node: Node<SkillNodeData>) => {
       if (!interactive) {
@@ -199,7 +236,7 @@ export function TechTreeCanvas({
     >
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={styledEdges}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={edgeOptions}
         fitView
