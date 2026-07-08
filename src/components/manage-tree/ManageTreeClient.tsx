@@ -1,12 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { addEdge, useEdgesState, useNodesState, type Connection } from "@xyflow/react";
-import { Download, Plus, Save, Target } from "lucide-react";
+import {
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type ReactFlowInstance,
+} from "@xyflow/react";
+import { Download, LayoutGrid, Plus, Save, Target } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import { useSaveUserTree, useUserTree } from "@/hooks/useUserTree";
+import { getLayoutedElements } from "@/lib/autoLayout";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 const initialManageNodes: SkillTreeNode[] = [
@@ -109,6 +116,14 @@ export function ManageTreeClient() {
   const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
+
+  const handleAutoLayout = useCallback(() => {
+    setNodes((currentNodes) => getLayoutedElements(currentNodes, edges, "LR").nodes);
+    window.setTimeout(() => {
+      reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
+    }, 50);
+  }, [edges, setNodes]);
 
   const handleAIGenerate = useCallback(async () => {
     const promptText = window.prompt("어떤 커리어를 목표로 하시나요? (예: 풀스택 개발자, 데이터 엔지니어 등)");
@@ -128,8 +143,12 @@ export function ManageTreeClient() {
       }
 
       const data = await response.json();
-      setNodes(data.nodes);
-      setEdges(data.edges);
+      const layouted = getLayoutedElements(data.nodes, data.edges, "LR");
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+      window.setTimeout(() => {
+        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
+      }, 50);
       setSelectedNodeId(data.nodes[0]?.id ?? null);
     } catch (error: unknown) {
       alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
@@ -314,6 +333,14 @@ export function ManageTreeClient() {
               </button>
               <button
                 type="button"
+                onClick={handleAutoLayout}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/70 bg-white/70 px-3 text-sm font-bold text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              >
+                <LayoutGrid className="h-4 w-4" aria-hidden />
+                자동 정렬
+              </button>
+              <button
+                type="button"
                 onClick={handleSave}
                 disabled={saveTreeMutation.isPending}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
@@ -347,6 +374,9 @@ export function ManageTreeClient() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={handleConnect}
+          onInit={(instance) => {
+            reactFlowInstanceRef.current = instance;
+          }}
           className="h-full min-h-screen pt-24"
         />
       </section>
