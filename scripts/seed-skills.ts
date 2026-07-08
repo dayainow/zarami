@@ -3,7 +3,7 @@ import { dashboardSkillNodes } from "../src/data/skill-tree";
 
 // Mock WebSocket for Node.js 20 compatibility since we don't use Supabase Realtime
 if (typeof globalThis.WebSocket === "undefined") {
-  globalThis.WebSocket = class {} as any;
+  globalThis.WebSocket = class {} as unknown as typeof WebSocket;
 }
 
 const supabase = createClient(
