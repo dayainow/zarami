@@ -12,9 +12,9 @@ export function Sidebar() {
 
   return (
     <aside
-      className="app-sidebar fixed inset-y-0 left-0 z-[70] hidden overflow-x-hidden border-r border-white/70 bg-white/72 px-3 py-4 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl transition-[width,background-color,border-color] duration-300 md:flex dark:border-white/10 dark:bg-slate-950/78 dark:shadow-black/30"
+      className="group fixed inset-y-0 left-0 z-[70] hidden w-[5rem] overflow-x-hidden border-r border-white/70 bg-white/72 px-3 py-4 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl transition-[width,background-color,border-color] duration-300 hover:w-64 focus-within:w-64 md:flex dark:border-white/10 dark:bg-slate-950/78 dark:shadow-black/30"
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full w-full flex-col">
         <Link
           href="/dashboard"
           className="flex h-12 items-center gap-3 rounded-xl px-2 text-slate-950 transition hover:bg-white/70 dark:text-white dark:hover:bg-white/10"
@@ -23,7 +23,7 @@ export function Sidebar() {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
             <Sprout className="h-5 w-5" aria-hidden />
           </span>
-          <span className="app-sidebar-label min-w-0 translate-x-2 whitespace-nowrap text-sm font-bold opacity-0 transition duration-200">
+          <span className="min-w-0 translate-x-2 whitespace-nowrap text-sm font-bold opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
             Zarami
           </span>
         </Link>
@@ -48,7 +48,7 @@ export function Sidebar() {
                 <span className="grid h-9 w-9 shrink-0 place-items-center">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
-                <span className="app-sidebar-label min-w-0 translate-x-2 whitespace-nowrap opacity-0 transition duration-200">
+                <span className="min-w-0 translate-x-2 whitespace-nowrap opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
                   {item.label}
                 </span>
               </Link>
@@ -59,7 +59,7 @@ export function Sidebar() {
         <div className="border-t border-slate-200/70 pt-4 dark:border-white/10">
           <ThemeToggle
             showLabel
-            className="app-sidebar-theme w-full justify-start overflow-hidden [&>span:last-child]:translate-x-2 [&>span:last-child]:opacity-0 [&>span:last-child]:transition [&>span:last-child]:duration-200"
+            className="w-full justify-start overflow-hidden [&>span:last-child]:translate-x-2 [&>span:last-child]:opacity-0 [&>span:last-child]:transition [&>span:last-child]:duration-200 group-hover:[&>span:last-child]:translate-x-0 group-hover:[&>span:last-child]:opacity-100 group-focus-within:[&>span:last-child]:translate-x-0 group-focus-within:[&>span:last-child]:opacity-100"
           />
         </div>
       </div>
