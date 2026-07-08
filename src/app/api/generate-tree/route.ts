@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 
 import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const getSystemPrompt = (trendingSkillsText: string) => `
 You are an expert career counselor and tech lead. The user will give you a career goal or skill they want to learn.
@@ -48,9 +45,9 @@ Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY is not configured." },
+        { error: "GEMINI_API_KEY is not configured." },
         { status: 500 }
       );
     }
@@ -82,27 +79,19 @@ export async function POST(req: Request) {
       console.error("Failed to fetch trending skills:", dbError);
     }
 
-    const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 2000,
-      temperature: 0.7,
-      system: getSystemPrompt(trendingSkillsText),
-      messages: [
-        {
-          role: "user",
-          content: `Career Goal: ${prompt}`,
-        },
-      ],
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: getSystemPrompt(trendingSkillsText)
     });
 
-    const contentBlock = message.content.find((block) => block.type === "text");
-    if (!contentBlock || contentBlock.type !== "text") {
-      throw new Error("Invalid response from Claude");
-    }
+    const result = await model.generateContent(`Career Goal: ${prompt}`);
+    const text = result.response.text();
+    
+    // Clean up possible markdown wrappers
+    const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
 
-    const rawJson = contentBlock.text.trim();
-    const parsed = JSON.parse(rawJson) as {
-      nodes: { id: string; data: any }[];
+    const parsed = JSON.parse(cleanedText) as {
+      nodes: { id: string; data: { level?: number; title: string; category?: string; isTrending?: boolean; [key: string]: unknown } }[];
       edges: { source: string; target: string }[];
     };
 
@@ -111,7 +100,7 @@ export async function POST(req: Request) {
     const levelYOffsets: Record<number, number> = {};
 
     parsed.nodes.forEach((n) => {
-      const lvl = n.data.level || 1;
+      const lvl = Number(n.data.level) || 1;
       levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
     });
 
@@ -125,7 +114,7 @@ export async function POST(req: Request) {
     });
 
     const finalNodes: SkillTreeNode[] = parsed.nodes.map((n) => {
-      const lvl = n.data.level || 1;
+      const lvl = Number(n.data.level) || 1;
       const x = (lvl - 1) * 360;
       const y = levelYOffsets[lvl];
       levelYOffsets[lvl] += 180;

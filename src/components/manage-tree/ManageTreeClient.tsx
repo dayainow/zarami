@@ -131,8 +131,8 @@ export function ManageTreeClient() {
       setNodes(data.nodes);
       setEdges(data.edges);
       setSelectedNodeId(data.nodes[0]?.id ?? null);
-    } catch (error: any) {
-      alert("AI 생성 중 오류가 발생했습니다: " + error.message);
+    } catch (error: unknown) {
+      alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsGeneratingAI(false);
     }

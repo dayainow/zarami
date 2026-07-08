@@ -1,0 +1,110 @@
+   ▲ Next.js 15.5.20
+   - Local:        http://localhost:3001
+   - Network:      http://172.31.0.113:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1124ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.6s (949 modules)
+ GET / 307 in 3001ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 623ms (1246 modules)
+ GET /dashboard 200 in 795ms
+ ✓ Compiled /favicon.ico in 173ms (719 modules)
+ GET /favicon.ico 200 in 254ms
+ GET /dashboard?node=react-components 200 in 73ms
+ GET /dashboard?node=state-zustand 200 in 26ms
+ GET /dashboard 200 in 27ms
+ ✓ Compiled /profile in 449ms (1259 modules)
+ GET /profile 200 in 519ms
+ ✓ Compiled /manage-tree in 248ms (1281 modules)
+ GET /manage-tree 200 in 302ms
+ ✓ Compiled /admin in 223ms (1289 modules)
+ GET /admin 200 in 276ms
+ GET /manage-tree 200 in 30ms
+ GET /manage-tree 200 in 412ms
+ GET /favicon.ico 200 in 22ms
+ GET /profile 200 in 41ms
+ GET /dashboard 200 in 62ms
+ GET /dashboard?node=offline-queue 200 in 34ms
+ GET /profile 200 in 27ms
+ GET /dashboard 200 in 82ms
+ GET /dashboard?node=web-foundation 200 in 29ms
+ ✓ Compiled in 1106ms (1268 modules)
+ GET /dashboard?node=web-foundation 200 in 159ms
+ GET /manage-tree 200 in 160ms
+ ✓ Compiled in 695ms (1268 modules)
+ GET /manage-tree 200 in 118ms
+ GET /dashboard?node=web-foundation 200 in 124ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1168ms (1273 modules)
+ GET /home 404 in 1635ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 693ms (728 modules)
+ GET /favicon.ico 200 in 857ms
+ GET /profile 200 in 119ms
+ GET /manage-tree 200 in 40ms
+ GET /profile 200 in 84ms
+ GET /manage-tree 200 in 34ms
+ GET /profile 200 in 43ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 594ms (716 modules)
+ GET /admin 200 in 734ms
+ GET /profile 200 in 36ms
+ GET /manage-tree 200 in 53ms
+ GET /dashboard 200 in 48ms
+ GET /dashboard 200 in 447ms
+ ✓ Compiled in 1679ms (1254 modules)
+ ✓ Compiled in 2s (1268 modules)
+ GET /manage-tree 200 in 806ms
+ ✓ Compiled /favicon.ico in 462ms (727 modules)
+ GET /favicon.ico 200 in 574ms
+ ✓ Compiled in 523ms (558 modules)
+ ✓ Compiled in 462ms (558 modules)
+ ✓ Compiled in 1449ms (1268 modules)
+ ✓ Compiled in 418ms (558 modules)
+ ✓ Compiled in 1041ms (558 modules)
+ ✓ Compiled in 617ms (558 modules)
+ GET /dashboard 200 in 412ms
+ ✓ Compiled /favicon.ico in 271ms (727 modules)
+ GET /favicon.ico 200 in 343ms
+ GET /profile 200 in 56ms
+ GET /manage-tree 200 in 39ms
+ ○ Compiling /api/generate-tree ...
+ ✓ Compiled /api/generate-tree in 1005ms (1431 modules)
+ POST /api/generate-tree 500 in 1161ms
+ GET /dashboard 200 in 117ms
+ GET /dashboard?node=react-components 200 in 29ms
+ GET /profile 200 in 39ms
+ GET /manage-tree 200 in 52ms
+ GET /profile 200 in 30ms
+ GET /dashboard 200 in 47ms
+ GET /profile 200 in 48ms
+ GET /manage-tree 200 in 49ms
+ POST /api/generate-tree 500 in 48ms
+ ✓ Compiled in 607ms (558 modules)
+ GET /manage-tree 200 in 20ms
+ ✓ Compiled in 715ms (1268 modules)
+ GET /manage-tree 200 in 149ms
+   Reload env: .env.local
+ ✓ Compiled in 181ms (1254 modules)
+ GET /manage-tree 200 in 98ms
+ ✓ Compiled in 317ms (558 modules)
+ GET /manage-tree 200 in 177ms
+ ✓ Compiled in 268ms (558 modules)
+ GET /manage-tree 200 in 33ms
+ ✓ Compiled in 311ms (558 modules)
+ GET /manage-tree 200 in 24ms
+ ✓ Compiled in 105ms (558 modules)
+ GET /manage-tree 200 in 17ms
+ ✓ Compiled in 120ms (558 modules)
+ GET /manage-tree 200 in 72ms
+ ✓ Compiled in 820ms (1268 modules)
+ GET /manage-tree 200 in 70ms
+ ✓ Compiled in 348ms (558 modules)
+ GET /manage-tree 200 in 15ms
+ ✓ Compiled in 95ms (558 modules)
+ GET /manage-tree 200 in 11ms
+ ✓ Compiled in 142ms (558 modules)
+ GET /manage-tree 200 in 16ms
