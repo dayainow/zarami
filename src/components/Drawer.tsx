@@ -197,11 +197,11 @@ export function Drawer({
               </div>
             </section>
 
-            <section className="mt-6 rounded-lg border border-white/60 bg-white/55 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
-              <div className="space-y-3">
-                {data?.questMarkdown ? renderMarkdownScaffold(data.questMarkdown) : null}
-              </div>
-            </section>
+            {data?.questMarkdown ? (
+              <section className="mt-6 rounded-lg border border-white/60 bg-white/55 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="space-y-3">{renderMarkdownScaffold(data.questMarkdown)}</div>
+              </section>
+            ) : null}
 
             {data && (data.totalPostingsAnalyzed ?? 0) > 0 ? (
               <section className="mt-6 rounded-lg border border-emerald-200/70 bg-emerald-50/60 p-5 shadow-sm backdrop-blur-xl dark:border-emerald-400/20 dark:bg-emerald-500/[0.06]">
@@ -229,34 +229,43 @@ export function Drawer({
               </section>
             ) : null}
 
-            <section className="mt-6">
-              <h3 className="text-sm font-semibold text-slate-950 dark:text-white">체크리스트</h3>
-              <div className="mt-3 space-y-2">
-                {(data?.checklist ?? []).map((item) => {
-                  const checked =
-                    isCompleted || (selectedSkillId ? Boolean(checkedKeys[checklistKey(selectedSkillId, item)]) : false);
-                  return (
-                    <label
-                      key={item}
-                      className="flex items-center gap-3 rounded-lg border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 bg-white accent-emerald-500 dark:border-slate-500 dark:bg-slate-900 dark:accent-emerald-400"
-                        checked={checked}
-                        disabled={isCompleted}
-                        onChange={() => {
-                          if (selectedSkillId) {
-                            toggleChecklistItem(selectedSkillId, item);
-                          }
-                        }}
-                      />
-                      <span className={checked ? "line-through opacity-60" : ""}>{item}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </section>
+            {data?.checklist && data.checklist.length > 0 ? (
+              <section className="mt-6">
+                <h3 className="text-sm font-semibold text-slate-950 dark:text-white">체크리스트</h3>
+                <div className="mt-3 space-y-2">
+                  {data.checklist.map((item) => {
+                    const checked =
+                      isCompleted ||
+                      (selectedSkillId ? Boolean(checkedKeys[checklistKey(selectedSkillId, item)]) : false);
+                    return (
+                      <label
+                        key={item}
+                        className="flex items-center gap-3 rounded-lg border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 bg-white accent-emerald-500 dark:border-slate-500 dark:bg-slate-900 dark:accent-emerald-400"
+                          checked={checked}
+                          disabled={isCompleted}
+                          onChange={() => {
+                            if (selectedSkillId) {
+                              toggleChecklistItem(selectedSkillId, item);
+                            }
+                          }}
+                        />
+                        <span className={checked ? "line-through opacity-60" : ""}>{item}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+
+            {!data?.questMarkdown && (!data?.checklist || data.checklist.length === 0) ? (
+              <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                이 목표에는 아직 세부 퀘스트가 없어요. 노드를 선택해 직접 설명이나 체크리스트를 추가해보세요.
+              </p>
+            ) : null}
           </div>
 
           <footer className="border-t border-slate-200/70 p-6 dark:border-white/10">
