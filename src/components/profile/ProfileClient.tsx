@@ -1,26 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Image from "next/image";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { createClient } from "@/utils/supabase/client";
 
-type PlantStage = {
-  emoji: string;
+type VillageStage = {
+  imageUrl: string;
   label: string;
 };
 
-function getPlantStage(progressPercent: number): PlantStage {
-  if (progressPercent <= 20) {
-    return { emoji: "🌱", label: "자람이의 흙을 고르는 중" };
+function getVillageStage(progressPercent: number): VillageStage {
+  if (progressPercent <= 25) {
+    return { imageUrl: "/images/village/lv1.png", label: "정착의 시작 (작은 야영지)" };
   }
   if (progressPercent <= 50) {
-    return { emoji: "🌿", label: "파릇파릇 싹이 틔었어요!" };
+    return { imageUrl: "/images/village/lv2.png", label: "마을의 태동 (목조 주택단지)" };
   }
-  if (progressPercent <= 80) {
-    return { emoji: "🌾", label: "폭풍 성장 중인 자람이" };
+  if (progressPercent <= 75) {
+    return { imageUrl: "/images/village/lv3.png", label: "활기찬 소도시 (우물과 상점)" };
   }
-  return { emoji: "🌸", label: "정원에 멋진 꽃이 피었습니다" };
+  return { imageUrl: "/images/village/lv4.png", label: "웅장한 대도시 (거대한 성과 광장)" };
 }
 
 function heatmapCellClassName(count: number): string {
@@ -65,7 +66,7 @@ export function ProfileClient() {
   const totalCount = stats?.totalCount ?? 0;
   const completedCount = stats?.completedCount ?? 0;
   const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
-  const plantStage = useMemo(() => getPlantStage(progressPercent), [progressPercent]);
+  const villageStage = useMemo(() => getVillageStage(progressPercent), [progressPercent]);
   // Guests never fetch stats (query is disabled) and a signed-in user's first
   // render is always mid-fetch, so fall back to the placeholder grid whenever
   // real data isn't available yet - never render a visually empty section.
@@ -105,12 +106,12 @@ export function ProfileClient() {
         </header>
 
         <section className="rounded-xl border border-white/70 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-          <div className="flex items-center gap-4">
-            <span className="text-5xl" aria-hidden>
-              {plantStage.emoji}
-            </span>
-            <div>
-              <p className="text-lg font-semibold text-slate-950 dark:text-white">{plantStage.label}</p>
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
+            <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-xl border-4 border-slate-200/50 shadow-inner dark:border-white/10">
+              <Image src={villageStage.imageUrl} alt={villageStage.label} fill className="object-cover" />
+            </div>
+            <div className="text-center sm:text-left">
+              <p className="text-lg font-bold text-slate-950 dark:text-white">{villageStage.label}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 {completedCount}/{totalCount} 스킬 완료 · {progressPercent}%
               </p>
