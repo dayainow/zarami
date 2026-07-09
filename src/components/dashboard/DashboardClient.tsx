@@ -7,10 +7,10 @@ import { ChevronRight, Flame, TreePine } from "lucide-react";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
-import { buildCompletedSkillIdSet } from "@/data/skill-tree";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
 import { findSkillTrend, useSkillTrends } from "@/hooks/useSkillTrends";
-import { useUserTree, useUserTrees } from "@/hooks/useUserTree";
+import { useToggleNodeCompletion, useUserTree, useUserTrees } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
 import { useStreakStore } from "@/stores/useStreakStore";
@@ -24,7 +24,8 @@ export function DashboardClient() {
   const { data: treeList } = useUserTrees(userId);
   const { data: myTree, isLoading: isMyTreeLoading } = useUserTree(currentTreeId);
   const { data: skillTrends } = useSkillTrends();
-  const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
+  const toggleCompletionMutation = useToggleNodeCompletion(userId);
+  const isOnline = useOnlineStatus();
   const openDrawer = useSkillStore((state) => state.openDrawer);
   const closeDrawer = useSkillStore((state) => state.closeDrawer);
   const toastError = useSkillStore((state) => state.toastError);
@@ -63,16 +64,19 @@ export function DashboardClient() {
     closeDrawer();
   }, [closeDrawer, nodeIds, openDrawer, selectedNodeId]);
 
-  const completedSet = useMemo(() => buildCompletedSkillIdSet(completedSkillIds), [completedSkillIds]);
-
+  // Completion truth is node.data.is_completed, persisted directly inside
+  // the tree's own nodes JSONB by ManageTreeClient's toggle (and this
+  // page's Drawer, via useToggleNodeCompletion) - both surfaces read and
+  // write the exact same field, so they can never silently disagree.
   const nodes = useMemo<SkillTreeNode[]>(() => {
     if (!myTree) return [];
-    
+
     const withStatus = myTree.nodes.map((node) => {
       const prerequisiteIds = node.data.prerequisiteIds ?? [];
-      const isCompleted = completedSet.has(node.id);
+      const isCompleted = node.data.is_completed === true;
+      const completedIds = new Set(myTree.nodes.filter((n) => n.data.is_completed === true).map((n) => n.id));
       const prerequisitesCompleted =
-        prerequisiteIds.length === 0 || prerequisiteIds.every((skillId: string) => completedSet.has(skillId));
+        prerequisiteIds.length === 0 || prerequisiteIds.every((skillId: string) => completedIds.has(skillId));
       const isNextAction = !isCompleted && prerequisiteIds.length > 0 && prerequisitesCompleted;
       const status: SkillNodeData["status"] = isCompleted
         ? "completed"
@@ -106,17 +110,18 @@ export function DashboardClient() {
     // Grow the tree bottom-up from completed roots instead of the data
     // file's fixed positions, so the canvas reads as a plant growing upward.
     return getLayoutedElements(withStatus, myTree.edges, "BT").nodes;
-  }, [myTree, celebratingSkillId, completedSet, skillTrends]);
+  }, [myTree, celebratingSkillId, skillTrends]);
 
   const edges = useMemo<SkillTreeEdge[]>(() => {
     if (!myTree) return [];
+    const completedIds = new Set(myTree.nodes.filter((n) => n.data.is_completed === true).map((n) => n.id));
     const nextActionIds = new Set(nodes.filter((node) => node.data.isNextAction).map((node) => node.id));
 
     return myTree.edges.map((edge) => {
       const isNextAction = nextActionIds.has(edge.target);
       // A completed source lights the edge up like a cleared skill-tree path,
       // unless the amber "next action" highlight already claims this edge.
-      const isActivated = !isNextAction && completedSet.has(edge.source);
+      const isActivated = !isNextAction && completedIds.has(edge.source);
 
       return {
         ...edge,
@@ -128,7 +133,7 @@ export function DashboardClient() {
         },
       };
     });
-  }, [myTree, completedSet, nodes]);
+  }, [myTree, nodes]);
 
   const handleNodeSelect = useCallback(
     (node: SkillTreeNode) => {
@@ -155,10 +160,18 @@ export function DashboardClient() {
     [recordActivity],
   );
 
+  const handleToggleComplete = useCallback(
+    (nodeId: string) => {
+      if (!myTree) return;
+      toggleCompletionMutation.mutate({ tree: myTree, nodeId });
+    },
+    [myTree, toggleCompletionMutation],
+  );
+
   const completedCount = useMemo(() => {
     if (!myTree) return 0;
-    return myTree.nodes.filter(node => completedSet.has(node.id)).length;
-  }, [myTree, completedSet]);
+    return myTree.nodes.filter((node) => node.data.is_completed === true).length;
+  }, [myTree]);
 
   const totalCount = myTree?.nodes.length ?? 0;
   const progress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
@@ -261,7 +274,14 @@ export function DashboardClient() {
         className="h-screen min-h-screen pt-20"
       />
 
-      <Drawer skills={nodes} userId={userId} onClose={handleCloseDrawer} onCompleteEffect={handleCompleteEffect} />
+      <Drawer
+        skills={nodes}
+        onClose={handleCloseDrawer}
+        onToggleComplete={handleToggleComplete}
+        onCompleteEffect={handleCompleteEffect}
+        isCompleting={toggleCompletionMutation.isPending}
+        isOffline={!isOnline}
+      />
     </main>
   );
 }

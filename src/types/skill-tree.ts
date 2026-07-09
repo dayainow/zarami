@@ -13,6 +13,7 @@ export type SkillNodeData = {
   checklist?: string[];
   estimatedMinutes?: number;
   is_completed?: boolean;
+  completedAt?: string;
   isNextAction?: boolean;
   isCelebrating?: boolean;
   isTrending?: boolean;

@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-import { buildCompletedSkillIdSet, dashboardSkillNodes } from "@/data/skill-tree";
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
-import { useSkillStore } from "@/stores/useSkillStore";
 import { createClient } from "@/utils/supabase/client";
 
 type PlantStage = {
@@ -43,7 +41,6 @@ export function ProfileClient() {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const userId = sessionUser?.id ?? null;
   const { data: stats, isLoading: isHeatmapLoading, isError: isHeatmapError } = useProfileStats(userId);
 
@@ -65,11 +62,8 @@ export function ProfileClient() {
     };
   }, []);
 
-  const totalCount = dashboardSkillNodes.length;
-  const completedCount = useMemo(
-    () => buildCompletedSkillIdSet(completedSkillIds).size,
-    [completedSkillIds],
-  );
+  const totalCount = stats?.totalCount ?? 0;
+  const completedCount = stats?.completedCount ?? 0;
   const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
   const plantStage = useMemo(() => getPlantStage(progressPercent), [progressPercent]);
   // Guests never fetch stats (query is disabled) and a signed-in user's first

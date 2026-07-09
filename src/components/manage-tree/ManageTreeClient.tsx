@@ -516,6 +516,7 @@ export function ManageTreeClient() {
                 const willBeCompleted = !data.is_completed;
                 updateSelectedNodeData({
                   is_completed: willBeCompleted,
+                  completedAt: willBeCompleted ? new Date().toISOString() : undefined,
                   status: willBeCompleted ? "completed" : "available",
                 });
                 if (willBeCompleted) {

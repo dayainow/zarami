@@ -2,14 +2,14 @@
 
 import { useMutationState } from "@tanstack/react-query";
 
-import { COMPLETE_SKILL_MUTATION_KEY } from "@/hooks/useCompleteSkillMutation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { TOGGLE_NODE_COMPLETION_MUTATION_KEY } from "@/hooks/useUserTree";
 
 export function OfflineBanner() {
   const isOnline = useOnlineStatus();
 
   const queuedMutations = useMutationState({
-    filters: { mutationKey: [...COMPLETE_SKILL_MUTATION_KEY], status: "pending" },
+    filters: { mutationKey: [...TOGGLE_NODE_COMPLETION_MUTATION_KEY], status: "pending" },
   });
 
   if (isOnline) {

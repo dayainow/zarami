@@ -3,7 +3,6 @@
 import { Fragment, useMemo } from "react";
 import { TrendingUp, X } from "lucide-react";
 
-import { useCompleteSkillMutation } from "@/hooks/useCompleteSkillMutation";
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeNode } from "@/types/skill-tree";
@@ -67,9 +66,14 @@ function formatEstimatedTime(minutes: number): string {
 
 type DrawerProps = {
   skills: SkillTreeNode[];
-  userId: string | null;
   onClose: () => void;
+  // The parent owns the actual completion mutation (it needs the full tree
+  // to persist node.data.is_completed back to Supabase) - the Drawer only
+  // renders state and reports the user's intent to toggle.
+  onToggleComplete?: (skillId: string) => void;
   onCompleteEffect?: (skillId: string) => void;
+  isCompleting?: boolean;
+  isOffline?: boolean;
 };
 
 function renderMarkdownScaffold(markdown: string) {
@@ -110,10 +114,15 @@ function renderMarkdownScaffold(markdown: string) {
     });
 }
 
-export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProps) {
+export function Drawer({
+  skills,
+  onClose,
+  onToggleComplete,
+  onCompleteEffect,
+  isCompleting = false,
+  isOffline = false,
+}: DrawerProps) {
   const selectedSkillId = useSkillStore((state) => state.selectedSkillId);
-  const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
-  const completeSkillMutation = useCompleteSkillMutation();
   const checkedKeys = useChecklistStore((state) => state.checkedKeys);
   const toggleChecklistItem = useChecklistStore((state) => state.toggleItem);
 
@@ -123,18 +132,14 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
   );
 
   const data = selectedSkill?.data as SkillNodeData | undefined;
-  const isCompleted =
-    Boolean(data?.is_completed) || (selectedSkillId ? completedSkillIds.includes(selectedSkillId) : false);
-  const isCompleting = completeSkillMutation.isPending;
+  const isCompleted = Boolean(data?.is_completed);
 
   const handleComplete = () => {
     if (!selectedSkillId || isCompleted || isCompleting) {
       return;
     }
 
-    // Optimistic UI + network dispatch happen inside the mutation (onMutate
-    // flips the store instantly; mutationFn is queued/paused if offline).
-    completeSkillMutation.mutate({ skillId: selectedSkillId, userId });
+    onToggleComplete?.(selectedSkillId);
     onCompleteEffect?.(selectedSkillId);
   };
 
@@ -268,7 +273,7 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
             >
               {isCompleted ? "물주기 완료" : isCompleting ? "저장 중" : "물주기"}
             </button>
-            {completeSkillMutation.isPaused ? (
+            {isOffline ? (
               <p className="mt-2 text-center text-xs text-amber-600 dark:text-amber-300">
                 오프라인 상태입니다. 재연결되면 자동으로 동기화됩니다.
               </p>

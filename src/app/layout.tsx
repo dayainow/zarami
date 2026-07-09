@@ -6,7 +6,6 @@ import "./globals.css";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { AuthProvider } from "@/components/providers/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
@@ -37,12 +36,10 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <QueryProvider>
-            <AuthProvider>
-              <OfflineBanner />
-              <Sidebar />
-              <MobileTabBar />
-              <div className="min-h-screen pb-16 md:pb-0 md:pl-20">{children}</div>
-            </AuthProvider>
+            <OfflineBanner />
+            <Sidebar />
+            <MobileTabBar />
+            <div className="min-h-screen pb-16 md:pb-0 md:pl-20">{children}</div>
           </QueryProvider>
         </ThemeProvider>
       </body>
