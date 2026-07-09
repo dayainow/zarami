@@ -30,16 +30,6 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Deploy
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npm run deploy
-
-      - name: Capture deployment URL
-        if: always()
-        run: |
-          if [ -f deployment-url.txt ]; then
-            echo "DEPLOYMENT_URL=$(cat deployment-url.txt)" >> "$GITHUB_ENV"
-          fi
 
       - name: Upload HTML test report
         if: always()

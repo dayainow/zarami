@@ -28,7 +28,9 @@ Output ONLY valid JSON matching this schema:
         "category": "Core/Action/Goal/etc",
         "level": number (1 for the starting node, 2 for next step, etc. up to 4),
         "estimatedMinutes": number (realistic learning time in minutes, typically between 30 and 300),
-        "isTrending": boolean (Set to true ONLY IF this skill is directly related to the high-demand trends provided above)
+        "isTrending": boolean (Set to true ONLY IF this skill is directly related to the high-demand trends provided above),
+        "questMarkdown": "A short Korean practical quest in this exact format: '## 실무 퀘스트\\n\\n(1-2 sentence description of a concrete task to practice this skill)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
+        "checklist": ["2 to 4 short Korean checklist items, each a concrete sub-step toward finishing this skill"]
       }
     }
   ],
@@ -41,6 +43,7 @@ Output ONLY valid JSON matching this schema:
 }
 The nodes must form a valid tree/graph where edges point from a lower level to a higher level.
 Level 1 should be the starting point (prerequisite).
+Every node's data MUST include a non-empty questMarkdown and checklist as described above - never leave them out.
 Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw JSON object.
 `;
 
