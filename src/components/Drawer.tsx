@@ -1,11 +1,69 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { X } from "lucide-react";
 
 import { useCompleteSkillMutation } from "@/hooks/useCompleteSkillMutation";
+import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeNode } from "@/types/skill-tree";
+
+// Matches [label](url) so quest text can link out to real reference docs -
+// the rest of the mini markdown parser below stays plain-text only.
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+function renderInlineMarkdown(text: string) {
+  const parts: (string | { label: string; url: string })[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(MARKDOWN_LINK_PATTERN)) {
+    const [fullMatch, label, url] = match;
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      parts.push(text.slice(lastIndex, index));
+    }
+    parts.push({ label, url });
+    lastIndex = index + fullMatch.length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.map((part, index) =>
+    typeof part === "string" ? (
+      <Fragment key={index}>{part}</Fragment>
+    ) : (
+      <a
+        key={index}
+        href={part.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-semibold text-sky-600 underline underline-offset-2 hover:text-sky-500 dark:text-sky-300 dark:hover:text-sky-200"
+      >
+        {part.label}
+      </a>
+    ),
+  );
+}
+
+// Anything under 8 work-hours reads as a single sitting (minutes/hours);
+// beyond that, framing it in days is more honest about the real scope of
+// bigger skills like "CI/CD 파이프라인" than a raw minute count would be.
+function formatEstimatedTime(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}분`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours < 8) {
+    return remainingMinutes > 0 ? `${hours}시간 ${remainingMinutes}분` : `${hours}시간`;
+  }
+
+  const days = Math.max(1, Math.round(hours / 8));
+  return `약 ${days}일`;
+}
 
 type DrawerProps = {
   skills: SkillTreeNode[];
@@ -39,14 +97,14 @@ function renderMarkdownScaffold(markdown: string) {
       if (line.startsWith("- ")) {
         return (
           <li key={`${line}-${index}`} className="ml-5 list-disc text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {line.replace("- ", "")}
+            {renderInlineMarkdown(line.replace("- ", ""))}
           </li>
         );
       }
 
       return (
         <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-          {line}
+          {renderInlineMarkdown(line)}
         </p>
       );
     });
@@ -56,6 +114,8 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
   const selectedSkillId = useSkillStore((state) => state.selectedSkillId);
   const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const completeSkillMutation = useCompleteSkillMutation();
+  const checkedKeys = useChecklistStore((state) => state.checkedKeys);
+  const toggleChecklistItem = useChecklistStore((state) => state.toggleItem);
 
   const selectedSkill = useMemo(
     () => skills.find((skill) => skill.id === selectedSkillId),
@@ -120,7 +180,9 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
             <section className="grid grid-cols-2 gap-3">
               <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
                 <p className="text-xs text-slate-500 dark:text-slate-400">예상 시간</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">{data?.estimatedMinutes ?? 30}분</p>
+                <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">
+                  {formatEstimatedTime(data?.estimatedMinutes ?? 30)}
+                </p>
               </div>
               <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
                 <p className="text-xs text-slate-500 dark:text-slate-400">상태</p>
@@ -139,19 +201,29 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
             <section className="mt-6">
               <h3 className="text-sm font-semibold text-slate-950 dark:text-white">체크리스트</h3>
               <div className="mt-3 space-y-2">
-                {(data?.checklist ?? []).map((item) => (
-                  <label
-                    key={item}
-                    className="flex items-center gap-3 rounded-lg border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 bg-white accent-emerald-500 dark:border-slate-500 dark:bg-slate-900 dark:accent-emerald-400"
-                      defaultChecked={isCompleted}
-                    />
-                    <span className={isCompleted ? "line-through opacity-60" : ""}>{item}</span>
-                  </label>
-                ))}
+                {(data?.checklist ?? []).map((item) => {
+                  const checked =
+                    isCompleted || (selectedSkillId ? Boolean(checkedKeys[checklistKey(selectedSkillId, item)]) : false);
+                  return (
+                    <label
+                      key={item}
+                      className="flex items-center gap-3 rounded-lg border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-700 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 bg-white accent-emerald-500 dark:border-slate-500 dark:bg-slate-900 dark:accent-emerald-400"
+                        checked={checked}
+                        disabled={isCompleted}
+                        onChange={() => {
+                          if (selectedSkillId) {
+                            toggleChecklistItem(selectedSkillId, item);
+                          }
+                        }}
+                      />
+                      <span className={checked ? "line-through opacity-60" : ""}>{item}</span>
+                    </label>
+                  );
+                })}
               </div>
             </section>
           </div>
