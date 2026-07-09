@@ -9,6 +9,7 @@ import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { buildCompletedSkillIdSet } from "@/data/skill-tree";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { findSkillTrend, useSkillTrends } from "@/hooks/useSkillTrends";
 import { useUserTree, useUserTrees } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
@@ -22,6 +23,7 @@ export function DashboardClient() {
   const [currentTreeId, setCurrentTreeId] = useState<string | null>(null);
   const { data: treeList } = useUserTrees(userId);
   const { data: myTree, isLoading: isMyTreeLoading } = useUserTree(currentTreeId);
+  const { data: skillTrends } = useSkillTrends();
   const completedSkillIds = useSkillStore((state) => state.completedSkillIds);
   const openDrawer = useSkillStore((state) => state.openDrawer);
   const closeDrawer = useSkillStore((state) => state.closeDrawer);
@@ -78,6 +80,11 @@ export function DashboardClient() {
           ? "available"
           : "locked";
 
+      // Personal tree nodes don't share ids with the skills catalog, so
+      // job-market evidence is matched by title text - undefined (no
+      // match) just means no evidence section renders, not an error.
+      const trend = skillTrends ? findSkillTrend(node.data.title, skillTrends) : undefined;
+
       return {
         ...node,
         data: {
@@ -86,6 +93,12 @@ export function DashboardClient() {
           isNextAction,
           isCelebrating: celebratingSkillId === node.id,
           status,
+          isTrending: node.data.isTrending || trend?.trend_score === "High",
+          trendScore: (trend?.trend_score as SkillNodeData["trendScore"]) ?? undefined,
+          wantedMentions: trend?.wanted_mentions ?? undefined,
+          jumpitMentions: trend?.jumpit_mentions ?? undefined,
+          totalPostingsAnalyzed: trend?.total_postings_analyzed ?? undefined,
+          trendUpdatedAt: trend?.trend_updated_at ?? undefined,
         },
       };
     });
@@ -93,7 +106,7 @@ export function DashboardClient() {
     // Grow the tree bottom-up from completed roots instead of the data
     // file's fixed positions, so the canvas reads as a plant growing upward.
     return getLayoutedElements(withStatus, myTree.edges, "BT").nodes;
-  }, [myTree, celebratingSkillId, completedSet]);
+  }, [myTree, celebratingSkillId, completedSet, skillTrends]);
 
   const edges = useMemo<SkillTreeEdge[]>(() => {
     if (!myTree) return [];

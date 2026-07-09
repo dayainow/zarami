@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { X } from "lucide-react";
+import { TrendingUp, X } from "lucide-react";
 
 import { useCompleteSkillMutation } from "@/hooks/useCompleteSkillMutation";
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
@@ -197,6 +197,32 @@ export function Drawer({ skills, userId, onClose, onCompleteEffect }: DrawerProp
                 {data?.questMarkdown ? renderMarkdownScaffold(data.questMarkdown) : null}
               </div>
             </section>
+
+            {data && (data.totalPostingsAnalyzed ?? 0) > 0 ? (
+              <section className="mt-6 rounded-lg border border-emerald-200/70 bg-emerald-50/60 p-5 shadow-sm backdrop-blur-xl dark:border-emerald-400/20 dark:bg-emerald-500/[0.06]">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                  <TrendingUp className="h-4 w-4" aria-hidden />
+                  왜 배워야 할까요?
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  최근 분석한 채용 공고 <strong>{data.totalPostingsAnalyzed}건</strong> 중{" "}
+                  <strong>{(data.wantedMentions ?? 0) + (data.jumpitMentions ?? 0)}건</strong>에서 이 스킬을
+                  요구했습니다.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-slate-700 shadow-sm dark:bg-white/10 dark:text-slate-200">
+                    원티드 {data.wantedMentions ?? 0}건
+                  </span>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-slate-700 shadow-sm dark:bg-white/10 dark:text-slate-200">
+                    점핏 {data.jumpitMentions ?? 0}건
+                  </span>
+                  <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-700 shadow-sm dark:text-emerald-200">
+                    수요{" "}
+                    {data.trendScore === "High" ? "높음" : data.trendScore === "Medium" ? "보통" : "낮음"}
+                  </span>
+                </div>
+              </section>
+            ) : null}
 
             <section className="mt-6">
               <h3 className="text-sm font-semibold text-slate-950 dark:text-white">체크리스트</h3>

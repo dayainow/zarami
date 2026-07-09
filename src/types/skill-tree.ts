@@ -17,6 +17,12 @@ export type SkillNodeData = {
   isCelebrating?: boolean;
   isTrending?: boolean;
   status?: SkillStatus;
+  /** Job-market evidence behind isTrending, from scripts/update-trend.ts. */
+  trendScore?: "High" | "Medium" | "Low";
+  wantedMentions?: number;
+  jumpitMentions?: number;
+  totalPostingsAnalyzed?: number;
+  trendUpdatedAt?: string;
   /** Branch collapse/expand (computed by TechTreeCanvas, not caller-supplied). */
   hasChildren?: boolean;
   isCollapsed?: boolean;
