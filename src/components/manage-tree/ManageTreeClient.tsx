@@ -8,11 +8,17 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { CheckCircle2, Download, LayoutGrid, Plus, Save, Sparkles, Target, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, LayoutGrid, Pencil, Plus, Save, Sparkles, Target, Trash2 } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
-import { useSaveUserTree, useUserTree, useUserTrees } from "@/hooks/useUserTree";
+import {
+  useDeleteUserTree,
+  useRenameUserTree,
+  useSaveUserTree,
+  useUserTree,
+  useUserTrees,
+} from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
@@ -67,6 +73,8 @@ export function ManageTreeClient() {
   const { data: treeList } = useUserTrees(userId);
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(currentTreeId);
   const saveTreeMutation = useSaveUserTree(userId);
+  const renameTreeMutation = useRenameUserTree(userId);
+  const deleteTreeMutation = useDeleteUserTree(userId);
   const recordActivity = useStreakStore((state) => state.recordActivity);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>([]);
@@ -78,7 +86,15 @@ export function ManageTreeClient() {
   const [onboardingGoal, setOnboardingGoal] = useState("");
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [promptInput, setPromptInput] = useState("");
+  // Tracked as its own piece of state (not derived from treeList.find(...))
+  // because a freshly AI-generated tree has no id/treeList entry yet until
+  // the first save - deriving it would always fall back to a generic name
+  // for brand-new roadmaps, which is exactly the bug this fixes.
+  const [currentTreeTitle, setCurrentTreeTitle] = useState("새 로드맵");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameInput, setRenameInput] = useState("");
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
+  const hasAutoSelectedInitialTreeRef = useRef(false);
 
   const handleAutoLayout = useCallback(() => {
     setNodes((currentNodes) => getLayoutedElements(currentNodes, edges, "BT").nodes);
@@ -117,6 +133,7 @@ export function ManageTreeClient() {
       const layouted = getLayoutedElements(data.nodes, data.edges, "BT");
       setNodes(layouted.nodes);
       setEdges(layouted.edges);
+      setCurrentTreeTitle(data.title || `${promptText} 로드맵`);
       window.setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
       }, 50);
@@ -128,15 +145,23 @@ export function ManageTreeClient() {
     }
   }, [promptInput, setNodes, setEdges]);
 
-  // Hydrate from the user's saved tree whenever currentTreeId changes
+  // Hydrate from the user's saved tree whenever currentTreeId changes.
+  // The "auto-select the first tree" fallback below must only ever fire
+  // once, on first load - otherwise it races handleAIGenerate/handleStartBlank
+  // (which set currentTreeId to null to signal "create a new tree") and
+  // silently re-selects the old tree, so the new generation's autosave
+  // overwrites it instead of creating a separate one.
   useEffect(() => {
     if (!savedTree) {
-      if (currentTreeId === null && treeList && treeList.length > 0) {
-        // Automatically select the first tree if none is selected
+      if (!hasAutoSelectedInitialTreeRef.current && currentTreeId === null && treeList && treeList.length > 0) {
+        hasAutoSelectedInitialTreeRef.current = true;
         setCurrentTreeId(treeList[0].id);
       }
       return;
     }
+
+    hasAutoSelectedInitialTreeRef.current = true;
+    setCurrentTreeTitle(savedTree.title || "새 로드맵");
 
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
@@ -177,8 +202,50 @@ export function ManageTreeClient() {
     setCurrentTreeId(null); // Create a new tree
     setNodes([rootNode]);
     setEdges([]);
+    setCurrentTreeTitle("새 로드맵");
     setSelectedNodeId(rootNode.id);
   }, [setEdges, setNodes]);
+
+  const handleStartRename = useCallback(() => {
+    setRenameInput(currentTreeTitle);
+    setIsRenaming(true);
+  }, [currentTreeTitle]);
+
+  const handleRenameSubmit = useCallback(() => {
+    const trimmed = renameInput.trim();
+    setIsRenaming(false);
+    if (!trimmed || trimmed === currentTreeTitle) {
+      return;
+    }
+
+    setCurrentTreeTitle(trimmed);
+    // Not-yet-saved trees (currentTreeId still null) simply pick up the new
+    // title on their first save - nothing to rename in the DB yet.
+    if (currentTreeId) {
+      renameTreeMutation.mutate({ treeId: currentTreeId, title: trimmed });
+    }
+  }, [renameInput, currentTreeTitle, currentTreeId, renameTreeMutation]);
+
+  const handleDeleteTree = useCallback(() => {
+    if (!currentTreeId) return;
+    if (!window.confirm(`"${currentTreeTitle}" 로드맵을 삭제하시겠습니까? 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    deleteTreeMutation.mutate(currentTreeId, {
+      onSuccess: () => {
+        const remaining = (treeList ?? []).filter((tree) => tree.id !== currentTreeId);
+        if (remaining.length > 0) {
+          setCurrentTreeId(remaining[0].id);
+        } else {
+          setCurrentTreeId(null);
+          setNodes([]);
+          setEdges([]);
+          setCurrentTreeTitle("새 로드맵");
+        }
+      },
+    });
+  }, [currentTreeId, currentTreeTitle, deleteTreeMutation, treeList, setNodes, setEdges]);
 
   const handleDeleteNode = useCallback(() => {
     if (!selectedNodeId) return;
@@ -217,11 +284,19 @@ export function ManageTreeClient() {
     }
   }, [edges, nodes]);
 
+  // `saveTreeMutation.mutate` (not the mutation object itself) is what
+  // stays referentially stable across renders in TanStack Query - the
+  // object as a whole changes identity on every isPending/isSuccess
+  // transition, so depending on it directly used to make the debounced
+  // autosave effect below re-schedule on every save's own state change,
+  // occasionally firing several overlapping saves that each still saw a
+  // stale null currentTreeId and created a duplicate tree via POST.
+  const saveTree = saveTreeMutation.mutate;
+
   const handleSave = useCallback(() => {
     setSaveState("saving");
-    const title = treeList?.find(t => t.id === currentTreeId)?.title || "새 로드맵";
-    saveTreeMutation.mutate(
-      { id: currentTreeId || undefined, title, nodes, edges },
+    saveTree(
+      { id: currentTreeId || undefined, title: currentTreeTitle, nodes, edges },
       {
         onSuccess: (data: { id: string } | null | undefined) => {
           if (data?.id && !currentTreeId) {
@@ -236,7 +311,7 @@ export function ManageTreeClient() {
         },
       },
     );
-  }, [edges, nodes, currentTreeId, treeList, saveTreeMutation]);
+  }, [edges, nodes, currentTreeId, currentTreeTitle, saveTree]);
 
   // Debounced auto-save so edits aren't lost if the user navigates away
   // without remembering to click [저장]. Skipped while the tree is still
@@ -247,9 +322,8 @@ export function ManageTreeClient() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      const title = treeList?.find(t => t.id === currentTreeId)?.title || "새 로드맵";
-      saveTreeMutation.mutate(
-        { id: currentTreeId || undefined, title, nodes, edges },
+      saveTree(
+        { id: currentTreeId || undefined, title: currentTreeTitle, nodes, edges },
         {
           onSuccess: (data: { id: string } | null | undefined) => {
             if (data?.id && !currentTreeId) {
@@ -266,7 +340,7 @@ export function ManageTreeClient() {
     }, 1500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [nodes, edges, isTreeLoading, currentTreeId, treeList, saveTreeMutation]);
+  }, [nodes, edges, isTreeLoading, currentTreeId, currentTreeTitle, saveTree]);
 
   const data = selectedNode?.data;
 
@@ -401,22 +475,62 @@ export function ManageTreeClient() {
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
                 My Tree Studio
               </p>
-              <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+              <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 내 트리 관리
                 {treeList && treeList.length > 0 && (
-                  <select
-                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
-                    value={currentTreeId || ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val) setCurrentTreeId(val);
-                    }}
-                  >
-                    <option value="" disabled>로드맵 선택</option>
-                    {treeList.map(tree => (
-                      <option key={tree.id} value={tree.id}>{tree.title}</option>
-                    ))}
-                  </select>
+                  <>
+                    {isRenaming ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={renameInput}
+                        onChange={(e) => setRenameInput(e.target.value)}
+                        onBlur={handleRenameSubmit}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRenameSubmit();
+                          if (e.key === "Escape") setIsRenaming(false);
+                        }}
+                        className="rounded-md border border-sky-400 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
+                      />
+                    ) : (
+                      <select
+                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+                        value={currentTreeId || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) setCurrentTreeId(val);
+                        }}
+                      >
+                        <option value="" disabled>로드맵 선택</option>
+                        {treeList.map(tree => (
+                          <option key={tree.id} value={tree.id}>{tree.title}</option>
+                        ))}
+                      </select>
+                    )}
+                    {!isRenaming ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleStartRename}
+                          aria-label="로드맵 이름 변경"
+                          title="이름 변경"
+                          className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
+                        >
+                          <Pencil className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeleteTree}
+                          disabled={!currentTreeId}
+                          aria-label="로드맵 삭제"
+                          title={currentTreeId ? "로드맵 삭제" : "저장 후 삭제할 수 있습니다"}
+                          className="grid h-8 w-8 place-items-center rounded-md border border-red-200 bg-red-50/60 text-red-500 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      </>
+                    ) : null}
+                  </>
                 )}
               </h1>
               {isTreeLoading ? (
@@ -607,11 +721,12 @@ export function ManageTreeClient() {
             className="w-full max-w-md scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40"
           >
             <h3 className="text-lg font-bold leading-6 text-slate-950 dark:text-white">
-              AI 로드맵 재설계
+              새 AI 로드맵 만들기
             </h3>
             <div className="mt-2">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                현재 트리를 지우고 완전히 새로운 커리어 로드맵을 설계하시겠습니까? 어떤 목표를 원하시는지 입력해주세요.
+                지금 보고 있는 로드맵은 그대로 남고, 별도의 새 로드맵이 만들어집니다. 어떤 목표를
+                원하시는지 입력해주세요.
               </p>
             </div>
 

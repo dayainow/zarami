@@ -18,6 +18,7 @@ When designing the roadmap, prioritize and heavily incorporate these trending sk
 
 Output ONLY valid JSON matching this schema:
 {
+  "title": "A short Korean roadmap title (e.g. '풀스택 개발자 로드맵', '데이터 엔지니어 로드맵'), based on the user's career goal",
   "nodes": [
     {
       "id": "unique-node-id",
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
     const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
 
     const parsed = JSON.parse(cleanedText) as {
+      title?: string;
       nodes: { id: string; data: { level?: number; title: string; category?: string; isTrending?: boolean; [key: string]: unknown } }[];
       edges: { source: string; target: string }[];
     };
@@ -139,7 +141,9 @@ export async function POST(req: Request) {
       animated: true,
     }));
 
-    return NextResponse.json({ nodes: finalNodes, edges: finalEdges });
+    const title = parsed.title?.trim() || `${prompt} 로드맵`;
+
+    return NextResponse.json({ title, nodes: finalNodes, edges: finalEdges });
   } catch (error) {
     console.error("Generate Tree Error:", error);
     return NextResponse.json(
