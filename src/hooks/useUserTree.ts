@@ -8,6 +8,7 @@ import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 export type UserTree = {
   id?: string;
   title?: string;
+  targetCompany?: string;
   nodes: SkillTreeNode[];
   edges: SkillTreeEdge[];
 };
@@ -33,7 +34,7 @@ async function fetchUserTree(treeId: string): Promise<UserTree | null> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("user_trees")
-    .select("id, title, nodes, edges")
+    .select("id, title, target_company, nodes, edges")
     .eq("id", treeId)
     .maybeSingle();
 
@@ -48,6 +49,7 @@ async function fetchUserTree(treeId: string): Promise<UserTree | null> {
   return {
     id: data.id,
     title: data.title,
+    targetCompany: data.target_company ?? undefined,
     nodes: (data.nodes ?? []) as SkillTreeNode[],
     edges: (data.edges ?? []) as SkillTreeEdge[],
   };
@@ -85,6 +87,7 @@ export function useSaveUserTree(userId: string | null) {
         // Update existing tree
         result = await supabase.from("user_trees").update({
           title: tree.title,
+          target_company: tree.targetCompany || null,
           nodes: tree.nodes,
           edges: tree.edges,
           updated_at: new Date().toISOString(),
@@ -94,6 +97,7 @@ export function useSaveUserTree(userId: string | null) {
         result = await supabase.from("user_trees").insert({
           user_id: userId,
           title: tree.title || "새 로드맵",
+          target_company: tree.targetCompany || null,
           nodes: tree.nodes,
           edges: tree.edges,
           updated_at: new Date().toISOString(),
