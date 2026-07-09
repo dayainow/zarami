@@ -267,12 +267,37 @@ export function DashboardClient() {
         </div>
       ) : null}
 
-      <TechTreeCanvas
-        nodes={nodes}
-        edges={edges}
-        onNodeSelect={handleNodeSelect}
-        className="h-screen min-h-screen pt-20"
-      />
+      {nodes.length === 0 && !isMyTreeLoading ? (
+        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+          <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
+              <TreePine className="h-7 w-7" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-lg font-bold text-slate-950 dark:text-white">
+              {userId ? "아직 만든 로드맵이 없어요" : "로그인하고 로드맵을 만들어보세요"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              {userId
+                ? "내 트리 관리에서 AI로 커리어 로드맵을 만들면 여기서 진행 상황을 확인할 수 있어요."
+                : "목표를 입력하면 AI가 나만의 커리어 로드맵을 만들어줘요. 로그인 후 바로 시작할 수 있어요."}
+            </p>
+            <Link
+              href="/manage-tree"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+            >
+              {userId ? "로드맵 만들러 가기" : "로그인하러 가기"}
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <TechTreeCanvas
+          nodes={nodes}
+          edges={edges}
+          onNodeSelect={handleNodeSelect}
+          className="h-screen min-h-screen pt-20"
+        />
+      )}
 
       <Drawer
         skills={nodes}
