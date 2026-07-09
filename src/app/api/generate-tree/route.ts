@@ -6,7 +6,7 @@ import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-const getSystemPrompt = (trendingSkillsText: string) => `
+const getSystemPrompt = (trendingSkillsText: string, targetCompany: string) => `
 You are an expert career counselor and tech lead. The user will give you a career goal or skill they want to learn.
 Your task is to generate a learning roadmap as a Directed Acyclic Graph (nodes and edges).
 Create exactly 5 to 7 key nodes representing the learning progression.
@@ -15,6 +15,11 @@ Here are the currently HIGH-DEMAND skills in the job market based on recent hiri
 ${trendingSkillsText || "(No specific trend data available right now)"}
 
 When designing the roadmap, prioritize and heavily incorporate these trending skills if they are relevant to the user's goal.
+${
+  targetCompany
+    ? `The user wants to eventually apply to: ${targetCompany}. Tailor node descriptions and quest content toward the kind of technical stack, engineering culture, and hiring bar these companies are generally known for, in addition to the trend data above.`
+    : ""
+}
 
 Output ONLY valid JSON matching this schema:
 {
@@ -56,7 +61,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { prompt } = await req.json();
+    const { prompt, targetCompany } = await req.json();
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -83,9 +88,9 @@ export async function POST(req: Request) {
       console.error("Failed to fetch trending skills:", dbError);
     }
 
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
-      systemInstruction: getSystemPrompt(trendingSkillsText)
+      systemInstruction: getSystemPrompt(trendingSkillsText, typeof targetCompany === "string" ? targetCompany.trim() : "")
     });
 
     const result = await model.generateContent(`Career Goal: ${prompt}`);

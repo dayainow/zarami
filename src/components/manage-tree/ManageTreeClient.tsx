@@ -73,6 +73,14 @@ export function ManageTreeClient() {
   const { data: treeList } = useUserTrees(userId);
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(currentTreeId);
   const saveTreeMutation = useSaveUserTree(userId);
+  // `saveTreeMutation.mutate` (not the mutation object itself) is what
+  // stays referentially stable across renders in TanStack Query - the
+  // object as a whole changes identity on every isPending/isSuccess
+  // transition, so depending on it directly used to make the debounced
+  // autosave effect below re-schedule on every save's own state change,
+  // occasionally firing several overlapping saves that each still saw a
+  // stale null currentTreeId and created a duplicate tree via POST.
+  const saveTree = saveTreeMutation.mutate;
   const renameTreeMutation = useRenameUserTree(userId);
   const deleteTreeMutation = useDeleteUserTree(userId);
   const recordActivity = useStreakStore((state) => state.recordActivity);
@@ -86,6 +94,7 @@ export function ManageTreeClient() {
   const [onboardingGoal, setOnboardingGoal] = useState("");
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [promptInput, setPromptInput] = useState("");
+  const [promptTargetCompanyInput, setPromptTargetCompanyInput] = useState("");
   // Tracked as its own piece of state (not derived from treeList.find(...))
   // because a freshly AI-generated tree has no id/treeList entry yet until
   // the first save - deriving it would always fall back to a generic name
@@ -93,6 +102,11 @@ export function ManageTreeClient() {
   const [currentTreeTitle, setCurrentTreeTitle] = useState("새 로드맵");
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameInput, setRenameInput] = useState("");
+  // Same "own state, not derived" reasoning as currentTreeTitle - a
+  // freshly-generated tree has no treeList entry to derive from yet.
+  const [targetCompany, setTargetCompany] = useState("");
+  const [isEditingTargetCompany, setIsEditingTargetCompany] = useState(false);
+  const [targetCompanyInput, setTargetCompanyInput] = useState("");
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
   const hasAutoSelectedInitialTreeRef = useRef(false);
 
@@ -105,13 +119,18 @@ export function ManageTreeClient() {
 
   // `promptOverride` lets the onboarding form pass its typed goal directly;
   // the toolbar's "AI 자동 생성" button opens the custom modal which eventually
-  // calls this function with the submitted text.
-  const handleAIGenerate = useCallback(async (promptOverride?: string) => {
+  // calls this function with the submitted text. `targetCompanyOverride`
+  // works the same way for the optional target-company field - each caller
+  // owns its own draft input since the modal creates a separate new tree
+  // from whatever's currently loaded.
+  const handleAIGenerate = useCallback(async (promptOverride?: string, targetCompanyOverride?: string) => {
     const promptText = promptOverride ?? promptInput;
     if (!promptText || promptText.trim() === "") return;
-    
+    const targetCompanyText = (targetCompanyOverride ?? "").trim();
+
     setIsPromptOpen(false);
     setPromptInput("");
+    setPromptTargetCompanyInput("");
     setCurrentTreeId(null); // Create a new tree
     setNodes([]); // Clear canvas
     setEdges([]);
@@ -121,7 +140,7 @@ export function ManageTreeClient() {
       const response = await fetch("/api/generate-tree", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: promptText }),
+        body: JSON.stringify({ prompt: promptText, targetCompany: targetCompanyText }),
       });
 
       if (!response.ok) {
@@ -134,6 +153,7 @@ export function ManageTreeClient() {
       setNodes(layouted.nodes);
       setEdges(layouted.edges);
       setCurrentTreeTitle(data.title || `${promptText} 로드맵`);
+      setTargetCompany(targetCompanyText);
       window.setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
       }, 50);
@@ -162,6 +182,7 @@ export function ManageTreeClient() {
 
     hasAutoSelectedInitialTreeRef.current = true;
     setCurrentTreeTitle(savedTree.title || "새 로드맵");
+    setTargetCompany(savedTree.targetCompany || "");
 
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
@@ -203,6 +224,7 @@ export function ManageTreeClient() {
     setNodes([rootNode]);
     setEdges([]);
     setCurrentTreeTitle("새 로드맵");
+    setTargetCompany("");
     setSelectedNodeId(rootNode.id);
   }, [setEdges, setNodes]);
 
@@ -226,6 +248,27 @@ export function ManageTreeClient() {
     }
   }, [renameInput, currentTreeTitle, currentTreeId, renameTreeMutation]);
 
+  const handleStartTargetCompanyEdit = useCallback(() => {
+    setTargetCompanyInput(targetCompany);
+    setIsEditingTargetCompany(true);
+  }, [targetCompany]);
+
+  const handleTargetCompanySubmit = useCallback(() => {
+    const trimmed = targetCompanyInput.trim();
+    setIsEditingTargetCompany(false);
+    if (trimmed === targetCompany) {
+      return;
+    }
+
+    setTargetCompany(trimmed);
+    // Same as title: an unsaved tree just picks this up on its next save.
+    // useRenameUserTree only touches the title column, so target_company
+    // edits go through the full save mutation instead.
+    if (currentTreeId) {
+      saveTree({ id: currentTreeId, title: currentTreeTitle, targetCompany: trimmed, nodes, edges });
+    }
+  }, [targetCompanyInput, targetCompany, currentTreeId, currentTreeTitle, nodes, edges, saveTree]);
+
   const handleDeleteTree = useCallback(() => {
     if (!currentTreeId) return;
     if (!window.confirm(`"${currentTreeTitle}" 로드맵을 삭제하시겠습니까? 되돌릴 수 없습니다.`)) {
@@ -242,6 +285,7 @@ export function ManageTreeClient() {
           setNodes([]);
           setEdges([]);
           setCurrentTreeTitle("새 로드맵");
+          setTargetCompany("");
         }
       },
     });
@@ -284,19 +328,10 @@ export function ManageTreeClient() {
     }
   }, [edges, nodes]);
 
-  // `saveTreeMutation.mutate` (not the mutation object itself) is what
-  // stays referentially stable across renders in TanStack Query - the
-  // object as a whole changes identity on every isPending/isSuccess
-  // transition, so depending on it directly used to make the debounced
-  // autosave effect below re-schedule on every save's own state change,
-  // occasionally firing several overlapping saves that each still saw a
-  // stale null currentTreeId and created a duplicate tree via POST.
-  const saveTree = saveTreeMutation.mutate;
-
   const handleSave = useCallback(() => {
     setSaveState("saving");
     saveTree(
-      { id: currentTreeId || undefined, title: currentTreeTitle, nodes, edges },
+      { id: currentTreeId || undefined, title: currentTreeTitle, targetCompany, nodes, edges },
       {
         onSuccess: (data: { id: string } | null | undefined) => {
           if (data?.id && !currentTreeId) {
@@ -311,7 +346,7 @@ export function ManageTreeClient() {
         },
       },
     );
-  }, [edges, nodes, currentTreeId, currentTreeTitle, saveTree]);
+  }, [edges, nodes, currentTreeId, currentTreeTitle, targetCompany, saveTree]);
 
   // Debounced auto-save so edits aren't lost if the user navigates away
   // without remembering to click [저장]. Skipped while the tree is still
@@ -323,7 +358,7 @@ export function ManageTreeClient() {
 
     const timeoutId = window.setTimeout(() => {
       saveTree(
-        { id: currentTreeId || undefined, title: currentTreeTitle, nodes, edges },
+        { id: currentTreeId || undefined, title: currentTreeTitle, targetCompany, nodes, edges },
         {
           onSuccess: (data: { id: string } | null | undefined) => {
             if (data?.id && !currentTreeId) {
@@ -340,7 +375,7 @@ export function ManageTreeClient() {
     }, 1500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [nodes, edges, isTreeLoading, currentTreeId, currentTreeTitle, saveTree]);
+  }, [nodes, edges, isTreeLoading, currentTreeId, currentTreeTitle, targetCompany, saveTree]);
 
   const data = selectedNode?.data;
 
@@ -422,7 +457,7 @@ export function ManageTreeClient() {
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void handleAIGenerate(onboardingGoal);
+              void handleAIGenerate(onboardingGoal, targetCompany);
             }}
             className="mt-6 flex flex-col gap-3"
           >
@@ -433,6 +468,14 @@ export function ManageTreeClient() {
               placeholder="예: 풀스택 개발자, 데이터 엔지니어, iOS 개발자..."
               disabled={isGeneratingAI}
               className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3.5 text-base text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all duration-300 hover:border-sky-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+            />
+            <input
+              type="text"
+              value={targetCompany}
+              onChange={(event) => setTargetCompany(event.target.value)}
+              placeholder="목표 기업 또는 직무 (선택, 예: 네이버, 카카오, 토스)"
+              disabled={isGeneratingAI}
+              className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all duration-300 hover:border-sky-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
             />
             <button
               type="submit"
@@ -536,6 +579,34 @@ export function ManageTreeClient() {
               {isTreeLoading ? (
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">저장된 트리 불러오는 중...</p>
               ) : null}
+              {!isTreeLoading && (
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Target className="h-3.5 w-3.5" aria-hidden />
+                  {isEditingTargetCompany ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={targetCompanyInput}
+                      onChange={(e) => setTargetCompanyInput(e.target.value)}
+                      onBlur={handleTargetCompanySubmit}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleTargetCompanySubmit();
+                        if (e.key === "Escape") setIsEditingTargetCompany(false);
+                      }}
+                      placeholder="목표 기업 또는 직무 (예: 네이버, 카카오)"
+                      className="rounded-md border border-sky-400 bg-white px-2 py-0.5 text-xs text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartTargetCompanyEdit}
+                      className="underline-offset-2 hover:text-slate-800 hover:underline dark:hover:text-slate-200"
+                    >
+                      {targetCompany ? `목표 기업: ${targetCompany}` : "목표 기업 추가하기"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -733,9 +804,9 @@ export function ManageTreeClient() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                void handleAIGenerate(promptInput);
+                void handleAIGenerate(promptInput, promptTargetCompanyInput);
               }}
-              className="mt-4"
+              className="mt-4 flex flex-col gap-3"
             >
               <input
                 type="text"
@@ -745,8 +816,15 @@ export function ManageTreeClient() {
                 placeholder="예: 풀스택 개발자, 프론트엔드 리드..."
                 className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
               />
+              <input
+                type="text"
+                value={promptTargetCompanyInput}
+                onChange={(e) => setPromptTargetCompanyInput(e.target.value)}
+                placeholder="목표 기업 또는 직무 (선택, 예: 네이버, 카카오, 토스)"
+                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+              />
 
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-3 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsPromptOpen(false)}
