@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { scrapeWantedJobs } from "./scrape-wanted";
+import { scrapeWantedJobs, type ScrapedPosting } from "./scrape-wanted";
 import { scrapeJumpitJobs } from "./scrape-jumpit";
 
 // Mock WebSocket for Node.js 20 compatibility since we don't use Supabase Realtime
@@ -21,6 +21,7 @@ type Database = {
           jumpit_mentions?: number;
           total_postings_analyzed?: number;
           trend_updated_at?: string;
+          sample_postings?: SamplePosting[];
         };
         Relationships: [];
       };
@@ -33,7 +34,13 @@ type Database = {
 type SupabaseAdmin = SupabaseClient<Database>;
 type SkillRow = { id: string; title: string };
 type PostingSource = "wanted" | "jumpit";
-type TaggedPosting = { site: PostingSource; text: string };
+type TaggedPosting = ScrapedPosting & { site: PostingSource };
+type SamplePosting = {
+  site: PostingSource;
+  title: string;
+  companyName: string;
+  url: string;
+};
 
 function requireEnv(key: string): string {
   const value = process.env[key];
@@ -133,7 +140,7 @@ async function bulkUpdateTrendData(
   supabaseAdmin: SupabaseAdmin,
   skills: SkillRow[],
   mentions: { skill_id: string; posting_indices: number[] }[],
-  siteByIndex: PostingSource[],
+  postings: TaggedPosting[],
 ): Promise<number> {
   const knownSkillIds = new Set(skills.map((skill) => skill.id));
   const validMentions = mentions.filter((mention) => knownSkillIds.has(mention.skill_id));
@@ -147,11 +154,15 @@ async function bulkUpdateTrendData(
   await Promise.all(
     validMentions.map(async (mention) => {
       const uniqueIndices = [...new Set(mention.posting_indices)].filter(
-        (index) => index >= 0 && index < siteByIndex.length,
+        (index) => index >= 0 && index < postings.length,
       );
-      const wantedMentions = uniqueIndices.filter((index) => siteByIndex[index] === "wanted").length;
-      const jumpitMentions = uniqueIndices.filter((index) => siteByIndex[index] === "jumpit").length;
-      const trendScore = deriveTrendScore(uniqueIndices.length, siteByIndex.length);
+      const wantedMentions = uniqueIndices.filter((index) => postings[index].site === "wanted").length;
+      const jumpitMentions = uniqueIndices.filter((index) => postings[index].site === "jumpit").length;
+      const trendScore = deriveTrendScore(uniqueIndices.length, postings.length);
+      const samplePostings: SamplePosting[] = uniqueIndices.slice(0, 2).map((index) => {
+        const posting = postings[index];
+        return { site: posting.site, title: posting.title, companyName: posting.companyName, url: posting.url };
+      });
 
       const { error } = await supabaseAdmin
         .from("skills")
@@ -159,8 +170,9 @@ async function bulkUpdateTrendData(
           trend_score: trendScore,
           wanted_mentions: wantedMentions,
           jumpit_mentions: jumpitMentions,
-          total_postings_analyzed: siteByIndex.length,
+          total_postings_analyzed: postings.length,
           trend_updated_at: trendUpdatedAt,
+          sample_postings: samplePostings,
         })
         .eq("id", mention.skill_id);
 
@@ -195,10 +207,10 @@ async function main(): Promise<void> {
   const jumpitFrontend = await scrapeJumpitJobs(2, 10);
 
   const postings: TaggedPosting[] = [
-    ...wantedBackend.map((text) => ({ site: "wanted" as const, text })),
-    ...wantedFrontend.map((text) => ({ site: "wanted" as const, text })),
-    ...jumpitBackend.map((text) => ({ site: "jumpit" as const, text })),
-    ...jumpitFrontend.map((text) => ({ site: "jumpit" as const, text })),
+    ...wantedBackend.map((posting) => ({ ...posting, site: "wanted" as const })),
+    ...wantedFrontend.map((posting) => ({ ...posting, site: "wanted" as const })),
+    ...jumpitBackend.map((posting) => ({ ...posting, site: "jumpit" as const })),
+    ...jumpitFrontend.map((posting) => ({ ...posting, site: "jumpit" as const })),
   ];
 
   if (postings.length === 0) {
@@ -206,13 +218,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  const siteByIndex = postings.map((posting) => posting.site);
   console.log(`${skills.length}개 스킬에 대해 ${postings.length}건의 실제 공고를 분석합니다...`);
 
   const mentions = await analyzeSkillMentions(genAI, skills, postings);
-  const updatedCount = await bulkUpdateTrendData(supabaseAdmin, skills, mentions, siteByIndex);
+  const updatedCount = await bulkUpdateTrendData(supabaseAdmin, skills, mentions, postings);
 
-  console.log(`trend 데이터 ${updatedCount}건 갱신 완료 (원티드 ${siteByIndex.filter((s) => s === "wanted").length}건, 점핏 ${siteByIndex.filter((s) => s === "jumpit").length}건 분석).`);
+  const wantedCount = postings.filter((p) => p.site === "wanted").length;
+  const jumpitCount = postings.filter((p) => p.site === "jumpit").length;
+  console.log(`trend 데이터 ${updatedCount}건 갱신 완료 (원티드 ${wantedCount}건, 점핏 ${jumpitCount}건 분석).`);
 }
 
 main().catch((error: unknown) => {

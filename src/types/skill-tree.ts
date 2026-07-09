@@ -2,6 +2,13 @@ import type { Edge, Node } from "@xyflow/react";
 
 export type SkillStatus = "locked" | "available" | "completed";
 
+export type SamplePosting = {
+  site: "wanted" | "jumpit";
+  title: string;
+  companyName: string;
+  url: string;
+};
+
 export type SkillNodeData = {
   id: string;
   title: string;
@@ -24,6 +31,7 @@ export type SkillNodeData = {
   jumpitMentions?: number;
   totalPostingsAnalyzed?: number;
   trendUpdatedAt?: string;
+  samplePostings?: SamplePosting[];
   /** Branch collapse/expand (computed by TechTreeCanvas, not caller-supplied). */
   hasChildren?: boolean;
   isCollapsed?: boolean;

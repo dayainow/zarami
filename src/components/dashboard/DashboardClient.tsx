@@ -103,6 +103,7 @@ export function DashboardClient() {
           jumpitMentions: trend?.jumpit_mentions ?? undefined,
           totalPostingsAnalyzed: trend?.total_postings_analyzed ?? undefined,
           trendUpdatedAt: trend?.trend_updated_at ?? undefined,
+          samplePostings: trend?.sample_postings ?? undefined,
         },
       };
     });

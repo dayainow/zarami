@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { TrendingUp, X } from "lucide-react";
+import { ExternalLink, TrendingUp, X } from "lucide-react";
 
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
@@ -226,6 +226,31 @@ export function Drawer({
                     {data.trendScore === "High" ? "높음" : data.trendScore === "Medium" ? "보통" : "낮음"}
                   </span>
                 </div>
+
+                {data.samplePostings && data.samplePostings.length > 0 ? (
+                  <div className="mt-4 space-y-2 border-t border-emerald-200/60 pt-4 dark:border-emerald-400/20">
+                    <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+                      실제 지원 가능한 공고
+                    </p>
+                    {data.samplePostings.map((posting, index) => (
+                      <a
+                        key={`${posting.url}-${index}`}
+                        href={posting.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm shadow-sm transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
+                          <span className="font-semibold">{posting.companyName}</span> · {posting.title}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                          {posting.site === "wanted" ? "원티드" : "점핏"}
+                          <ExternalLink className="h-3 w-3" aria-hidden />
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
