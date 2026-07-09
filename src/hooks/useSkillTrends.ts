@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { createClient } from "@/utils/supabase/client";
+import type { SamplePosting } from "@/types/skill-tree";
 
 export type SkillTrend = {
   id: string;
@@ -12,13 +13,16 @@ export type SkillTrend = {
   jumpit_mentions: number | null;
   total_postings_analyzed: number | null;
   trend_updated_at: string | null;
+  sample_postings: SamplePosting[] | null;
 };
 
 async function fetchSkillTrends(): Promise<SkillTrend[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("skills")
-    .select("id, title, trend_score, wanted_mentions, jumpit_mentions, total_postings_analyzed, trend_updated_at");
+    .select(
+      "id, title, trend_score, wanted_mentions, jumpit_mentions, total_postings_analyzed, trend_updated_at, sample_postings",
+    );
 
   if (error) {
     // Degrade gracefully (e.g. the trend_sources migration hasn't been
