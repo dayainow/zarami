@@ -12,7 +12,7 @@ import { CheckCircle2, Download, LayoutGrid, Plus, Save, Sparkles, Target, Trash
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
-import { useSaveUserTree, useUserTree } from "@/hooks/useUserTree";
+import { useSaveUserTree, useUserTree, useUserTrees } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
@@ -62,7 +62,10 @@ function createGoalNode(index: number): SkillTreeNode {
 export function ManageTreeClient() {
   const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, handleTestLogin, authChecked } =
     useMagicLinkAuth();
-  const { data: savedTree, isLoading: isTreeLoading } = useUserTree(userId);
+  
+  const [currentTreeId, setCurrentTreeId] = useState<string | null>(null);
+  const { data: treeList } = useUserTrees(userId);
+  const { data: savedTree, isLoading: isTreeLoading } = useUserTree(currentTreeId);
   const saveTreeMutation = useSaveUserTree(userId);
   const recordActivity = useStreakStore((state) => state.recordActivity);
 
@@ -70,9 +73,11 @@ export function ManageTreeClient() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
-  const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [onboardingGoal, setOnboardingGoal] = useState("");
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
+  const [promptInput, setPromptInput] = useState("");
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
 
   const handleAutoLayout = useCallback(() => {
@@ -83,11 +88,17 @@ export function ManageTreeClient() {
   }, [edges, setNodes]);
 
   // `promptOverride` lets the onboarding form pass its typed goal directly;
-  // the toolbar's "AI 자동 생성" button (for an already-populated tree) still
-  // falls back to a native prompt() since it has no dedicated input of its own.
+  // the toolbar's "AI 자동 생성" button opens the custom modal which eventually
+  // calls this function with the submitted text.
   const handleAIGenerate = useCallback(async (promptOverride?: string) => {
-    const promptText = promptOverride ?? window.prompt("어떤 커리어를 목표로 하시나요? (예: 풀스택 개발자, 데이터 엔지니어 등)");
+    const promptText = promptOverride ?? promptInput;
     if (!promptText || promptText.trim() === "") return;
+    
+    setIsPromptOpen(false);
+    setPromptInput("");
+    setCurrentTreeId(null); // Create a new tree
+    setNodes([]); // Clear canvas
+    setEdges([]);
 
     setIsGeneratingAI(true);
     try {
@@ -115,23 +126,28 @@ export function ManageTreeClient() {
     } finally {
       setIsGeneratingAI(false);
     }
-  }, [setNodes, setEdges]);
+  }, [promptInput, setNodes, setEdges]);
 
-  // Hydrate from the user's saved tree exactly once when it first arrives -
-  // a later background refetch must not clobber in-progress local edits.
-  const hasHydratedFromServer = useRef(false);
+  // Hydrate from the user's saved tree whenever currentTreeId changes
   useEffect(() => {
-    if (hasHydratedFromServer.current || !savedTree) {
+    if (!savedTree) {
+      if (currentTreeId === null && treeList && treeList.length > 0) {
+        // Automatically select the first tree if none is selected
+        setCurrentTreeId(treeList[0].id);
+      }
       return;
     }
-    hasHydratedFromServer.current = true;
 
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
       setEdges(savedTree.edges);
       setSelectedNodeId(savedTree.nodes[0]?.id ?? null);
+    } else {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeId(null);
     }
-  }, [savedTree, setEdges, setNodes]);
+  }, [savedTree, treeList, currentTreeId, setEdges, setNodes]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -158,6 +174,7 @@ export function ManageTreeClient() {
 
   const handleStartBlank = useCallback(() => {
     const rootNode = createBlankRootNode();
+    setCurrentTreeId(null); // Create a new tree
     setNodes([rootNode]);
     setEdges([]);
     setSelectedNodeId(rootNode.id);
@@ -201,10 +218,15 @@ export function ManageTreeClient() {
   }, [edges, nodes]);
 
   const handleSave = useCallback(() => {
+    setSaveState("saving");
+    const title = treeList?.find(t => t.id === currentTreeId)?.title || "새 로드맵";
     saveTreeMutation.mutate(
-      { nodes, edges },
+      { id: currentTreeId || undefined, title, nodes, edges },
       {
-        onSuccess: () => {
+        onSuccess: (data: { id: string } | null | undefined) => {
+          if (data?.id && !currentTreeId) {
+            setCurrentTreeId(data.id);
+          }
           setSaveState("saved");
           window.setTimeout(() => setSaveState("idle"), 1800);
         },
@@ -214,7 +236,7 @@ export function ManageTreeClient() {
         },
       },
     );
-  }, [edges, nodes, saveTreeMutation]);
+  }, [edges, nodes, currentTreeId, treeList, saveTreeMutation]);
 
   // Debounced auto-save so edits aren't lost if the user navigates away
   // without remembering to click [저장]. Skipped while the tree is still
@@ -225,23 +247,26 @@ export function ManageTreeClient() {
     }
 
     const timeoutId = window.setTimeout(() => {
+      const title = treeList?.find(t => t.id === currentTreeId)?.title || "새 로드맵";
       saveTreeMutation.mutate(
-        { nodes, edges },
+        { id: currentTreeId || undefined, title, nodes, edges },
         {
-          onSuccess: () => {
-            setSaveState("saved");
-            window.setTimeout(() => setSaveState("idle"), 1800);
+          onSuccess: (data: { id: string } | null | undefined) => {
+            if (data?.id && !currentTreeId) {
+              setCurrentTreeId(data.id);
+            }
+            // Auto-save is silent, do not flash the button
           },
           onError: () => {
-            setSaveState("error");
-            window.setTimeout(() => setSaveState("idle"), 1800);
+            // Auto-save errors shouldn't interrupt the user, but we could log it
+            console.error("Auto-save failed");
           },
         },
       );
     }, 1500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [nodes, edges, isTreeLoading, saveTreeMutation]);
+  }, [nodes, edges, isTreeLoading, currentTreeId, treeList, saveTreeMutation]);
 
   const data = selectedNode?.data;
 
@@ -309,11 +334,13 @@ export function ManageTreeClient() {
   // with "직접 만들기" as the explicit opt-out for manual editing.
   if (!isTreeLoading && nodes.length === 0) {
     return (
-      <main className="grid min-h-screen w-full place-items-center bg-slate-50 px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
-        <div className="w-full max-w-lg rounded-2xl border border-white/70 bg-white/75 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 dark:bg-indigo-400 dark:text-slate-950">
-            <Sparkles className="h-6 w-6" aria-hidden />
-          </span>
+      <main className="grid min-h-screen w-full place-items-center bg-slate-50 mesh-gradient px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
+        <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/60 bg-white/60 p-10 text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/50 dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)]">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
+          
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.5)] glow-sky">
+            <Sparkles className="h-10 w-10 animate-pulse" aria-hidden />
+          </div>
           <h1 className="mt-4 text-xl font-bold text-slate-950 dark:text-white">첫 트리를 만들어볼까요?</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             어떤 커리어를 목표로 하시나요? AI가 목표에 맞는 스킬 트리 초안을 자동으로 만들어드립니다.
@@ -331,15 +358,18 @@ export function ManageTreeClient() {
               onChange={(event) => setOnboardingGoal(event.target.value)}
               placeholder="예: 풀스택 개발자, 데이터 엔지니어, iOS 개발자..."
               disabled={isGeneratingAI}
-              className="w-full rounded-lg border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+              className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3.5 text-base text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all duration-300 hover:border-sky-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
             />
             <button
               type="submit"
               disabled={isGeneratingAI || onboardingGoal.trim() === ""}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-500 px-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
+              className="group relative mt-2 inline-flex h-14 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 p-[1px] font-bold text-white shadow-[0_10px_20px_-10px_rgba(99,102,241,0.6)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_15px_30px_-10px_rgba(99,102,241,0.8)] disabled:opacity-50 disabled:hover:scale-100"
             >
-              <Sparkles className="h-4 w-4" aria-hidden />
-              {isGeneratingAI ? "생성 중..." : "AI로 로드맵 생성하기"}
+              <span className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100"></span>
+              <span className="flex h-full w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 px-4 py-2 transition-all">
+                <Sparkles className="h-5 w-5" aria-hidden />
+                {isGeneratingAI ? "AI가 로드맵을 설계하고 있습니다..." : "AI로 커리어 로드맵 생성하기"}
+              </span>
             </button>
           </form>
 
@@ -371,8 +401,23 @@ export function ManageTreeClient() {
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
                 My Tree Studio
               </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+              <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 내 트리 관리
+                {treeList && treeList.length > 0 && (
+                  <select
+                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+                    value={currentTreeId || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) setCurrentTreeId(val);
+                    }}
+                  >
+                    <option value="" disabled>로드맵 선택</option>
+                    {treeList.map(tree => (
+                      <option key={tree.id} value={tree.id}>{tree.title}</option>
+                    ))}
+                  </select>
+                )}
               </h1>
               {isTreeLoading ? (
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">저장된 트리 불러오는 중...</p>
@@ -381,7 +426,7 @@ export function ManageTreeClient() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => void handleAIGenerate()}
+                onClick={() => setIsPromptOpen(true)}
                 disabled={isGeneratingAI}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-500 px-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
               >
@@ -415,7 +460,7 @@ export function ManageTreeClient() {
                   ? "저장됨!"
                   : saveState === "error"
                     ? "저장 실패"
-                    : saveTreeMutation.isPending
+                    : saveState === "saving"
                       ? "저장 중..."
                       : "저장"}
               </button>
@@ -553,6 +598,59 @@ export function ManageTreeClient() {
           </div>
         )}
       </aside>
+
+      {/* Custom AI Prompt Modal */}
+      {isPromptOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm transition-all dark:bg-black/60">
+          <div
+            className="w-full max-w-md scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40"
+          >
+            <h3 className="text-lg font-bold leading-6 text-slate-950 dark:text-white">
+              AI 로드맵 재설계
+            </h3>
+            <div className="mt-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                현재 트리를 지우고 완전히 새로운 커리어 로드맵을 설계하시겠습니까? 어떤 목표를 원하시는지 입력해주세요.
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleAIGenerate(promptInput);
+              }}
+              className="mt-4"
+            >
+              <input
+                type="text"
+                autoFocus
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                placeholder="예: 풀스택 개발자, 프론트엔드 리드..."
+                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+              />
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPromptOpen(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={!promptInput.trim() || isGeneratingAI}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden />
+                  생성하기
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

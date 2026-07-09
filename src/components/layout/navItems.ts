@@ -1,4 +1,4 @@
-import { LayoutDashboard, Shield, TreePine, UserRound, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, TreePine, UserRound, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -11,22 +11,17 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
-    label: "대시보드",
+    label: "나의 테크트리",
     icon: LayoutDashboard,
   },
   {
-    href: "/profile",
-    label: "내 프로필",
-    icon: UserRound,
-  },
-  {
     href: "/manage-tree",
-    label: "트리 관리",
+    label: "로드맵 설계",
     icon: TreePine,
   },
   {
-    href: "/admin",
-    label: "어드민",
-    icon: Shield,
+    href: "/profile",
+    label: "성장 기록",
+    icon: UserRound,
   },
 ];

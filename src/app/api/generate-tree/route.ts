@@ -26,7 +26,7 @@ Output ONLY valid JSON matching this schema:
         "description": "Brief explanation",
         "category": "Core/Action/Goal/etc",
         "level": number (1 for the starting node, 2 for next step, etc. up to 4),
-        "estimatedMinutes": number,
+        "estimatedMinutes": number (realistic learning time in minutes, typically between 30 and 300),
         "isTrending": boolean (Set to true ONLY IF this skill is directly related to the high-demand trends provided above)
       }
     }

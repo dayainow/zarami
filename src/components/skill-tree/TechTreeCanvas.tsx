@@ -40,11 +40,11 @@ type TechTreeCanvasProps = {
 
 const statusClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
   completed:
-    "border-emerald-300 bg-emerald-50/90 text-emerald-950 shadow-emerald-100 backdrop-blur-xl dark:border-emerald-400/70 dark:bg-emerald-950/90 dark:text-emerald-50 dark:shadow-emerald-950/30",
+    "border-emerald-300/50 bg-emerald-50/80 text-emerald-950 shadow-[0_8px_32px_rgba(16,185,129,0.15)] backdrop-blur-2xl glow-emerald dark:border-emerald-400/30 dark:bg-emerald-950/40 dark:text-emerald-50",
   available:
-    "border-sky-300 bg-white/95 text-slate-950 shadow-sky-100 backdrop-blur-xl dark:border-sky-400 dark:bg-slate-800/95 dark:text-white dark:shadow-sky-950/40",
+    "border-sky-300/50 bg-white/80 text-slate-950 shadow-[0_8px_32px_rgba(14,165,233,0.15)] backdrop-blur-2xl glow-sky dark:border-sky-400/30 dark:bg-slate-900/60 dark:text-white",
   locked:
-    "border-slate-300 bg-slate-100/85 text-slate-500 shadow-slate-100 backdrop-blur-xl dark:border-slate-600 dark:bg-slate-800/85 dark:text-slate-400",
+    "border-slate-300/40 bg-slate-100/60 text-slate-500 shadow-sm backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-400",
 };
 
 const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
@@ -82,11 +82,11 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       role="button"
       tabIndex={0}
       className={[
-        "group relative w-72 rounded-lg border border-l-4 px-4 py-3 text-left shadow-sm transition duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
-        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950" : "",
-        isCompleted ? "opacity-90" : "",
-        isNextAction ? "border-amber-300 shadow-[0_0_0_4px_rgba(251,191,36,0.18),0_18px_42px_rgba(251,191,36,0.22)]" : "",
+        "group relative w-72 rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
+        "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
+        isCompleted ? "opacity-95" : "",
+        isNextAction ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]" : "",
         statusClassName[status],
         categoryColor.border,
       ].join(" ")}
@@ -97,8 +97,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         </div>
       ) : null}
       {data.isTrending ? (
-        <div className="absolute -left-3 -top-3 z-10 flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-lg shadow-rose-500/30">
-          <span className="text-[10px]">🔥</span> 트렌드
+        <div className="absolute -left-4 -top-3 z-10 flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
+          <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
         </div>
       ) : null}
       {data.isCelebrating ? (
@@ -181,7 +181,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
               data.onToggleCollapse?.(data.id);
             }
           }}
-          className="absolute -top-3 left-1/2 z-30 flex h-6 w-6 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 shadow-md transition hover:scale-110 hover:text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+          className="absolute -top-3 left-1/2 z-30 flex h-7 w-7 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300/50 bg-white/80 text-slate-500 shadow-lg backdrop-blur-md transition-all hover:scale-110 hover:border-sky-400 hover:text-sky-600 hover:shadow-[0_0_15px_rgba(56,189,248,0.4)] dark:border-slate-600/50 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-sky-400 dark:hover:text-sky-400"
         >
           {data.isCollapsed ? (
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />

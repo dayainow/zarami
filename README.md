@@ -12,6 +12,8 @@
 2. **Guest Data & Migration Pipeline**: 비회원 데이터 로컬 저장 및 로그인 시 안전한 데이터 병합 (Supabase Upsert)
 3. **Offline Queueing**: 오프라인 상태 트래킹 및 뮤테이션 큐잉 (TanStack Query 연동)
 4. **Gamification**: 기술 마스터 개수에 따른 반려식물 진화 (씨앗 -> 새싹 -> 줄기 -> 개화)
+5. **AI 커스텀 로드맵 자동 생성**: 생성형 AI를 활용해 원하는 직무/목표에 맞춘 나만의 커리어 로드맵을 자동으로 설계
+6. **다중 로드맵(Multi-roadmap) 관리**: 유저 1명이 풀스택, 백엔드 등 여러 개의 로드맵을 생성하고 탭/드롭다운으로 자유롭게 전환하며 성취도를 독립적으로 추적
 
 ## 기술 스택 (Tech Stack)
 - **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS, React Flow v11, Zustand
