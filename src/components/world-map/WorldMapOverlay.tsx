@@ -35,7 +35,7 @@ const REGIONS = [
   }
 ];
 
-export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayProps) {
+export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOverlayProps) {
   const activeRegions = useMemo(() => {
     // If activeTree is provided, we show only one path for this tree
     if (activeTree) {
