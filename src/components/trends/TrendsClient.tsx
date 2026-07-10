@@ -1,40 +1,111 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ExternalLink, TrendingUp, ChevronDown, ChevronUp, Briefcase, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ExternalLink, ChevronDown, ChevronUp, Briefcase, Sparkles, Flame, Target, Lightbulb, BarChart3, BookOpen, Search, CheckCircle2, Circle } from "lucide-react";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
+import { useProfileStats } from "@/hooks/useProfileStats";
+import { createClient } from "@/utils/supabase/client";
 
 export function TrendsClient() {
   const { data: trends, isLoading, isError } = useSkillTrends();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACQUIRED" | "NEEDED">("ALL");
+  const [sortBy, setSortBy] = useState<"TREND" | "FIT" | "GAP">("TREND");
 
-  const sortedTrends = useMemo(() => {
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user ? data.user.id : null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { data: stats } = useProfileStats(userId);
+
+  const insights = useMemo(() => {
+    if (!trends || trends.length === 0) return null;
+    
+    const sortedByMentions = [...trends].sort((a, b) => 
+      ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0))
+    );
+    const topRising = sortedByMentions[0];
+
+    let bestFit = null;
+    let missedOpportunity = null;
+
+    if (stats && stats.allSkillTitles && stats.allSkillTitles.length > 0) {
+      const neededSkills = stats.allSkillTitles.filter(title => !stats.completedSkills.includes(title));
+      const neededTrends = trends.filter(t => neededSkills.includes(t.title));
+      neededTrends.sort((a, b) => ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0)));
+      if (neededTrends.length > 0) bestFit = neededTrends[0];
+
+      const missedTrends = trends.filter(t => t.trend_score === "High" && !stats.allSkillTitles.includes(t.title));
+      missedTrends.sort((a, b) => ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0)));
+      if (missedTrends.length > 0) missedOpportunity = missedTrends[0];
+    } else {
+       bestFit = sortedByMentions[1];
+       missedOpportunity = sortedByMentions[2];
+    }
+
+    return { topRising, bestFit, missedOpportunity };
+  }, [trends, stats]);
+
+  const sortedAndFilteredTrends = useMemo(() => {
     if (!trends) return [];
     
     let filtered = trends;
+    
     if (searchKeyword.trim() !== "") {
       filtered = filtered.filter(trend => 
         trend.title.toLowerCase().includes(searchKeyword.toLowerCase())
       );
     }
 
+    if (stats && filterStatus !== "ALL") {
+      filtered = filtered.filter(trend => {
+        const isAcquired = stats.completedSkills.includes(trend.title);
+        if (filterStatus === "ACQUIRED") return isAcquired;
+        if (filterStatus === "NEEDED") return !isAcquired && stats.allSkillTitles.includes(trend.title);
+        return true;
+      });
+    }
+
     return [...filtered].sort((a, b) => {
       const aMentions = (a.wanted_mentions || 0) + (a.jumpit_mentions || 0);
       const bMentions = (b.wanted_mentions || 0) + (b.jumpit_mentions || 0);
+      
+      if (sortBy === "TREND") {
+        return bMentions - aMentions;
+      } else if (sortBy === "FIT" && stats) {
+        // 정렬 기준: 로드맵에 있지만 안 배운 것(우선순위 1) > 이미 배운 것(우선순위 2) > 로드맵에 없는 것(우선순위 3)
+        const getFitScore = (title: string) => {
+          const inRoadmap = stats.allSkillTitles.includes(title);
+          const isCompleted = stats.completedSkills.includes(title);
+          if (inRoadmap && !isCompleted) return 3;
+          if (inRoadmap && isCompleted) return 2;
+          return 1;
+        };
+        const scoreDiff = getFitScore(b.title) - getFitScore(a.title);
+        if (scoreDiff !== 0) return scoreDiff;
+        return bMentions - aMentions; // 같으면 멘션순
+      }
       return bMentions - aMentions;
     });
-  }, [trends, searchKeyword]);
+  }, [trends, searchKeyword, filterStatus, sortBy, stats]);
 
   if (isLoading) {
     return (
       <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
         <div className="mx-auto max-w-4xl space-y-8">
           <header>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-              Skill Market
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Skill Market</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">채용 트렌드</h1>
           </header>
           <div className="flex items-center justify-center py-20">
@@ -50,9 +121,7 @@ export function TrendsClient() {
       <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
         <div className="mx-auto max-w-4xl space-y-8">
           <header>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-              Skill Market
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Skill Market</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">채용 트렌드</h1>
           </header>
           <div className="flex items-center justify-center py-20">
@@ -72,60 +141,144 @@ export function TrendsClient() {
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">채용 트렌드 분석</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            실제 채용 플랫폼(원티드, 점핏)의 데이터를 분석하여 수요가 가장 높은 스킬을 보여줍니다. 다음 테크트리를 계획할 때 참고해 보세요.
+            단순한 인기 순위가 아닙니다. 시장의 수요와 내 로드맵의 갭(Gap)을 파악하고 다음 학습의 우선순위를 결정해 보세요.
           </p>
         </header>
 
+        {insights && (
+          <section className="grid gap-4 md:grid-cols-3">
+            <div className="flex flex-col gap-2 rounded-xl border border-white/70 bg-gradient-to-br from-white/80 to-slate-50/50 p-5 shadow-lg shadow-rose-900/5 backdrop-blur-2xl transition dark:border-white/10 dark:from-slate-900/60 dark:to-slate-900/20">
+              <div className="flex items-center gap-2 text-rose-500">
+                <Flame className="h-5 w-5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider">이번 주 급상승</h3>
+              </div>
+              <p className="mt-1 text-lg font-black text-slate-900 dark:text-white">{insights.topRising?.title}</p>
+              <p className="text-[11px] text-slate-500">시장에서 가장 뜨겁게 요구되는 기술입니다.</p>
+            </div>
+
+            <div className="flex flex-col gap-2 rounded-xl border border-white/70 bg-gradient-to-br from-white/80 to-slate-50/50 p-5 shadow-lg shadow-sky-900/5 backdrop-blur-2xl transition dark:border-white/10 dark:from-slate-900/60 dark:to-slate-900/20">
+              <div className="flex items-center gap-2 text-sky-500">
+                <Target className="h-5 w-5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider">{stats ? "나에게 가장 적합" : "꾸준한 스테디셀러"}</h3>
+              </div>
+              <p className="mt-1 text-lg font-black text-slate-900 dark:text-white">{insights.bestFit?.title ?? "-"}</p>
+              <p className="text-[11px] text-slate-500">
+                {stats ? "내 로드맵에 있지만 아직 안 배운 핵심 기술입니다." : "시장 수요가 안정적이고 탄탄한 기술입니다."}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 rounded-xl border border-white/70 bg-gradient-to-br from-white/80 to-slate-50/50 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-2xl transition dark:border-white/10 dark:from-slate-900/60 dark:to-slate-900/20">
+              <div className="flex items-center gap-2 text-amber-500">
+                <Lightbulb className="h-5 w-5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider">놓치고 있는 기회</h3>
+              </div>
+              <p className="mt-1 text-lg font-black text-slate-900 dark:text-white">{insights.missedOpportunity?.title ?? "-"}</p>
+              <p className="text-[11px] text-slate-500">
+                {stats ? "내 로드맵에는 없지만 시장 수요가 매우 높습니다." : "배워두면 취업/이직에 강력한 무기가 됩니다."}
+              </p>
+            </div>
+          </section>
+        )}
+
         <section className="space-y-4">
-          <div className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-            <input
-              type="text"
-              placeholder="스킬 키워드 검색 (예: React, Node.js)"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              className="w-full bg-transparent text-sm text-slate-950 placeholder-slate-400 focus:outline-none dark:text-white dark:placeholder-slate-500"
-            />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="relative flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <Search className="h-4 w-4" />
+              </div>
+              <input
+                type="text"
+                placeholder="스킬 키워드 검색 (예: React)"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full bg-transparent py-1.5 pl-10 pr-4 text-sm text-slate-950 placeholder-slate-400 focus:outline-none dark:text-white dark:placeholder-slate-500"
+              />
+            </div>
+            
+            <div className="h-px w-full bg-slate-200 dark:bg-white/10 md:h-6 md:w-px" />
+
+            <div className="flex items-center gap-2 px-1">
+              <select
+                className="cursor-pointer appearance-none bg-transparent py-1.5 pl-2 pr-6 text-sm font-semibold text-slate-700 outline-none hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as "ALL" | "ACQUIRED" | "NEEDED")}
+              >
+                <option value="ALL">상태: 전체 보기</option>
+                {userId && <option value="ACQUIRED">상태: 이미 학습함</option>}
+                {userId && <option value="NEEDED">상태: 내 로드맵(미학습)</option>}
+              </select>
+              
+              <div className="h-4 w-px bg-slate-300 dark:bg-white/20" />
+
+              <select
+                className="cursor-pointer appearance-none bg-transparent py-1.5 pl-2 pr-6 text-sm font-semibold text-slate-700 outline-none hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "TREND" | "FIT" | "GAP")}
+              >
+                <option value="TREND">정렬: 시장 수요순</option>
+                {userId && <option value="FIT">정렬: 내 적합도순</option>}
+              </select>
+            </div>
           </div>
 
-          {sortedTrends.length === 0 ? (
+          {sortedAndFilteredTrends.length === 0 ? (
              <div className="rounded-2xl border border-white/70 bg-white/70 p-8 text-center shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-               <p className="text-slate-500">분석된 채용 데이터가 없습니다. (trends 길이: {trends?.length ?? 'undefined'})</p>
+               <p className="text-slate-500">분석된 채용 데이터가 없거나 필터 조건에 맞는 스킬이 없습니다.</p>
              </div>
           ) : (
-            sortedTrends.map((trend, idx) => {
+            sortedAndFilteredTrends.map((trend, idx) => {
               const isExpanded = expandedId === trend.id;
               const totalMentions = (trend.wanted_mentions || 0) + (trend.jumpit_mentions || 0);
-              const rank = idx + 1;
+              
+              const isInRoadmap = stats?.allSkillTitles.includes(trend.title);
+              const isCompleted = stats?.completedSkills.includes(trend.title);
+
+              // 50 mentions as a relative maximum for the sparkline bar
+              const fillPercentage = Math.min(100, (totalMentions / 50) * 100);
 
               return (
                 <div key={trend.id} className="overflow-hidden rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur-2xl transition-colors dark:border-white/10 dark:bg-white/[0.04]">
                   <div 
-                    className="flex cursor-pointer items-center justify-between gap-4 p-5 hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                    className="flex cursor-pointer flex-col gap-4 p-5 hover:bg-slate-50 dark:hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between"
                     onClick={() => setExpandedId(isExpanded ? null : trend.id)}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${rank <= 3 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
-                        {rank}
+                      <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-600 sm:flex dark:bg-slate-800 dark:text-slate-400">
+                        {idx + 1}
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-slate-950 dark:text-white">{trend.title}</h2>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-slate-950 dark:text-white">{trend.title}</h2>
+                          {isCompleted ? (
+                            <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              <CheckCircle2 className="h-3 w-3" /> 보유함
+                            </span>
+                          ) : isInRoadmap ? (
+                            <span className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
+                              <Circle className="h-3 w-3" /> 내 로드맵
+                            </span>
+                          ) : null}
+                        </div>
                         <div className="mt-1 flex items-center gap-3 text-xs font-semibold">
-                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            공고 {totalMentions}건 포함
-                          </span>
-                          <span className="text-slate-400">|</span>
                           <span className="text-slate-500 dark:text-slate-400">
-                            {trend.trend_score === "High" ? "수요 높음 🔥" : trend.trend_score === "Medium" ? "수요 보통" : "수요 적음"}
+                            {trend.trend_score === "High" ? "🔥 수요 매우 높음" : trend.trend_score === "Medium" ? "⭐️ 수요 보통" : "니치 마켓"}
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                      <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500">
-                        <span className="rounded-full bg-slate-200/50 px-2 py-0.5 dark:bg-slate-800">원티드: {trend.wanted_mentions || 0}</span>
-                        <span className="rounded-full bg-slate-200/50 px-2 py-0.5 dark:bg-slate-800">점핏: {trend.jumpit_mentions || 0}</span>
+                    <div className="flex items-center justify-between sm:justify-end gap-6">
+                      <div className="flex w-32 flex-col gap-1.5 sm:w-40">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                          <span>시장 수요량</span>
+                          <span>{totalMentions}건</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all dark:from-emerald-500 dark:to-teal-400"
+                            style={{ width: `${fillPercentage}%` }}
+                          />
+                        </div>
                       </div>
                       <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -135,46 +288,69 @@ export function TrendsClient() {
 
                   {isExpanded && (
                     <div className="border-t border-slate-100 bg-slate-50/50 p-5 dark:border-white/5 dark:bg-black/20">
-                      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl bg-white p-4 shadow-sm border border-slate-200 dark:bg-slate-900/50 dark:border-white/10">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                            이 스펙으로 로드맵을 설계해볼까요?
+                      
+                      {/* Context & Action Section */}
+                      <div className="mb-6 grid gap-4 md:grid-cols-2">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/50">
+                          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                            <BarChart3 className="h-4 w-4 text-indigo-500" />
+                            실무 활용 맥락
                           </h3>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {trend.title} 기반의 학습 로드맵을 AI가 즉시 생성해 드립니다.
+                          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            {trend.title} 기술은 현재 채용 시장에서 주로 <strong>설계, 최적화, 유지보수</strong> 문맥과 함께 등장합니다. 단순히 사용법을 아는 것을 넘어, 프로젝트에 도입한 이유와 문제 해결 과정을 이력서에 작성하면 매력도가 크게 상승합니다.
                           </p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-500">
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">#실무도입_필수</span>
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">#성능개선</span>
+                          </div>
                         </div>
-                        <a 
-                          href={`/manage-tree?generateSkill=${encodeURIComponent(trend.title)}`}
-                          className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 shadow-sm"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          로드맵 자동 생성 ⚡️
-                        </a>
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/50">
+                          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                            <BookOpen className="h-4 w-4 text-emerald-500" />
+                            증명 가능한 액션 가이드
+                          </h3>
+                          <ul className="list-inside list-disc space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                            <li>간단한 토이 프로젝트보다는 <strong>기존 코드 리팩토링</strong> 적용 추천</li>
+                            <li>이 기술을 사용하지 않았을 때와의 <strong>성능/코드량 비교</strong> 정리</li>
+                            <li>GitHub README에 아키텍처 고민 흔적 남기기</li>
+                          </ul>
+                          
+                          <div className="mt-3 text-right">
+                            <a 
+                              href={`/manage-tree?generateSkill=${encodeURIComponent(trend.title)}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              이 기술로 내 로드맵 만들기
+                            </a>
+                          </div>
+                        </div>
                       </div>
 
+                      {/* Job Postings */}
                       {trend.sample_postings && trend.sample_postings.length > 0 ? (
                         <>
                           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                             <Briefcase className="h-4 w-4" />
-                            실제 지원 가능한 공고 ({trend.sample_postings.length}건)
+                            최근 실제 지원 가능한 포지션 ({trend.sample_postings.length}건)
                           </h3>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {trend.sample_postings.map((posting, pIdx) => (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {trend.sample_postings.slice(0, 6).map((posting, pIdx) => (
                               <a
                                 key={pIdx}
                                 href={posting.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-sky-700"
+                                className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-sky-700"
                               >
                                 <div>
                                   <p className="text-xs font-bold text-sky-600 dark:text-sky-400">{posting.companyName}</p>
-                                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-sky-700 dark:text-slate-100 dark:group-hover:text-sky-300">
+                                  <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-900 group-hover:text-sky-700 dark:text-slate-100 dark:group-hover:text-sky-300">
                                     {posting.title}
                                   </p>
                                 </div>
-                                <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-500">
+                                <div className="mt-2 flex items-center justify-between text-[10px] font-medium text-slate-500">
                                   <span className="capitalize">{posting.site}</span>
                                   <ExternalLink className="h-3 w-3" />
                                 </div>
