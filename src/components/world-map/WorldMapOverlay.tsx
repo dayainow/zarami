@@ -6,6 +6,7 @@ type CategoryStats = Record<string, { total: number; completed: number }>;
 
 interface WorldMapOverlayProps {
   categoryStats: CategoryStats;
+  activeTree?: any;
 }
 
 // We use a viewBox of 1000 1000 but make the paths jagged for a retro RPG feel
@@ -14,49 +15,59 @@ const REGIONS = [
     category: "Frontend",
     name: "Grass Castle (초원)",
     color: "#38bdf8", // Sky blue
-    icon: "/images/characters/frontend.png", // Character
-    // Jagged path
+    icon: "/images/characters/hero.png", // Single Hero Character
     path: "M 250,850 L 250,500 L 350,500 L 350,300 L 250,300 L 250,150",
   },
   {
     category: "Backend",
     name: "Mountain Keep (바위 산맥)",
     color: "#f97316", // Orange
-    icon: "/images/characters/backend.png",
-    // Jagged path
+    icon: "/images/characters/hero.png",
     path: "M 500,850 L 500,550 L 550,550 L 550,400 L 500,400 L 500,150",
   },
   {
     category: "AI",
     name: "Forest Castle (유령 숲)",
     color: "#a855f7", // Purple
-    icon: "/images/characters/ai.png",
-    // Jagged path
+    icon: "/images/characters/hero.png",
     path: "M 750,850 L 750,650 L 650,650 L 650,450 L 800,450 L 800,200",
   }
 ];
 
-export function WorldMapOverlay({ categoryStats }: WorldMapOverlayProps) {
+export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayProps) {
   const activeRegions = useMemo(() => {
-    // If stats are empty, fallback to default regions with 5% progress
+    // If activeTree is provided, we show only one path for this tree
+    if (activeTree) {
+      const displayTotal = activeTree.nodes.filter((n: any) => !n.id.includes('-')).length;
+      const displayCompleted = activeTree.nodes.filter((n: any) => !n.id.includes('-') && n.data.is_completed).length;
+      let progress = displayTotal > 0 ? displayCompleted / displayTotal : 0.05;
+      progress = Math.max(0.05, Math.min(progress, 1.0));
+      
+      return [{
+        ...REGIONS[0], // just use the first path template for individual trees
+        category: "Custom",
+        progress,
+        label: activeTree.title,
+        color: "#10b981", // Emerald green for active tree
+      }];
+    }
+
+    // "All" overview mode: Fallback to existing logic using categoryStats
     let keys = Object.keys(categoryStats);
     if (keys.length === 0) {
       keys = ["Frontend", "Backend", "AI"];
     }
 
-    // Match top categories to regions
     return REGIONS.map((region, idx) => {
-      // Find a matching category string if possible, or just assign by index
       const matchedKey = keys.find(k => k.toLowerCase().includes(region.category.toLowerCase())) || keys[idx % keys.length];
       const stat = categoryStats[matchedKey] || { total: 0, completed: 0 };
       
-      // Calculate progress (min 0.05 so it's visible, max 1.0)
       let progress = stat.total > 0 ? stat.completed / stat.total : 0.05;
       progress = Math.max(0.05, Math.min(progress, 1.0));
       
       return { ...region, progress, stat, label: matchedKey };
     });
-  }, [categoryStats]);
+  }, [categoryStats, activeTree]);
 
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
