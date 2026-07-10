@@ -6,10 +6,22 @@ import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-const getSystemPrompt = (trendingSkillsText: string, targetCompany: string) => `
+const getSystemPrompt = (trendingSkillsText: string, targetCompany: string, careerLevel: string) => {
+  let levelInstruction = "";
+  if (careerLevel === "mid") {
+    levelInstruction = "The user is a Mid-level developer. Generate Deep-Dive quests focused on complex problem solving, performance tuning, and intermediate architecture rather than basic tutorials.";
+  } else if (careerLevel === "senior") {
+    levelInstruction = "The user is a Senior developer. Generate highly advanced Deep-Dive quests focused on large-scale system architecture, high-availability, scalability, deep troubleshooting, and technical leadership.";
+  } else {
+    levelInstruction = "The user is a Junior developer. Focus on mastering the basics, practical usage, and standard best practices.";
+  }
+
+  return `
 You are an expert career counselor and tech lead. The user will give you a career goal or skill they want to learn.
 Your task is to generate a learning roadmap as a Directed Acyclic Graph (nodes and edges).
 Create exactly 5 to 7 key nodes representing the learning progression.
+
+${levelInstruction}
 
 Here are the currently HIGH-DEMAND skills in the job market based on recent hiring trends:
 ${trendingSkillsText || "(No specific trend data available right now)"}
@@ -51,6 +63,7 @@ Level 1 should be the starting point (prerequisite).
 Every node's data MUST include a non-empty questMarkdown and checklist as described above - never leave them out.
 Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw JSON object.
 `;
+}
 
 export async function POST(req: Request) {
   try {
@@ -61,7 +74,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { prompt, targetCompany } = await req.json();
+    const { prompt, targetCompany, careerLevel } = await req.json();
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -90,7 +103,11 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
-      systemInstruction: getSystemPrompt(trendingSkillsText, typeof targetCompany === "string" ? targetCompany.trim() : "")
+      systemInstruction: getSystemPrompt(
+        trendingSkillsText,
+        typeof targetCompany === "string" ? targetCompany.trim() : "",
+        typeof careerLevel === "string" ? careerLevel : "junior"
+      )
     });
 
     const result = await model.generateContent(`Career Goal: ${prompt}`);

@@ -95,6 +95,8 @@ export function ManageTreeClient() {
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [promptInput, setPromptInput] = useState("");
   const [promptTargetCompanyInput, setPromptTargetCompanyInput] = useState("");
+  const [promptCareerLevel, setPromptCareerLevel] = useState("junior");
+  const [onboardingCareerLevel, setOnboardingCareerLevel] = useState("junior");
   // Tracked as its own piece of state (not derived from treeList.find(...))
   // because a freshly AI-generated tree has no id/treeList entry yet until
   // the first save - deriving it would always fall back to a generic name
@@ -123,14 +125,16 @@ export function ManageTreeClient() {
   // works the same way for the optional target-company field - each caller
   // owns its own draft input since the modal creates a separate new tree
   // from whatever's currently loaded.
-  const handleAIGenerate = useCallback(async (promptOverride?: string, targetCompanyOverride?: string) => {
+  const handleAIGenerate = useCallback(async (promptOverride?: string, targetCompanyOverride?: string, careerLevelOverride?: string) => {
     const promptText = promptOverride ?? promptInput;
     if (!promptText || promptText.trim() === "") return;
     const targetCompanyText = (targetCompanyOverride ?? "").trim();
+    const careerLevelText = careerLevelOverride ?? promptCareerLevel;
 
     setIsPromptOpen(false);
     setPromptInput("");
     setPromptTargetCompanyInput("");
+    setPromptCareerLevel("junior");
     setCurrentTreeId(null); // Create a new tree
     setNodes([]); // Clear canvas
     setEdges([]);
@@ -140,7 +144,7 @@ export function ManageTreeClient() {
       const response = await fetch("/api/generate-tree", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: promptText, targetCompany: targetCompanyText }),
+        body: JSON.stringify({ prompt: promptText, targetCompany: targetCompanyText, careerLevel: careerLevelText }),
       });
 
       if (!response.ok) {
@@ -163,7 +167,7 @@ export function ManageTreeClient() {
     } finally {
       setIsGeneratingAI(false);
     }
-  }, [promptInput, setNodes, setEdges]);
+  }, [promptInput, promptCareerLevel, setNodes, setEdges]);
 
   // Hydrate from the user's saved tree whenever currentTreeId changes.
   // The "auto-select the first tree" fallback below must only ever fire
@@ -457,7 +461,7 @@ export function ManageTreeClient() {
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void handleAIGenerate(onboardingGoal, targetCompany);
+              void handleAIGenerate(onboardingGoal, targetCompany, onboardingCareerLevel);
             }}
             className="mt-6 flex flex-col gap-3"
           >
@@ -477,6 +481,16 @@ export function ManageTreeClient() {
               disabled={isGeneratingAI}
               className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all duration-300 hover:border-sky-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
             />
+            <select
+              value={onboardingCareerLevel}
+              onChange={(event) => setOnboardingCareerLevel(event.target.value)}
+              disabled={isGeneratingAI}
+              className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition-all duration-300 hover:border-sky-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+            >
+              <option value="junior">🌱 주니어 (기본기 중심)</option>
+              <option value="mid">🚀 미들 (심화 및 문제 해결)</option>
+              <option value="senior">🎯 시니어 (아키텍처 및 성능 최적화)</option>
+            </select>
             <button
               type="submit"
               disabled={isGeneratingAI || onboardingGoal.trim() === ""}
@@ -804,7 +818,7 @@ export function ManageTreeClient() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                void handleAIGenerate(promptInput, promptTargetCompanyInput);
+                void handleAIGenerate(promptInput, promptTargetCompanyInput, promptCareerLevel);
               }}
               className="mt-4 flex flex-col gap-3"
             >
@@ -823,6 +837,15 @@ export function ManageTreeClient() {
                 placeholder="목표 기업 또는 직무 (선택, 예: 네이버, 카카오, 토스)"
                 className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
               />
+              <select
+                value={promptCareerLevel}
+                onChange={(e) => setPromptCareerLevel(e.target.value)}
+                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+              >
+                <option value="junior">🌱 주니어 (기본기 중심)</option>
+                <option value="mid">🚀 미들 (심화 및 문제 해결)</option>
+                <option value="senior">🎯 시니어 (아키텍처 및 성능 최적화)</option>
+              </select>
 
               <div className="mt-3 flex justify-end gap-3">
                 <button
