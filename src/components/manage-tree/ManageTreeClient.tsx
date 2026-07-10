@@ -19,6 +19,7 @@ import {
   useUserTree,
   useUserTrees,
 } from "@/hooks/useUserTree";
+import { useProfileStats } from "@/hooks/useProfileStats";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
@@ -97,6 +98,13 @@ export function ManageTreeClient() {
   const [promptTargetCompanyInput, setPromptTargetCompanyInput] = useState("");
   const [promptCareerLevel, setPromptCareerLevel] = useState("junior");
   const [onboardingCareerLevel, setOnboardingCareerLevel] = useState("junior");
+  
+  // Tab state for the AI modal
+  const [aiModalTab, setAiModalTab] = useState<"general" | "gap">("general");
+  const [jdInput, setJdInput] = useState("");
+
+  const { data: stats } = useProfileStats(userId);
+
   // Tracked as its own piece of state (not derived from treeList.find(...))
   // because a freshly AI-generated tree has no id/treeList entry yet until
   // the first save - deriving it would always fall back to a generic name
@@ -168,6 +176,46 @@ export function ManageTreeClient() {
       setIsGeneratingAI(false);
     }
   }, [promptInput, promptCareerLevel, setNodes, setEdges]);
+
+  const handleGapGenerate = useCallback(async () => {
+    if (!jdInput || jdInput.trim() === "") return;
+
+    setIsPromptOpen(false);
+    setJdInput("");
+    setAiModalTab("general");
+    setCurrentTreeId(null); // Create a new tree
+    setNodes([]); // Clear canvas
+    setEdges([]);
+
+    setIsGeneratingAI(true);
+    try {
+      const response = await fetch("/api/generate-gap-tree", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jdText: jdInput, completedSkills: stats?.completedSkills || [] }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate");
+      }
+
+      const data = await response.json();
+      const layouted = getLayoutedElements(data.nodes, data.edges, "BT");
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+      setCurrentTreeTitle(data.title || `JD 갭 보완 로드맵`);
+      setTargetCompany("JD 갭 분석 로드맵");
+      window.setTimeout(() => {
+        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
+      }, 50);
+      setSelectedNodeId(data.nodes[0]?.id ?? null);
+    } catch (error: unknown) {
+      alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [jdInput, stats, setNodes, setEdges]);
 
   // Hydrate from the user's saved tree whenever currentTreeId changes.
   // The "auto-select the first tree" fallback below must only ever fire
@@ -805,66 +853,124 @@ export function ManageTreeClient() {
           <div
             className="w-full max-w-md scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40"
           >
-            <h3 className="text-lg font-bold leading-6 text-slate-950 dark:text-white">
-              새 AI 로드맵 만들기
-            </h3>
-            <div className="mt-2">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                지금 보고 있는 로드맵은 그대로 남고, 별도의 새 로드맵이 만들어집니다. 어떤 목표를
-                원하시는지 입력해주세요.
-              </p>
+            <div className="mb-4 flex gap-4 border-b border-slate-200 dark:border-slate-700">
+              <button
+                className={\`pb-2 text-sm font-bold \${aiModalTab === "general" ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}\`}
+                onClick={() => setAiModalTab("general")}
+              >
+                일반 로드맵
+              </button>
+              <button
+                className={\`pb-2 text-sm font-bold \${aiModalTab === "gap" ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}\`}
+                onClick={() => setAiModalTab("gap")}
+              >
+                JD 갭 분석
+              </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void handleAIGenerate(promptInput, promptTargetCompanyInput, promptCareerLevel);
-              }}
-              className="mt-4 flex flex-col gap-3"
-            >
-              <input
-                type="text"
-                autoFocus
-                value={promptInput}
-                onChange={(e) => setPromptInput(e.target.value)}
-                placeholder="예: 풀스택 개발자, 프론트엔드 리드..."
-                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
-              />
-              <input
-                type="text"
-                value={promptTargetCompanyInput}
-                onChange={(e) => setPromptTargetCompanyInput(e.target.value)}
-                placeholder="목표 기업 또는 직무 (선택, 예: 네이버, 카카오, 토스)"
-                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
-              />
-              <select
-                value={promptCareerLevel}
-                onChange={(e) => setPromptCareerLevel(e.target.value)}
-                className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
-              >
-                <option value="junior">🌱 주니어 (기본기 중심)</option>
-                <option value="mid">🚀 미들 (심화 및 문제 해결)</option>
-                <option value="senior">🎯 시니어 (아키텍처 및 성능 최적화)</option>
-              </select>
+            {aiModalTab === "general" ? (
+              <>
+                <div className="mt-2">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    지금 보고 있는 로드맵은 그대로 남고, 별도의 새 로드맵이 만들어집니다. 어떤 목표를
+                    원하시는지 입력해주세요.
+                  </p>
+                </div>
 
-              <div className="mt-3 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsPromptOpen(false)}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleAIGenerate(promptInput, promptTargetCompanyInput, promptCareerLevel);
+                  }}
+                  className="mt-4 flex flex-col gap-3"
                 >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={!promptInput.trim() || isGeneratingAI}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                  <input
+                    type="text"
+                    autoFocus
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    placeholder="예: 풀스택 개발자, 프론트엔드 리드..."
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={promptTargetCompanyInput}
+                    onChange={(e) => setPromptTargetCompanyInput(e.target.value)}
+                    placeholder="목표 기업 또는 직무 (선택, 예: 네이버, 카카오, 토스)"
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                  />
+                  <select
+                    value={promptCareerLevel}
+                    onChange={(e) => setPromptCareerLevel(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                  >
+                    <option value="junior">🌱 주니어 (기본기 중심)</option>
+                    <option value="mid">🚀 미들 (심화 및 문제 해결)</option>
+                    <option value="senior">🎯 시니어 (아키텍처 및 성능 최적화)</option>
+                  </select>
+
+                  <div className="mt-3 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsPromptOpen(false)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!promptInput.trim() || isGeneratingAI}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    >
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      생성하기
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="mt-2">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    가고 싶은 회사의 채용 공고(JD) 텍스트를 붙여넣어주세요. 
+                    현재 달성한 내 스킬 내역과 비교하여 <b>부족한 기술만</b>으로 갭 보완 로드맵을 설계해 줍니다.
+                  </p>
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleGapGenerate();
+                  }}
+                  className="mt-4 flex flex-col gap-3"
                 >
-                  <Sparkles className="h-4 w-4" aria-hidden />
-                  생성하기
-                </button>
-              </div>
-            </form>
+                  <textarea
+                    autoFocus
+                    rows={6}
+                    value={jdInput}
+                    onChange={(e) => setJdInput(e.target.value)}
+                    placeholder="채용 공고 본문 (자격요건, 우대사항 등) 붙여넣기..."
+                    className="w-full resize-none rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                  />
+                  <div className="mt-3 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsPromptOpen(false)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!jdInput.trim() || isGeneratingAI}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    >
+                      <Target className="h-4 w-4" aria-hidden />
+                      갭 분석 생성
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
