@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
 
 const getRecommendationPrompt = () => `
 You are an expert tech lead and career mentor.
@@ -27,6 +27,8 @@ Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw
 
 export async function POST(req: Request) {
   try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
     }

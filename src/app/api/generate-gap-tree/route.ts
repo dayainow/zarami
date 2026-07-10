@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
 
 const getGapSystemPrompt = (completedSkills: string[]) => `
 You are an expert career counselor and tech lead. The user wants to apply to a specific company/role and will provide the Job Description (JD).
@@ -49,6 +49,8 @@ Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw
 
 export async function POST(req: Request) {
   try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: "GEMINI_API_KEY is not configured." },

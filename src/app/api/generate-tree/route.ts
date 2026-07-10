@@ -4,8 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
 const getSystemPrompt = (trendingSkillsText: string, targetCompany: string, careerLevel: string) => {
   let levelInstruction = "";
   if (careerLevel === "mid") {
@@ -67,6 +65,8 @@ Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw
 
 export async function POST(req: Request) {
   try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: "GEMINI_API_KEY is not configured." },
