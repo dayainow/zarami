@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ExternalLink, Briefcase } from "lucide-react";
+import { ExternalLink, Briefcase, FileText } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
@@ -94,16 +94,29 @@ export function ProfileClient() {
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
       <div className="mx-auto max-w-3xl space-y-8">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            Zarami Dashboard
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">성장 기록 요약</h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            {userId
-              ? (sessionUser?.email ?? "로그인된 계정")
-              : "게스트로 둘러보는 중입니다. 로그인하면 진행도가 저장돼요."}
-          </p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+              Zarami Dashboard
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">성장 기록 요약</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              {userId
+                ? (sessionUser?.email ?? "로그인된 계정")
+                : "게스트로 둘러보는 중입니다. 로그인하면 진행도가 저장돼요."}
+            </p>
+          </div>
+          {userId && (
+            <a
+              href="/resume"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            >
+              <FileText className="h-4 w-4" />
+              이력서 자동 생성
+            </a>
+          )}
         </header>
 
 
