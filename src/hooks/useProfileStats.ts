@@ -14,6 +14,12 @@ export type ProfileStats = {
   heatmap: HeatmapDay[];
   totalCount: number;
   completedCount: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalEstimatedMinutes: number;
+  categoryStats: Record<string, { total: number; completed: number }>;
+  recentAchievements: { id: string; title: string; category?: string; completedAt: string }[];
+  completedSkills: string[];
 };
 
 const HEATMAP_DAYS = 91; // 13-week trailing window, GitHub-contribution style
@@ -50,13 +56,82 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
   const completedNodes = allNodes.filter((node) => node.data.is_completed === true);
 
   const countByDate = new Map<string, number>();
+  let totalEstimatedMinutes = 0;
+  const categoryStats: Record<string, { total: number; completed: number }> = {};
+  
+  for (const node of allNodes) {
+    const cat = node.data.category || "General";
+    if (!categoryStats[cat]) categoryStats[cat] = { total: 0, completed: 0 };
+    categoryStats[cat].total++;
+  }
+
+  const validCompletedNodes = [];
+
   for (const node of completedNodes) {
+    const cat = node.data.category || "General";
+    categoryStats[cat].completed++;
+    totalEstimatedMinutes += node.data.estimatedMinutes || 0;
+
     const completedAt = node.data.completedAt;
     if (!completedAt) {
       continue;
     }
+    validCompletedNodes.push(node);
     const date = completedAt.slice(0, 10);
     countByDate.set(date, (countByDate.get(date) ?? 0) + 1);
+  }
+
+  validCompletedNodes.sort((a, b) => new Date(b.data.completedAt!).getTime() - new Date(a.data.completedAt!).getTime());
+  
+  const recentAchievements = validCompletedNodes.slice(0, 5).map(n => ({
+    id: n.id,
+    title: n.data.title,
+    category: n.data.category || "General",
+    completedAt: n.data.completedAt!
+  }));
+  
+  const completedSkills = validCompletedNodes.map(n => n.data.title);
+
+  // Streaks calculation
+  let currentStreak = 0;
+  let maxStreak = 0;
+  const todayDate = new Date();
+  todayDate.setHours(0,0,0,0);
+  const uniqueDates = Array.from(countByDate.keys()).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  
+  if (uniqueDates.length > 0) {
+    const firstDate = new Date(uniqueDates[0]);
+    firstDate.setHours(0,0,0,0);
+    const diffDays = Math.floor((todayDate.getTime() - firstDate.getTime()) / (1000 * 3600 * 24));
+    
+    if (diffDays <= 1) {
+      currentStreak = 1;
+      let checkDate = new Date(firstDate);
+      for (let i = 1; i < uniqueDates.length; i++) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (uniqueDates[i] === checkDate.toISOString().slice(0, 10)) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    let currMax = 1;
+    let tempStreak = 1;
+    let prevDate = new Date(uniqueDates[0]);
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const d = new Date(uniqueDates[i]);
+      const diff = Math.floor((prevDate.getTime() - d.getTime()) / (1000 * 3600 * 24));
+      if (diff === 1) {
+        tempStreak++;
+      } else {
+        tempStreak = 1;
+      }
+      if (tempStreak > currMax) currMax = tempStreak;
+      prevDate = d;
+    }
+    maxStreak = currMax;
   }
 
   const heatmap = buildEmptyHeatmap().map((day) => ({
@@ -64,7 +139,17 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
     count: countByDate.get(day.date) ?? 0,
   }));
 
-  return { heatmap, totalCount: allNodes.length, completedCount: completedNodes.length };
+  return { 
+    heatmap, 
+    totalCount: allNodes.length, 
+    completedCount: completedNodes.length,
+    currentStreak,
+    maxStreak,
+    totalEstimatedMinutes,
+    categoryStats,
+    recentAchievements,
+    completedSkills
+  };
 }
 
 export function useProfileStats(userId: string | null) {

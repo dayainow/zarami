@@ -1,28 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import Image from "next/image";
+import { ExternalLink, Briefcase } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
+import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
+import type { SkillTrend } from "@/hooks/useSkillTrends";
 import { createClient } from "@/utils/supabase/client";
-
-type VillageStage = {
-  imageUrl: string;
-  label: string;
-};
-
-function getVillageStage(progressPercent: number): VillageStage {
-  if (progressPercent <= 25) {
-    return { imageUrl: "/images/village/lv1.png", label: "정착의 시작 (작은 야영지)" };
-  }
-  if (progressPercent <= 50) {
-    return { imageUrl: "/images/village/lv2.png", label: "마을의 태동 (목조 주택단지)" };
-  }
-  if (progressPercent <= 75) {
-    return { imageUrl: "/images/village/lv3.png", label: "활기찬 소도시 (우물과 상점)" };
-  }
-  return { imageUrl: "/images/village/lv4.png", label: "웅장한 대도시 (거대한 성과 광장)" };
-}
 
 function heatmapCellClassName(count: number): string {
   if (count === 0) return "bg-slate-200/80 dark:bg-white/5";
@@ -31,6 +15,8 @@ function heatmapCellClassName(count: number): string {
   if (count === 3) return "bg-emerald-500 dark:bg-emerald-500";
   return "bg-emerald-600 dark:bg-emerald-400";
 }
+
+// We no longer use getRecommendations since we fetch real postings.
 
 type SessionUser = {
   id: string;
@@ -44,6 +30,22 @@ export function ProfileClient() {
   const [emailSent, setEmailSent] = useState(false);
   const userId = sessionUser?.id ?? null;
   const { data: stats, isLoading: isHeatmapLoading, isError: isHeatmapError } = useProfileStats(userId);
+  const { data: trends } = useSkillTrends();
+
+  const realJobPostings = useMemo(() => {
+    if (!trends || !stats?.completedSkills || stats.completedSkills.length === 0) return [];
+    
+    // Find matching trends for each completed skill
+    const matched = stats.completedSkills
+      .map(title => findSkillTrend(title, trends))
+      .filter(Boolean) as SkillTrend[];
+    
+    // Flatten and deduplicate postings by URL
+    const allPostings = matched.flatMap(t => t.sample_postings || []);
+    const uniquePostings = Array.from(new Map(allPostings.map(p => [p.url, p])).values());
+    
+    return uniquePostings.slice(0, 5); // Show top 5
+  }, [trends, stats?.completedSkills]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,7 +68,6 @@ export function ProfileClient() {
   const totalCount = stats?.totalCount ?? 0;
   const completedCount = stats?.completedCount ?? 0;
   const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
-  const villageStage = useMemo(() => getVillageStage(progressPercent), [progressPercent]);
   // Guests never fetch stats (query is disabled) and a signed-in user's first
   // render is always mid-fetch, so fall back to the placeholder grid whenever
   // real data isn't available yet - never render a visually empty section.
@@ -95,9 +96,9 @@ export function ProfileClient() {
       <div className="mx-auto max-w-3xl space-y-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            Zarami Profile
+            Zarami Dashboard
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">내 프로필</h1>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">성장 기록 요약</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             {userId
               ? (sessionUser?.email ?? "로그인된 계정")
@@ -105,57 +106,130 @@ export function ProfileClient() {
           </p>
         </header>
 
-        <section className="rounded-xl border border-white/70 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-          <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-xl border-4 border-slate-200/50 shadow-inner dark:border-white/10">
-              <Image src={villageStage.imageUrl} alt={villageStage.label} fill className="object-cover" />
+
+
+        <div className="relative">
+          <div className={["grid grid-cols-1 gap-4 md:grid-cols-3", !userId ? "pointer-events-none select-none blur-sm" : ""].join(" ")} aria-hidden={!userId}>
+            
+            <div className="flex flex-col gap-4 md:col-span-1">
+              <div className="flex gap-4">
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-4 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                  <p className="flex items-center gap-1 text-3xl font-black text-orange-500">
+                    🔥 {stats?.currentStreak ?? 0}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">일 연속 학습</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">최고 기록: {stats?.maxStreak ?? 0}일</p>
+                </div>
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-4 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                  <p className="flex items-center gap-1 text-3xl font-black text-blue-500">
+                    ⏱️ {Math.round((stats?.totalEstimatedMinutes ?? 0) / 60)}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">시간 누적 학습</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">({stats?.completedCount ?? 0}개 스킬 달성)</p>
+                </div>
+              </div>
+
+              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">기술 스택 분포</h2>
+                <div className="space-y-3">
+                  {Object.entries(stats?.categoryStats ?? {}).map(([cat, counts]) => (
+                    <div key={cat}>
+                      <div className="mb-1 flex justify-between text-xs">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{cat}</span>
+                        <span className="text-slate-500">{counts.completed}/{counts.total}</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div 
+                          className="h-full rounded-full bg-sky-500 transition-all" 
+                          style={{ width: `${Math.round((counts.completed / counts.total) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(stats?.categoryStats ?? {}).length === 0 && (
+                    <p className="text-xs italic text-slate-400">완료된 스킬이 없습니다.</p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-center sm:text-left">
-              <p className="text-lg font-bold text-slate-950 dark:text-white">{villageStage.label}</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                {completedCount}/{totalCount} 스킬 완료 · {progressPercent}%
-              </p>
+
+            <div className="flex flex-col gap-4 md:col-span-2">
+              
+              <div className="relative rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                <h2 className="text-sm font-bold text-slate-950 dark:text-white">학습 잔디</h2>
+                <p className="mt-0.5 text-[11px] text-slate-500">최근 13주간 완료한 날짜별 기록입니다.</p>
+                
+                <div className="mt-3 grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto pb-1">
+                  {heatmapDays.map((day) => (
+                    <div
+                      key={day.date}
+                      title={`${day.date} · ${day.count}건 완료`}
+                      className={`h-3 w-3 shrink-0 rounded-sm ${heatmapCellClassName(day.count)}`}
+                    />
+                  ))}
+                </div>
+                {userId && isHeatmapLoading && <p className="mt-2 text-xs text-slate-500">불러오는 중...</p>}
+                {userId && isHeatmapError && <p className="mt-2 text-xs text-red-500">데이터를 불러오지 못했습니다.</p>}
+              </div>
+
+              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">최근 달성 스킬</h2>
+                <div className="space-y-3">
+                  {stats?.recentAchievements?.map((achievement, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{achievement.title}</p>
+                        <p className="text-[10px] text-slate-500">{achievement.category} · {achievement.completedAt.slice(0,10)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(!stats?.recentAchievements || stats.recentAchievements.length === 0) && (
+                    <p className="text-xs italic text-slate-400">최근 달성한 스킬이 없습니다.</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">지금 지원 가능한 포지션</h2>
+                <div className="space-y-4">
+                  {realJobPostings.length > 0 ? (
+                    realJobPostings.map((posting, idx) => (
+                      <a
+                        key={idx}
+                        href={posting.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-slate-900/50 dark:hover:border-sky-700"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-sky-600 dark:text-sky-400">{posting.companyName}</p>
+                          <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-sky-700 dark:text-slate-100 dark:group-hover:text-sky-300">
+                            {posting.title}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-xs font-medium text-slate-500">
+                          <span className="capitalize">{posting.site}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 text-center text-slate-500">
+                      <Briefcase className="mb-2 h-8 w-8 opacity-50" />
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">관련 공고가 없습니다.</p>
+                      <p className="mt-1 text-xs text-slate-500">더 많은 스킬을 달성하여 매칭된 채용 공고를 확인해 보세요!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
             </div>
           </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
-            <div
-              className="h-full rounded-full bg-emerald-500 shadow-[0_0_16px_rgba(16,185,129,0.35)] transition-all dark:bg-emerald-400"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-xl border border-white/70 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-          <h2 className="text-sm font-semibold text-slate-950 dark:text-white">잔디 심기</h2>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">최근 13주간 스킬을 완료한 날짜별 기록입니다.</p>
-
-          <div
-            className={[
-              "mt-4 grid grid-flow-col grid-rows-7 gap-1",
-              !userId ? "pointer-events-none select-none blur-sm" : "",
-            ].join(" ")}
-            aria-hidden={!userId}
-          >
-            {heatmapDays.map((day) => (
-              <div
-                key={day.date}
-                title={`${day.date} · ${day.count}건 완료`}
-                className={`h-3 w-3 rounded-sm ${heatmapCellClassName(day.count)}`}
-              />
-            ))}
-          </div>
-
-          {userId && isHeatmapLoading ? (
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-500">불러오는 중...</p>
-          ) : null}
-
-          {userId && isHeatmapError ? (
-            <p className="mt-3 text-xs text-red-600 dark:text-red-300">잔디 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
-          ) : null}
 
           {!userId ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/65 p-6 backdrop-blur-2xl dark:bg-slate-950/65">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">로그인하면 잔디 기록을 볼 수 있어요</p>
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/65 p-6 backdrop-blur-md dark:bg-slate-950/65">
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">로그인하면 전체 대시보드를 볼 수 있어요</p>
               {emailSent ? (
                 <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">이메일로 로그인 링크를 보냈습니다!</p>
               ) : (
@@ -179,7 +253,7 @@ export function ProfileClient() {
               )}
             </div>
           ) : null}
-        </section>
+        </div>
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-import { LayoutDashboard, TreePine, UserRound, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Map, TreePine, UserRound, TrendingUp, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -23,5 +23,15 @@ export const navItems: NavItem[] = [
     href: "/profile",
     label: "성장 기록",
     icon: UserRound,
+  },
+  {
+    href: "/world-map",
+    label: "스킬 모험 지도",
+    icon: Map,
+  },
+  {
+    href: "/trends",
+    label: "채용 트렌드",
+    icon: TrendingUp,
   },
 ];

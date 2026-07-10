@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { ExternalLink, TrendingUp, X } from "lucide-react";
+import { ExternalLink, TrendingUp, X, Award, ShieldCheck } from "lucide-react";
 
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
@@ -159,14 +159,22 @@ export function Drawer({
         ].join(" ")}
       >
         <div className="flex h-full flex-col">
-          <header className="border-b border-slate-200/70 px-6 py-5 dark:border-white/10">
+          <header className={`border-b border-slate-200/70 px-6 py-5 dark:border-white/10 ${isCompleted ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">
-                  {data?.category ?? "Skill"}
-                </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                {isCompleted ? (
+                  <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    <Award className="h-4 w-4" />
+                    마스터 뱃지 획득
+                  </div>
+                ) : (
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">
+                    {data?.category ?? "Skill"}
+                  </p>
+                )}
+                <h2 className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                   {data?.title ?? "스킬 상세"}
+                  {isCompleted && <ShieldCheck className="h-6 w-6 text-emerald-500" />}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{data?.description}</p>
               </div>
@@ -183,18 +191,36 @@ export function Drawer({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             <section className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="text-xs text-slate-500 dark:text-slate-400">예상 시간</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">
-                  {formatEstimatedTime(data?.estimatedMinutes ?? 30)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="text-xs text-slate-500 dark:text-slate-400">상태</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">
-                  {isCompleted ? "완료" : data?.isNextAction ? "다음 행동" : "진행 가능"}
-                </p>
-              </div>
+              {isCompleted ? (
+                <div className="col-span-2 flex items-center justify-center gap-3 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 shadow-sm dark:border-emerald-800/50 dark:from-emerald-950/40 dark:to-teal-950/40">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
+                    <Award className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">이 스킬을 완벽하게 내 것으로 만들었습니다!</p>
+                    {data?.completedAt && (
+                       <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
+                         달성일: {new Date(data.completedAt).toLocaleDateString()}
+                       </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">예상 시간</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">
+                      {formatEstimatedTime(data?.estimatedMinutes ?? 30)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">상태</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">
+                      {data?.isNextAction ? "다음 행동" : "진행 가능"}
+                    </p>
+                  </div>
+                </>
+              )}
             </section>
 
             {data?.questMarkdown ? (
@@ -299,13 +325,17 @@ export function Drawer({
               onClick={handleComplete}
               disabled={isCompleted || isCompleting || !selectedSkillId}
               className={[
-                "h-12 w-full rounded-lg px-4 text-sm font-bold transition",
+                "flex h-12 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition",
                 isCompleted
-                  ? "cursor-not-allowed bg-emerald-500/15 text-emerald-700 dark:text-emerald-200"
+                  ? "cursor-default bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 dark:bg-emerald-500 dark:text-slate-950"
                   : "bg-sky-500 text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400 disabled:cursor-wait disabled:opacity-70 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300",
               ].join(" ")}
             >
-              {isCompleted ? "물주기 완료" : isCompleting ? "저장 중" : "물주기"}
+              {isCompleted ? (
+                <>
+                  <ShieldCheck className="h-4 w-4" /> 내 스킬셋에 장착되었습니다
+                </>
+              ) : isCompleting ? "저장 중..." : "내 스킬로 만들기"}
             </button>
             {isOffline ? (
               <p className="mt-2 text-center text-xs text-amber-600 dark:text-amber-300">
