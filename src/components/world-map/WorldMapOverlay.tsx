@@ -15,21 +15,21 @@ const REGIONS = [
     category: "Frontend",
     name: "Grass Castle (초원)",
     color: "#38bdf8", // Sky blue
-    icon: "/images/characters/hero.png", // Single Hero Character
+    icon: "/images/characters/hero_back.png", // Single Hero Character (Back View)
     path: "M 250,850 L 250,500 L 350,500 L 350,300 L 250,300 L 250,150",
   },
   {
     category: "Backend",
     name: "Mountain Keep (바위 산맥)",
     color: "#f97316", // Orange
-    icon: "/images/characters/hero.png",
+    icon: "/images/characters/hero_back.png",
     path: "M 500,850 L 500,550 L 550,550 L 550,400 L 500,400 L 500,150",
   },
   {
     category: "AI",
     name: "Forest Castle (유령 숲)",
     color: "#a855f7", // Purple
-    icon: "/images/characters/hero.png",
+    icon: "/images/characters/hero_back.png",
     path: "M 750,850 L 750,650 L 650,650 L 650,450 L 800,450 L 800,200",
   }
 ];
