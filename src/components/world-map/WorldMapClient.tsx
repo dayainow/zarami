@@ -69,12 +69,13 @@ export function WorldMapClient() {
 
         {/* Map Container */}
         <div className="relative w-full flex-1 overflow-auto bg-[#73C856]">
-          <div className="relative h-[800px] min-h-full min-w-[1200px] md:w-full">
+          {/* Map Container */}
+          <div className="relative h-full w-full">
             <Image 
               src="/images/world_map.png" 
-              alt="World Map" 
+              alt="World Map Base" 
               fill 
-              className="object-cover object-center" 
+              className="object-contain object-center" 
               style={{ imageRendering: "pixelated" }} 
               priority
             />
