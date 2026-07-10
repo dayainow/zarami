@@ -14,6 +14,7 @@ export const THEMES = {
     id: 'forest',
     name: '기본 숲',
     filter: 'none',
+    mapImage: '/images/world_map.png',
     icon: '/images/characters/hero_back.png',
     pathColor: '#10b981', // Emerald
     bgColor: '#73C856', // Map wrapper bg
@@ -22,7 +23,8 @@ export const THEMES = {
   desert: {
     id: 'desert',
     name: '사막',
-    filter: 'sepia(0.6) hue-rotate(-20deg) saturate(1.5)',
+    filter: 'none',
+    mapImage: '/images/world_map_desert.png',
     icon: '/images/characters/hero_desert.png',
     pathColor: '#f59e0b',
     bgColor: '#e6c875',
@@ -31,7 +33,8 @@ export const THEMES = {
   winter: {
     id: 'winter',
     name: '설원',
-    filter: 'grayscale(0.2) hue-rotate(160deg) brightness(1.2) saturate(0.8)',
+    filter: 'none',
+    mapImage: '/images/world_map_winter.png',
     icon: '/images/characters/hero_snow.png',
     pathColor: '#38bdf8',
     bgColor: '#a6d6d6',
@@ -40,7 +43,8 @@ export const THEMES = {
   volcano: {
     id: 'volcano',
     name: '화산',
-    filter: 'hue-rotate(300deg) saturate(2) brightness(0.9)',
+    filter: 'none',
+    mapImage: '/images/world_map_volcano.png',
     icon: '/images/characters/hero_volcano.png',
     pathColor: '#ef4444',
     bgColor: '#a84545',
@@ -50,6 +54,7 @@ export const THEMES = {
     id: 'cyberpunk',
     name: '사이버펑크',
     filter: 'invert(1) hue-rotate(180deg) saturate(1.5)',
+    mapImage: '/images/world_map_volcano.png', // Cyberpunk uses inverted volcano map
     icon: '/images/characters/hero_cyber.png',
     pathColor: '#a855f7',
     bgColor: '#231c3b',
@@ -138,7 +143,7 @@ export function WorldMapClient() {
           {/* Map Container */}
           <div className="relative h-full w-full">
             <Image 
-              src="/images/world_map.png" 
+              src={activeTreeTheme.mapImage} 
               alt="World Map Base" 
               fill 
               className="object-contain object-center transition-all duration-700" 
