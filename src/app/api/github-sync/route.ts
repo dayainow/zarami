@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
-const getGithubSyncPrompt = () => \`
+const getGithubSyncPrompt = () => `
 You are an expert tech lead evaluating a developer's GitHub commits.
 You will be provided with:
 1. A list of recent commit messages from their repository.
@@ -29,8 +29,8 @@ Output ONLY valid JSON matching this schema:
 }
 
 If no skills match, return {"certifiedNodes": []}.
-Do NOT wrap the JSON in Markdown formatting (no \\\`\\\`\\\`json). Just return the raw JSON object.
-\`;
+Do NOT wrap the JSON in Markdown formatting (no \`\`\`json). Just return the raw JSON object.
+`;
 
 export async function POST(req: Request) {
   try {
@@ -59,10 +59,10 @@ export async function POST(req: Request) {
     }
 
     // 2. Fetch commits from GitHub
-    const githubRes = await fetch(\`https://api.github.com/repos/\${owner}/\${repo}/commits?per_page=30\`, {
+    const githubRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=30`, {
       headers: {
         "User-Agent": "Zarami-App",
-        ...(process.env.GITHUB_TOKEN ? { Authorization: \`token \${process.env.GITHUB_TOKEN}\` } : {})
+        ...(process.env.GITHUB_TOKEN ? { Authorization: `token ${process.env.GITHUB_TOKEN}` } : {})
       }
     });
 
@@ -109,17 +109,17 @@ export async function POST(req: Request) {
       systemInstruction: getGithubSyncPrompt()
     });
 
-    const userPrompt = \`
+    const userPrompt = `
 Recent Commits:
-\${commitMessages.join("\\n")}
+${commitMessages.join("\n")}
 
 Incomplete Skills:
-\${JSON.stringify(incompleteNodes, null, 2)}
-\`;
+${JSON.stringify(incompleteNodes, null, 2)}
+`;
 
     const result = await model.generateContent(userPrompt);
     const text = result.response.text();
-    const cleanedText = text.replace(/```json\\n?|\\n?```/g, "").trim();
+    const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
     
     let parsed: { certifiedNodes: { treeId: string; nodeId: string; skillTitle: string; reason: string }[] };
     try {

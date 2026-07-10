@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ExternalLink, Briefcase, FileText, Github, Sparkles } from "lucide-react";
+import { ExternalLink, Briefcase, FileText, GitCommit, Sparkles } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
@@ -149,7 +149,7 @@ export function ProfileClient() {
                 onClick={() => setIsGithubModalOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-indigo-400"
               >
-                <Github className="h-4 w-4" />
+                <GitCommit className="h-4 w-4" />
                 GitHub 스킬 인증
               </button>
               <a
@@ -319,7 +319,7 @@ export function ProfileClient() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm transition-all dark:bg-black/60">
           <div className="w-full max-w-md scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40">
             <h3 className="flex items-center gap-2 text-lg font-bold leading-6 text-slate-950 dark:text-white">
-              <Github className="h-5 w-5" />
+              <GitCommit className="h-5 w-5" />
               GitHub 커밋으로 자동 인증
             </h3>
             

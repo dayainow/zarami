@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     });
 
     const finalEdges: SkillTreeEdge[] = parsed.edges.map((e) => ({
-      id: \`\${e.source}-\${e.target}\`,
+      id: `${e.source}-${e.target}`,
       source: e.source,
       target: e.target,
       type: "smoothstep",

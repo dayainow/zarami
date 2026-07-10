@@ -855,13 +855,13 @@ export function ManageTreeClient() {
           >
             <div className="mb-4 flex gap-4 border-b border-slate-200 dark:border-slate-700">
               <button
-                className={\`pb-2 text-sm font-bold \${aiModalTab === "general" ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}\`}
+                className={`pb-2 text-sm font-bold ${aiModalTab === "general" ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
                 onClick={() => setAiModalTab("general")}
               >
                 일반 로드맵
               </button>
               <button
-                className={\`pb-2 text-sm font-bold \${aiModalTab === "gap" ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}\`}
+                className={`pb-2 text-sm font-bold ${aiModalTab === "gap" ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
                 onClick={() => setAiModalTab("gap")}
               >
                 JD 갭 분석
