@@ -23,6 +23,7 @@ import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { useSkillStore } from "@/stores/useSkillStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
+import { formatEstimatedTime } from "@/utils/format";
 
 type TechTreeCanvasProps = {
   nodes?: SkillTreeNode[];
@@ -106,6 +107,11 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           <span className="absolute left-5 top-4 h-2 w-2 animate-bounce rounded-full bg-sky-300" />
           <span className="absolute right-8 top-7 h-2.5 w-2.5 animate-ping rounded-full bg-emerald-300" />
           <span className="absolute bottom-4 left-1/2 h-2 w-2 animate-bounce rounded-full bg-amber-300 [animation-delay:120ms]" />
+        </div>
+      ) : null}
+      {typeof data.estimatedMinutes === "number" ? (
+        <div className="absolute -right-3 -top-3 z-10 flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold tracking-wide text-slate-600 shadow-sm dark:border-white/10 dark:bg-slate-800 dark:text-slate-300">
+          ⏳ {formatEstimatedTime(data.estimatedMinutes)}
         </div>
       ) : null}
       <Handle

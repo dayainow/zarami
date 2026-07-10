@@ -201,10 +201,10 @@ async function main(): Promise<void> {
 
   console.log("실제 채용 공고(원티드, 점핏)를 스크래핑합니다...");
   // Scrape backend (872 for wanted, 1 for jumpit) and frontend (669 for wanted, 2 for jumpit)
-  const wantedBackend = await scrapeWantedJobs(872, 10);
-  const wantedFrontend = await scrapeWantedJobs(669, 10);
-  const jumpitBackend = await scrapeJumpitJobs(1, 10);
-  const jumpitFrontend = await scrapeJumpitJobs(2, 10);
+  const wantedBackend = await scrapeWantedJobs(872, 25);
+  const wantedFrontend = await scrapeWantedJobs(669, 25);
+  const jumpitBackend = await scrapeJumpitJobs(1, 25);
+  const jumpitFrontend = await scrapeJumpitJobs(2, 25);
 
   const postings: TaggedPosting[] = [
     ...wantedBackend.map((posting) => ({ ...posting, site: "wanted" as const })),

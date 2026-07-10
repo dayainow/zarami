@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Flame, TreePine } from "lucide-react";
+import { ChevronRight, Flame, TreePine, ChevronDown } from "lucide-react";
 
 import { Drawer } from "@/components/Drawer";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -188,19 +188,24 @@ export function DashboardClient() {
             <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
               기술트리 성장 캔버스
               {treeList && treeList.length > 0 && (
-                <select
-                  className="rounded-md border border-slate-200 bg-white/70 px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200"
-                  value={currentTreeId || ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) setCurrentTreeId(val);
-                  }}
-                >
-                  <option value="" disabled>로드맵 선택</option>
-                  {treeList.map(tree => (
-                    <option key={tree.id} value={tree.id}>{tree.title}</option>
-                  ))}
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
+                    value={currentTreeId || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) setCurrentTreeId(val);
+                    }}
+                  >
+                    <option value="" disabled>로드맵 선택</option>
+                    {treeList.map(tree => (
+                      <option key={tree.id} value={tree.id}>{tree.title}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-3 flex items-center text-slate-400 dark:text-slate-500">
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </div>
               )}
             </h1>
           </div>

@@ -29,7 +29,7 @@ Rules:
         "level": number (1 for the starting node, 2 for next step, etc. up to 3),
         "estimatedMinutes": number (realistic learning time in minutes),
         "isTrending": true,
-        "questMarkdown": "A short Korean practical quest in this exact format: '## 실무 퀘스트\\n\\n(1-2 sentence description of a concrete task to practice this skill)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
+        "questMarkdown": "A short Korean practical quest in this exact format: '## 실전 미니 퀘스트\\n\\n(단순히 공부하라는 내용이 아니라, 무엇을 직접 만들어보아야 이 기술을 증명할 수 있는지 구체적인 미니 프로젝트나 구현 과제를 1-2문장으로 제시)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
         "checklist": ["2 to 4 short Korean checklist items, each a concrete sub-step toward finishing this skill"]
       }
     }

@@ -20,6 +20,9 @@ export type ProfileStats = {
   categoryStats: Record<string, { total: number; completed: number }>;
   recentAchievements: { id: string; title: string; category?: string; completedAt: string }[];
   completedSkills: string[];
+  allSkillTitles: string[];
+  practicalScore: number;
+  githubCertifiedCount: number;
 };
 
 const HEATMAP_DAYS = 91; // 13-week trailing window, GitHub-contribution style
@@ -66,11 +69,22 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
   }
 
   const validCompletedNodes = [];
+  let practicalScore = 0;
+  let githubCertifiedCount = 0;
 
   for (const node of completedNodes) {
     const cat = node.data.category || "General";
     categoryStats[cat].completed++;
     totalEstimatedMinutes += node.data.estimatedMinutes || 0;
+
+    practicalScore += 10;
+    if (node.data.questMarkdown) {
+      practicalScore += 20;
+    }
+    
+    if (node.data.certified_by_github) {
+      githubCertifiedCount++;
+    }
 
     const completedAt = node.data.completedAt;
     if (!completedAt) {
@@ -91,6 +105,7 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
   }));
   
   const completedSkills = validCompletedNodes.map(n => n.data.title);
+  const allSkillTitles = allNodes.map(n => n.data.title);
 
   // Streaks calculation
   let currentStreak = 0;
@@ -148,7 +163,10 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
     totalEstimatedMinutes,
     categoryStats,
     recentAchievements,
-    completedSkills
+    completedSkills,
+    allSkillTitles,
+    practicalScore,
+    githubCertifiedCount,
   };
 }
 

@@ -145,7 +145,8 @@ ${JSON.stringify(incompleteNodes, null, 2)}
                   ...node.data,
                   is_completed: true,
                   status: "completed",
-                  completedAt: new Date().toISOString()
+                  completedAt: new Date().toISOString(),
+                  certified_by_github: true
                 }
               };
             }

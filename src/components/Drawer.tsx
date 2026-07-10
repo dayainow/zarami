@@ -1,7 +1,8 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { ExternalLink, TrendingUp, X, Award, ShieldCheck } from "lucide-react";
+import { Award, ExternalLink, ShieldCheck, TrendingUp, X } from "lucide-react";
+import { formatEstimatedTime } from "@/utils/format";
 
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
@@ -45,24 +46,7 @@ function renderInlineMarkdown(text: string) {
   );
 }
 
-// Anything under 8 work-hours reads as a single sitting (minutes/hours);
-// beyond that, framing it in days is more honest about the real scope of
-// bigger skills like "CI/CD 파이프라인" than a raw minute count would be.
-function formatEstimatedTime(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes}분`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (hours < 8) {
-    return remainingMinutes > 0 ? `${hours}시간 ${remainingMinutes}분` : `${hours}시간`;
-  }
-
-  const days = Math.max(1, Math.round(hours / 8));
-  return `약 ${days}일`;
-}
+// The formatEstimatedTime function has been moved to src/utils/format.ts
 
 type DrawerProps = {
   skills: SkillTreeNode[];

@@ -8,14 +8,24 @@ export function TrendsClient() {
   const { data: trends, isLoading, isError } = useSkillTrends();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const [searchKeyword, setSearchKeyword] = useState("");
+
   const sortedTrends = useMemo(() => {
     if (!trends) return [];
-    return [...trends].sort((a, b) => {
+    
+    let filtered = trends;
+    if (searchKeyword.trim() !== "") {
+      filtered = filtered.filter(trend => 
+        trend.title.toLowerCase().includes(searchKeyword.toLowerCase())
+      );
+    }
+
+    return [...filtered].sort((a, b) => {
       const aMentions = (a.wanted_mentions || 0) + (a.jumpit_mentions || 0);
       const bMentions = (b.wanted_mentions || 0) + (b.jumpit_mentions || 0);
       return bMentions - aMentions;
     });
-  }, [trends]);
+  }, [trends, searchKeyword]);
 
   if (isLoading) {
     return (
@@ -67,9 +77,19 @@ export function TrendsClient() {
         </header>
 
         <section className="space-y-4">
+          <div className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+            <input
+              type="text"
+              placeholder="스킬 키워드 검색 (예: React, Node.js)"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="w-full bg-transparent text-sm text-slate-950 placeholder-slate-400 focus:outline-none dark:text-white dark:placeholder-slate-500"
+            />
+          </div>
+
           {sortedTrends.length === 0 ? (
              <div className="rounded-2xl border border-white/70 bg-white/70 p-8 text-center shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-               <p className="text-slate-500">분석된 채용 데이터가 없습니다.</p>
+               <p className="text-slate-500">분석된 채용 데이터가 없습니다. (trends 길이: {trends?.length ?? 'undefined'})</p>
              </div>
           ) : (
             sortedTrends.map((trend, idx) => {

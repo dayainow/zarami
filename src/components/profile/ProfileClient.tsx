@@ -33,7 +33,7 @@ export function ProfileClient() {
   const { data: trends } = useSkillTrends();
 
   const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
-  const [githubRepoUrl, setGithubRepoUrl] = useState("");
+  const [githubRepoUrl, setGithubRepoUrl] = useState("https://github.com/dayainow/zarami");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ skillTitle: string; reason: string }[] | null>(null);
 
@@ -111,6 +111,33 @@ export function ProfileClient() {
   const placeholderHeatmap = useMemo(() => buildEmptyHeatmap(), []);
   const heatmapDays = stats?.heatmap ?? placeholderHeatmap;
 
+  const marketFitCoverage = useMemo(() => {
+    if (!trends || !stats?.allSkillTitles || stats.allSkillTitles.length === 0) return 0;
+    let totalWeight = 0;
+    let completedWeight = 0;
+    
+    for (const title of stats.allSkillTitles) {
+      const isCompleted = stats.completedSkills.includes(title);
+      const trend = findSkillTrend(title, trends);
+      let weight = 1;
+      if (trend) {
+        if (trend.trend_score === "High") weight = 3;
+        else if (trend.trend_score === "Medium") weight = 2;
+      }
+      totalWeight += weight;
+      if (isCompleted) {
+        completedWeight += weight;
+      }
+    }
+    
+    return totalWeight === 0 ? 0 : Math.round((completedWeight / totalWeight) * 100);
+  }, [trends, stats?.allSkillTitles, stats?.completedSkills]);
+
+  const portfolioConversionRate = useMemo(() => {
+    if (!stats || stats.completedCount === 0) return 0;
+    return Math.round((stats.githubCertifiedCount / stats.completedCount) * 100);
+  }, [stats]);
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -169,27 +196,37 @@ export function ProfileClient() {
 
         <div className="relative">
           <div className={["grid grid-cols-1 gap-4 md:grid-cols-3", !userId ? "pointer-events-none select-none blur-sm" : ""].join(" ")} aria-hidden={!userId}>
-            
-            <div className="flex flex-col gap-4 md:col-span-1">
-              <div className="flex gap-4">
-                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-4 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                  <p className="flex items-center gap-1 text-3xl font-black text-orange-500">
-                    🔥 {stats?.currentStreak ?? 0}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">일 연속 학습</p>
-                  <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">최고 기록: {stats?.maxStreak ?? 0}일</p>
-                </div>
-                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-4 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                  <p className="flex items-center gap-1 text-3xl font-black text-blue-500">
-                    ⏱️ {Math.round((stats?.totalEstimatedMinutes ?? 0) / 60)}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">시간 누적 학습</p>
-                  <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">({stats?.completedCount ?? 0}개 스킬 달성)</p>
-                </div>
+            {/* Top 3 Metrics Row */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:col-span-3">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="flex items-center gap-1 text-3xl font-black text-rose-500">
+                  🎯 {marketFitCoverage}%
+                </p>
+                <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">시장 적합 스킬 커버리지</p>
+                <p className="mt-1 text-[10px] text-slate-500">시장에서 수요가 높은 핵심 기술 달성률</p>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="flex items-center gap-1 text-3xl font-black text-amber-500">
+                  ⚔️ {stats?.practicalScore ?? 0}점
+                </p>
+                <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">실전 역량 증명 점수</p>
+                <p className="mt-1 text-[10px] text-slate-500">미니 퀘스트 기반 실전 프로젝트 수행 증명</p>
               </div>
 
+              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="flex items-center gap-1 text-3xl font-black text-indigo-500">
+                  📦 {portfolioConversionRate}%
+                </p>
+                <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">포트폴리오 전환율</p>
+                <p className="mt-1 text-[10px] text-slate-500">GitHub 등 이력서 실물 자산으로 연결된 비율</p>
+              </div>
+            </div>
+
+            {/* Middle Row */}
+            <div className="flex flex-col gap-4 md:col-span-1">
               <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">기술 스택 분포</h2>
+                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">직무 준비도 맵 (스택 분포)</h2>
                 <div className="space-y-3">
                   {Object.entries(stats?.categoryStats ?? {}).map(([cat, counts]) => (
                     <div key={cat}>
