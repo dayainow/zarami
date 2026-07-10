@@ -85,6 +85,12 @@ body {
 .glow-emerald { animation: neon-pulse-emerald 3s infinite ease-in-out; }
 .glow-sky { animation: neon-pulse-sky 3s infinite ease-in-out; }
 
+@keyframes bounce-arrow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.bounce-arrow { animation: bounce-arrow 1.5s infinite ease-in-out; }
+
 /* Custom Scrollbar for a premium feel */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

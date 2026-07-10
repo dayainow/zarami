@@ -132,16 +132,11 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
             {/* Animated Character Avatar along the path using animateMotion */}
             <g>
               <g className="rpg-character">
-                {/* Shadow */}
-                <ellipse cx="0" cy="25" rx="20" ry="7" fill="rgba(0,0,0,0.6)" />
-                {/* Character Image without wrapper */}
-                <image href={region.icon} x="-40" y="-50" width="80" height="80" preserveAspectRatio="xMidYMid slice" style={{ imageRendering: 'pixelated' }} />
-                {/* Tooltip-like label above the avatar */}
-                <rect x="-70" y="-95" width="140" height="36" rx="0" fill="#2d2d2d" stroke="white" strokeWidth="2" />
-                <rect x="-72" y="-97" width="144" height="40" rx="0" fill="none" stroke="black" strokeWidth="2" />
-                <text x="0" y="-71" fontSize="14" textAnchor="middle" fill="white" className="font-pixel rpg-dialogue" style={{ letterSpacing: '1px' }}>
-                  {region.label} ({Math.round(region.progress * 100)}%)
-                </text>
+                {/* Character Image positioned so its feet are on the path */}
+                <image href={region.icon} x="-40" y="-65" width="80" height="80" preserveAspectRatio="xMidYMid slice" style={{ imageRendering: 'pixelated' }} />
+                
+                {/* Simple position marker (bouncing arrow) above character */}
+                <path d="M -8 -80 L 8 -80 L 0 -65 Z" fill="#FFE128" stroke="black" strokeWidth="2" className="bounce-arrow" />
               </g>
               
               {/* Note: SVG animateMotion works great for this */}
