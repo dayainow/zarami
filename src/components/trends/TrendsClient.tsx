@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, ChevronDown, ChevronUp, Briefcase, Sparkles, Flame, Target, Lightbulb, BarChart3, BookOpen, Search, CheckCircle2, Circle } from "lucide-react";
-import { useSkillTrends } from "@/hooks/useSkillTrends";
+import { useSkillTrends, type SkillTrend } from "@/hooks/useSkillTrends";
 import { useProfileStats } from "@/hooks/useProfileStats";
 import { createClient } from "@/utils/supabase/client";
+import { useCallback } from "react";
 
 export function TrendsClient() {
   const { data: trends, isLoading, isError } = useSkillTrends();
@@ -13,6 +14,27 @@ export function TrendsClient() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACQUIRED" | "NEEDED">("ALL");
   const [sortBy, setSortBy] = useState<"TREND" | "FIT" | "GAP">("TREND");
+
+  const [segmentPosition, setSegmentPosition] = useState<string>("ALL");
+  const [segmentExperience, setSegmentExperience] = useState<string>("ALL");
+  const [segmentCompanyType, setSegmentCompanyType] = useState<string>("ALL");
+
+  const getMentionsForTrend = useCallback((trend: SkillTrend) => {
+    if (segmentPosition === "ALL" && segmentExperience === "ALL" && segmentCompanyType === "ALL") {
+      return (trend.wanted_mentions || 0) + (trend.jumpit_mentions || 0);
+    }
+    
+    if (!trend.segment_stats) return 0;
+    
+    const posCount = segmentPosition !== "ALL" ? (trend.segment_stats.position?.[segmentPosition] || 0) : null;
+    const expCount = segmentExperience !== "ALL" ? (trend.segment_stats.experience?.[segmentExperience] || 0) : null;
+    const compCount = segmentCompanyType !== "ALL" ? (trend.segment_stats.company_type?.[segmentCompanyType] || 0) : null;
+
+    const activeCounts = [posCount, expCount, compCount].filter(c => c !== null) as number[];
+    if (activeCounts.length === 0) return 0;
+    
+    return Math.min(...activeCounts);
+  }, [segmentPosition, segmentExperience, segmentCompanyType]);
 
   const [userId, setUserId] = useState<string | null>(null);
   
@@ -32,9 +54,9 @@ export function TrendsClient() {
   const insights = useMemo(() => {
     if (!trends || trends.length === 0) return null;
     
-    const sortedByMentions = [...trends].sort((a, b) => 
-      ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0))
-    );
+    const trendsWithMentions = trends.map(t => ({ ...t, current_mentions: getMentionsForTrend(t) }));
+    
+    const sortedByMentions = [...trendsWithMentions].sort((a, b) => b.current_mentions - a.current_mentions);
     const topRising = sortedByMentions[0];
 
     let bestFit = null;
@@ -42,12 +64,12 @@ export function TrendsClient() {
 
     if (stats && stats.allSkillTitles && stats.allSkillTitles.length > 0) {
       const neededSkills = stats.allSkillTitles.filter(title => !stats.completedSkills.includes(title));
-      const neededTrends = trends.filter(t => neededSkills.includes(t.title));
-      neededTrends.sort((a, b) => ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0)));
+      const neededTrends = trendsWithMentions.filter(t => neededSkills.includes(t.title) && t.current_mentions > 0);
+      neededTrends.sort((a, b) => b.current_mentions - a.current_mentions);
       if (neededTrends.length > 0) bestFit = neededTrends[0];
 
-      const missedTrends = trends.filter(t => t.trend_score === "High" && !stats.allSkillTitles.includes(t.title));
-      missedTrends.sort((a, b) => ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0)));
+      const missedTrends = trendsWithMentions.filter(t => t.trend_score === "High" && !stats.allSkillTitles.includes(t.title) && t.current_mentions > 0);
+      missedTrends.sort((a, b) => b.current_mentions - a.current_mentions);
       if (missedTrends.length > 0) missedOpportunity = missedTrends[0];
     } else {
        bestFit = sortedByMentions[1];
@@ -55,12 +77,19 @@ export function TrendsClient() {
     }
 
     return { topRising, bestFit, missedOpportunity };
-  }, [trends, stats]);
+  }, [trends, stats, getMentionsForTrend]);
 
   const sortedAndFilteredTrends = useMemo(() => {
     if (!trends) return [];
     
-    let filtered = trends;
+    const trendsWithMentions = trends.map(t => ({ ...t, current_mentions: getMentionsForTrend(t) }));
+    
+    // 세그먼트 필터를 켰는데 멘션이 0건이면 필터링 (ALL일 땐 0건도 노출)
+    let filtered = trendsWithMentions.filter(t => 
+      (segmentPosition === "ALL" && segmentExperience === "ALL" && segmentCompanyType === "ALL") 
+      ? true 
+      : t.current_mentions > 0
+    );
     
     if (searchKeyword.trim() !== "") {
       filtered = filtered.filter(trend => 
@@ -78,11 +107,8 @@ export function TrendsClient() {
     }
 
     return [...filtered].sort((a, b) => {
-      const aMentions = (a.wanted_mentions || 0) + (a.jumpit_mentions || 0);
-      const bMentions = (b.wanted_mentions || 0) + (b.jumpit_mentions || 0);
-      
       if (sortBy === "TREND") {
-        return bMentions - aMentions;
+        return b.current_mentions - a.current_mentions;
       } else if (sortBy === "FIT" && stats) {
         // 정렬 기준: 로드맵에 있지만 안 배운 것(우선순위 1) > 이미 배운 것(우선순위 2) > 로드맵에 없는 것(우선순위 3)
         const getFitScore = (title: string) => {
@@ -94,11 +120,11 @@ export function TrendsClient() {
         };
         const scoreDiff = getFitScore(b.title) - getFitScore(a.title);
         if (scoreDiff !== 0) return scoreDiff;
-        return bMentions - aMentions; // 같으면 멘션순
+        return b.current_mentions - a.current_mentions; // 같으면 멘션순
       }
-      return bMentions - aMentions;
+      return b.current_mentions - a.current_mentions;
     });
-  }, [trends, searchKeyword, filterStatus, sortBy, stats]);
+  }, [trends, searchKeyword, filterStatus, sortBy, stats, getMentionsForTrend, segmentPosition, segmentExperience, segmentCompanyType]);
 
   if (isLoading) {
     return (
@@ -181,6 +207,49 @@ export function TrendsClient() {
         )}
 
         <section className="space-y-4">
+          {/* 세그먼트 필터 바 */}
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+              <span className="mr-2 rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Target</span>
+            </div>
+            
+            <select
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 outline-none hover:border-indigo-300 hover:bg-indigo-50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/20"
+              value={segmentPosition}
+              onChange={(e) => setSegmentPosition(e.target.value)}
+            >
+              <option value="ALL">모든 포지션</option>
+              <option value="frontend">프론트엔드</option>
+              <option value="backend">백엔드</option>
+              <option value="fullstack">풀스택</option>
+              <option value="mobile">모바일</option>
+              <option value="data">데이터</option>
+              <option value="ai">AI</option>
+            </select>
+
+            <select
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 outline-none hover:border-emerald-300 hover:bg-emerald-50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-700 dark:hover:bg-emerald-900/20"
+              value={segmentExperience}
+              onChange={(e) => setSegmentExperience(e.target.value)}
+            >
+              <option value="ALL">모든 연차</option>
+              <option value="junior">신입~3년 (주니어)</option>
+              <option value="mid">4~7년 (미들)</option>
+              <option value="senior">8년 이상 (시니어)</option>
+            </select>
+
+            <select
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 outline-none hover:border-amber-300 hover:bg-amber-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-amber-700 dark:hover:bg-amber-900/20"
+              value={segmentCompanyType}
+              onChange={(e) => setSegmentCompanyType(e.target.value)}
+            >
+              <option value="ALL">모든 회사유형</option>
+              <option value="startup">스타트업</option>
+              <option value="enterprise">대기업/중견</option>
+              <option value="agency">SI/에이전시</option>
+            </select>
+          </div>
+
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
             <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -226,9 +295,9 @@ export function TrendsClient() {
                <p className="text-slate-500">분석된 채용 데이터가 없거나 필터 조건에 맞는 스킬이 없습니다.</p>
              </div>
           ) : (
-            sortedAndFilteredTrends.map((trend, idx) => {
+            sortedAndFilteredTrends.map((trend: SkillTrend & { current_mentions?: number }, idx) => {
               const isExpanded = expandedId === trend.id;
-              const totalMentions = (trend.wanted_mentions || 0) + (trend.jumpit_mentions || 0);
+              const totalMentions = trend.current_mentions ?? 0;
               
               const isInRoadmap = stats?.allSkillTitles.includes(trend.title);
               const isCompleted = stats?.completedSkills.includes(trend.title);
@@ -263,6 +332,11 @@ export function TrendsClient() {
                           <span className="text-slate-500 dark:text-slate-400">
                             {trend.trend_score === "High" ? "🔥 수요 매우 높음" : trend.trend_score === "Medium" ? "⭐️ 수요 보통" : "니치 마켓"}
                           </span>
+                          {(segmentPosition !== "ALL" || segmentExperience !== "ALL" || segmentCompanyType !== "ALL") && (
+                            <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                              세그먼트 내 {totalMentions}건
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

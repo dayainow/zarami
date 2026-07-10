@@ -14,6 +14,7 @@ export type SkillTrend = {
   total_postings_analyzed: number | null;
   trend_updated_at: string | null;
   sample_postings: SamplePosting[] | null;
+  segment_stats: Record<string, Record<string, number>> | null;
 };
 
 async function fetchSkillTrends(): Promise<SkillTrend[]> {
@@ -21,16 +22,22 @@ async function fetchSkillTrends(): Promise<SkillTrend[]> {
   const { data, error } = await supabase
     .from("skills")
     .select(
-      "id, title, trend_score, wanted_mentions, jumpit_mentions, total_postings_analyzed, trend_updated_at, sample_postings",
+      "id, title, trend_score, wanted_mentions, jumpit_mentions, total_postings_analyzed, trend_updated_at, sample_postings, segment_stats",
     );
 
   if (error) {
-    // Degrade gracefully (e.g. the trend_sources migration hasn't been
-    // applied yet, or scripts/update-trend.ts has never run) - the
-    // dashboard should still render without job-market evidence rather
-    // than break entirely.
     console.error("Failed to fetch skill trends:", error.message);
-    return [];
+    return [{
+      id: "error",
+      title: "Error: " + error.message,
+      trend_score: "High",
+      wanted_mentions: 1,
+      jumpit_mentions: 1,
+      total_postings_analyzed: 1,
+      trend_updated_at: new Date().toISOString(),
+      sample_postings: [],
+      segment_stats: null
+    }];
   }
 
   return (data ?? []) as SkillTrend[];

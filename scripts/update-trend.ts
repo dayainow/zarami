@@ -22,6 +22,7 @@ type Database = {
           total_postings_analyzed?: number;
           trend_updated_at?: string;
           sample_postings?: SamplePosting[];
+          segment_stats?: Record<string, Record<string, number>>;
         };
         Relationships: [];
       };
@@ -58,8 +59,31 @@ function requireEnv(key: string): string {
 const trendMentionSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
+    postings: {
+      type: SchemaType.ARRAY,
+      description: "Array of parsed information for each posting, maintaining the original order (index).",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          position: { 
+            type: SchemaType.STRING, 
+            description: "One of: frontend, backend, fullstack, mobile, data, ai, or other" 
+          },
+          experience: { 
+            type: SchemaType.STRING, 
+            description: "One of: junior, mid, senior, or any" 
+          },
+          company_type: { 
+            type: SchemaType.STRING, 
+            description: "One of: startup, enterprise, agency, or unknown" 
+          }
+        },
+        required: ["position", "experience", "company_type"]
+      }
+    },
     mentions: {
       type: SchemaType.ARRAY,
+      description: "Which skills were mentioned in which postings.",
       items: {
         type: SchemaType.OBJECT,
         properties: {
@@ -73,7 +97,7 @@ const trendMentionSchema: Schema = {
       },
     },
   },
-  required: ["mentions"],
+  required: ["postings", "mentions"],
 };
 
 async function fetchSkillCatalog(supabaseAdmin: SupabaseAdmin): Promise<SkillRow[]> {
@@ -98,31 +122,44 @@ function buildTaggedPostingsText(postings: TaggedPosting[]): string {
 async function analyzeSkillMentions(
   genAI: GoogleGenerativeAI,
   skills: SkillRow[],
-  postings: TaggedPosting[],
-): Promise<{ skill_id: string; posting_indices: number[] }[]> {
-  const skillCatalog = skills.map((skill) => `${skill.id}: ${skill.title}`).join("\n");
-  const postingsText = buildTaggedPostingsText(postings);
-
+  postingsText: string,
+): Promise<{
+  postings: { position: string; experience: string; company_type: string }[];
+  mentions: { skill_id: string; posting_indices: number[] }[];
+}> {
   const model = genAI.getGenerativeModel({
     model: "gemini-3.5-flash",
-    systemInstruction:
-      "당신은 실제 채용 공고 텍스트를 분석해 기술 스택이 어떤 공고에서 언급되는지 찾아내는 어시스턴트입니다. " +
-      "주어진 스킬 카탈로그의 각 항목이 등장하거나 의미상 요구되는(예: '리액트'는 react-components에 해당) 공고들의 " +
-      "[공고 N · 사이트] 번호(N)를 모두 찾아 posting_indices 배열로 반환하십시오. " +
-      "카탈로그에 없는 스킬은 만들어내지 말고, 언급이 전혀 없으면 빈 배열을 반환하십시오.",
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: trendMentionSchema,
     },
   });
 
-  const prompt = `## 스킬 카탈로그\n${skillCatalog}\n\n## 실제 채용 공고 모음\n${postingsText}`;
+  const prompt = `
+당신은 채용 공고(JD) 분석 전문가입니다. 주어진 채용 공고 목록을 분석하여 다음 두 가지를 수행하세요.
 
-  const response = await model.generateContent(prompt);
-  const text = response.response.text();
-  const parsed = JSON.parse(text);
+1. 각 공고(0번부터 순서대로)의 성격을 다음 기준으로 분류(Classification)하세요:
+   - position: frontend, backend, fullstack, mobile, data, ai, other 중 택 1
+   - experience: junior(0-3년), mid(4-7년), senior(8년 이상), any(무관) 중 택 1
+   - company_type: startup(스타트업), enterprise(대기업/중견), agency(SI/에이전시), unknown 중 택 1
 
-  return parsed.mentions;
+2. 제공된 기술 스택(Skills) 목록 중, 어떤 기술이 어느 공고에 등장(언급)했는지 매핑하세요.
+   - 명시적으로 기재된 것뿐만 아니라, 문맥상 강하게 암시되는 경우도 포함하세요.
+   - 예: "React" -> react, "RSC" -> react-server-components
+
+[분석할 스킬 목록]
+${skills.map((s) => `- ${s.id}: ${s.title}`).join("\n")}
+
+[분석할 채용 공고 목록]
+${postingsText}
+  `.trim();
+
+  const result = await model.generateContent(prompt);
+  const jsonText = result.response.text();
+  return JSON.parse(jsonText) as {
+    postings: { position: string; experience: string; company_type: string }[];
+    mentions: { skill_id: string; posting_indices: number[] }[];
+  };
 }
 
 function deriveTrendScore(totalMentions: number, totalPostings: number): "High" | "Medium" | "Low" {
@@ -139,25 +176,15 @@ function deriveTrendScore(totalMentions: number, totalPostings: number): "High" 
 async function bulkUpdateTrendData(
   supabaseAdmin: SupabaseAdmin,
   skills: SkillRow[],
-  mentions: { skill_id: string; posting_indices: number[] }[],
+  mentions: Map<string, { wanted: number; jumpit: number; sampleIndices: Set<number> }>,
+  segmentStats: Record<string, Record<string, Record<string, number>>>,
   postings: TaggedPosting[],
 ): Promise<number> {
-  const knownSkillIds = new Set(skills.map((skill) => skill.id));
-  const validMentions = mentions.filter((mention) => knownSkillIds.has(mention.skill_id));
-
-  if (validMentions.length === 0) {
-    return 0;
-  }
-
   const trendUpdatedAt = new Date().toISOString();
 
   await Promise.all(
-    validMentions.map(async (mention) => {
-      const uniqueIndices = [...new Set(mention.posting_indices)].filter(
-        (index) => index >= 0 && index < postings.length,
-      );
-      const wantedMentions = uniqueIndices.filter((index) => postings[index].site === "wanted").length;
-      const jumpitMentions = uniqueIndices.filter((index) => postings[index].site === "jumpit").length;
+    Array.from(mentions.entries()).map(async ([skill_id, counts]) => {
+      const uniqueIndices = Array.from(counts.sampleIndices);
       const trendScore = deriveTrendScore(uniqueIndices.length, postings.length);
       const samplePostings: SamplePosting[] = uniqueIndices.slice(0, 2).map((index) => {
         const posting = postings[index];
@@ -168,21 +195,22 @@ async function bulkUpdateTrendData(
         .from("skills")
         .update({
           trend_score: trendScore,
-          wanted_mentions: wantedMentions,
-          jumpit_mentions: jumpitMentions,
+          wanted_mentions: counts.wanted,
+          jumpit_mentions: counts.jumpit,
           total_postings_analyzed: postings.length,
           trend_updated_at: trendUpdatedAt,
           sample_postings: samplePostings,
+          segment_stats: segmentStats[skill_id] || {},
         })
-        .eq("id", mention.skill_id);
+        .eq("id", skill_id);
 
       if (error) {
-        throw new Error(`Failed to update ${mention.skill_id}: ${error.message}`);
+        throw new Error(`Failed to update ${skill_id}: ${error.message}`);
       }
     }),
   );
 
-  return validMentions.length;
+  return mentions.size;
 }
 
 async function main(): Promise<void> {
@@ -200,31 +228,70 @@ async function main(): Promise<void> {
   }
 
   console.log("실제 채용 공고(원티드, 점핏)를 스크래핑합니다...");
-  // Scrape backend (872 for wanted, 1 for jumpit) and frontend (669 for wanted, 2 for jumpit)
-  const wantedBackend = await scrapeWantedJobs(872, 25);
-  const wantedFrontend = await scrapeWantedJobs(669, 25);
-  const jumpitBackend = await scrapeJumpitJobs(1, 25);
-  const jumpitFrontend = await scrapeJumpitJobs(2, 25);
+  const wantedJobs = [...await scrapeWantedJobs(872, 25), ...await scrapeWantedJobs(669, 25)];
+  const jumpitJobs = [...await scrapeJumpitJobs(1, 25), ...await scrapeJumpitJobs(2, 25)];
 
-  const postings: TaggedPosting[] = [
-    ...wantedBackend.map((posting) => ({ ...posting, site: "wanted" as const })),
-    ...wantedFrontend.map((posting) => ({ ...posting, site: "wanted" as const })),
-    ...jumpitBackend.map((posting) => ({ ...posting, site: "jumpit" as const })),
-    ...jumpitFrontend.map((posting) => ({ ...posting, site: "jumpit" as const })),
+  const allPostings: TaggedPosting[] = [
+    ...wantedJobs.map((p) => ({ ...p, site: "wanted" as const })),
+    ...jumpitJobs.map((p) => ({ ...p, site: "jumpit" as const })),
   ];
 
-  if (postings.length === 0) {
+  if (allPostings.length === 0) {
     console.log("스크래핑된 채용 공고가 없습니다.");
     return;
   }
 
-  console.log(`${skills.length}개 스킬에 대해 ${postings.length}건의 실제 공고를 분석합니다...`);
+  const totalAnalyzed = allPostings.length;
+  console.log(`\nFound ${wantedJobs.length} Wanted jobs, ${jumpitJobs.length} Jumpit jobs. Total: ${totalAnalyzed}`);
 
-  const mentions = await analyzeSkillMentions(genAI, skills, postings);
-  const updatedCount = await bulkUpdateTrendData(supabaseAdmin, skills, mentions, postings);
+  const BATCH_SIZE = 5;
+  const mentionCounts = new Map<string, { wanted: number; jumpit: number; sampleIndices: Set<number> }>();
+  const segmentStats: Record<string, Record<string, Record<string, number>>> = {};
+  
+  for (let i = 0; i < allPostings.length; i += BATCH_SIZE) {
+    const batchPostings = allPostings.slice(i, i + BATCH_SIZE);
+    const postingsText = buildTaggedPostingsText(batchPostings);
 
-  const wantedCount = postings.filter((p) => p.site === "wanted").length;
-  const jumpitCount = postings.filter((p) => p.site === "jumpit").length;
+    try {
+      console.log(`Analyzing batch ${i / BATCH_SIZE + 1}...`);
+      const analysis = await analyzeSkillMentions(genAI, skills, postingsText);
+
+      for (const m of analysis.mentions) {
+        if (!mentionCounts.has(m.skill_id)) {
+          mentionCounts.set(m.skill_id, { wanted: 0, jumpit: 0, sampleIndices: new Set<number>() });
+        }
+        const counts = mentionCounts.get(m.skill_id)!;
+
+        if (!segmentStats[m.skill_id]) {
+          segmentStats[m.skill_id] = { position: {}, experience: {}, company_type: {} };
+        }
+        
+        for (const localIdx of m.posting_indices) {
+          const globalIdx = i + localIdx;
+          const p = batchPostings[localIdx];
+          if (!p) continue;
+
+          counts.sampleIndices.add(globalIdx);
+          if (p.site === "wanted") counts.wanted++;
+          else counts.jumpit++;
+          
+          const postingMeta = analysis.postings[localIdx];
+          if (postingMeta) {
+            const { position, experience, company_type } = postingMeta;
+            if (position) segmentStats[m.skill_id].position[position] = (segmentStats[m.skill_id].position[position] || 0) + 1;
+            if (experience) segmentStats[m.skill_id].experience[experience] = (segmentStats[m.skill_id].experience[experience] || 0) + 1;
+            if (company_type) segmentStats[m.skill_id].company_type[company_type] = (segmentStats[m.skill_id].company_type[company_type] || 0) + 1;
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Batch ${i} failed`, e);
+    }
+  }
+
+  const updatedCount = await bulkUpdateTrendData(supabaseAdmin, skills, mentionCounts, segmentStats, allPostings);
+  const wantedCount = allPostings.filter((p) => p.site === "wanted").length;
+  const jumpitCount = allPostings.filter((p) => p.site === "jumpit").length;
   console.log(`trend 데이터 ${updatedCount}건 갱신 완료 (원티드 ${wantedCount}건, 점핏 ${jumpitCount}건 분석).`);
 }
 
