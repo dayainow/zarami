@@ -15,11 +15,11 @@ export type UserTree = {
 
 const USER_TREE_QUERY_KEY = ["userTree"] as const;
 
-async function fetchUserTrees(userId: string): Promise<{ id: string; title: string }[]> {
+async function fetchUserTrees(userId: string): Promise<{ id: string; title: string; nodes: SkillTreeNode[] }[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("user_trees")
-    .select("id, title, updated_at")
+    .select("id, title, updated_at, nodes")
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
 
@@ -27,7 +27,10 @@ async function fetchUserTrees(userId: string): Promise<{ id: string; title: stri
     throw new Error(error.message);
   }
 
-  return data ?? [];
+  return (data ?? []).map(t => ({
+    ...t,
+    nodes: (t.nodes || []) as SkillTreeNode[]
+  }));
 }
 
 async function fetchUserTree(treeId: string): Promise<UserTree | null> {

@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { CheckCircle2, Download, LayoutGrid, Pencil, Plus, Save, Sparkles, Target, Trash2 } from "lucide-react";
+import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2 } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
@@ -103,6 +103,10 @@ export function ManageTreeClient() {
   const [aiModalTab, setAiModalTab] = useState<"general" | "gap">("general");
   const [jdInput, setJdInput] = useState("");
 
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendations, setRecommendations] = useState<{ title: string; description: string; category: string }[]>([]);
+  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
+
   const { data: stats } = useProfileStats(userId);
 
   // Tracked as its own piece of state (not derived from treeList.find(...))
@@ -126,6 +130,29 @@ export function ManageTreeClient() {
       reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
     }, 50);
   }, [edges, setNodes]);
+
+  const handleRecommendNode = useCallback(async () => {
+    if (nodes.length === 0) {
+      alert("먼저 로드맵에 최소 1개 이상의 노드가 있어야 추천을 받을 수 있습니다.");
+      return;
+    }
+    setIsRecommending(true);
+    try {
+      const res = await fetch("/api/recommend-node", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodes }),
+      });
+      if (!res.ok) throw new Error("Failed to get recommendations");
+      const data = await res.json();
+      setRecommendations(data.recommendations || []);
+      setShowRecommendationsModal(true);
+    } catch (error) {
+      alert("추천을 받아오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsRecommending(false);
+    }
+  }, [nodes]);
 
   // `promptOverride` lets the onboarding form pass its typed goal directly;
   // the toolbar's "AI 자동 생성" button opens the custom modal which eventually
@@ -682,6 +709,15 @@ export function ManageTreeClient() {
               </button>
               <button
                 type="button"
+                onClick={handleRecommendNode}
+                disabled={isRecommending}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-3 text-sm font-bold text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 disabled:opacity-50 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300"
+              >
+                <Lightbulb className="h-4 w-4" aria-hidden />
+                {isRecommending ? "생각 중..." : "AI 노드 추천"}
+              </button>
+              <button
+                type="button"
                 onClick={handleAddNode}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-sky-500 px-3 text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
               >
@@ -971,6 +1007,80 @@ export function ManageTreeClient() {
                 </form>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations Modal */}
+      {showRecommendationsModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm transition-all dark:bg-black/60">
+          <div className="w-full max-w-lg scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="flex items-center gap-2 text-lg font-bold leading-6 text-slate-950 dark:text-white">
+                <Lightbulb className="h-5 w-5 text-amber-500" />
+                AI 추천 학습 스킬
+              </h3>
+              <button onClick={() => setShowRecommendationsModal(false)} className="text-slate-500 hover:text-slate-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              현재 로드맵 구조를 분석하여 이어서 학습하기 가장 좋은 스킬을 추천해 드립니다.
+            </p>
+
+            <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
+              {recommendations.map((rec, i) => (
+                <div key={i} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 dark:text-white">{rec.title}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                      {rec.category}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{rec.description}</p>
+                  <button
+                    onClick={() => {
+                      const id = Date.now().toString();
+                      const x = nodes.length > 0 ? nodes[nodes.length - 1].position.x : 250;
+                      const y = nodes.length > 0 ? nodes[nodes.length - 1].position.y + 150 : 250;
+                      
+                      const newNode: SkillTreeNode = {
+                        id,
+                        type: "skillNode",
+                        position: { x, y },
+                        data: {
+                          id,
+                          title: rec.title,
+                          description: rec.description,
+                          category: rec.category as any,
+                          is_completed: false,
+                        },
+                      };
+                      setNodes((nds) => [...nds, newNode]);
+                      
+                      if (nodes.length > 0) {
+                        const newEdge: SkillTreeEdge = {
+                          id: `e-${nodes[nodes.length - 1].id}-${id}`,
+                          source: nodes[nodes.length - 1].id,
+                          target: id,
+                          type: "smoothstep",
+                          animated: true,
+                        };
+                        setEdges((eds) => [...eds, newEdge]);
+                      }
+                      
+                      setShowRecommendationsModal(false);
+                      setTimeout(handleAutoLayout, 100);
+                    }}
+                    className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  >
+                    <Plus className="h-4 w-4" />
+                    이 노드 추가하기
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
