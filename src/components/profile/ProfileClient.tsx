@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ExternalLink, Briefcase, FileText } from "lucide-react";
+import { ExternalLink, Briefcase, FileText, Github, Sparkles } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
@@ -31,6 +31,43 @@ export function ProfileClient() {
   const userId = sessionUser?.id ?? null;
   const { data: stats, isLoading: isHeatmapLoading, isError: isHeatmapError } = useProfileStats(userId);
   const { data: trends } = useSkillTrends();
+
+  const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
+  const [githubRepoUrl, setGithubRepoUrl] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ skillTitle: string; reason: string }[] | null>(null);
+
+  const handleGithubSync = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!userId || !githubRepoUrl.trim()) return;
+
+    setIsSyncing(true);
+    setSyncResult(null);
+
+    try {
+      const res = await fetch("/api/github-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, repoUrl: githubRepoUrl })
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "동기화 실패");
+      }
+
+      const data = await res.json();
+      setSyncResult(data.certifiedNodes || []);
+      // Refresh window to show updated stats and trees
+      if (data.certifiedNodes && data.certifiedNodes.length > 0) {
+        window.setTimeout(() => window.location.reload(), 3000);
+      }
+    } catch (err: any) {
+      alert("GitHub 연동 중 오류: " + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const realJobPostings = useMemo(() => {
     if (!trends || !stats?.completedSkills || stats.completedSkills.length === 0) return [];
@@ -107,15 +144,24 @@ export function ProfileClient() {
             </p>
           </div>
           {userId && (
-            <a
-              href="/resume"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-            >
-              <FileText className="h-4 w-4" />
-              이력서 자동 생성
-            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setIsGithubModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-indigo-400"
+              >
+                <Github className="h-4 w-4" />
+                GitHub 스킬 인증
+              </button>
+              <a
+                href="/resume"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+              >
+                <FileText className="h-4 w-4" />
+                이력서 자동 생성
+              </a>
+            </div>
           )}
         </header>
 
@@ -268,6 +314,99 @@ export function ProfileClient() {
           ) : null}
         </div>
       </div>
+
+      {isGithubModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm transition-all dark:bg-black/60">
+          <div className="w-full max-w-md scale-100 transform overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 text-left align-middle shadow-2xl backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40">
+            <h3 className="flex items-center gap-2 text-lg font-bold leading-6 text-slate-950 dark:text-white">
+              <Github className="h-5 w-5" />
+              GitHub 커밋으로 자동 인증
+            </h3>
+            
+            {!syncResult ? (
+              <>
+                <div className="mt-2">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    최근 작업하신 GitHub 레포지토리 URL을 입력해주세요. AI가 커밋 기록을 분석하여 현재 학습 중인 스킬을 자동으로 달성 처리해 줍니다. (Public 레포지토리만 지원)
+                  </p>
+                </div>
+                <form onSubmit={handleGithubSync} className="mt-4 flex flex-col gap-3">
+                  <input
+                    type="url"
+                    autoFocus
+                    required
+                    value={githubRepoUrl}
+                    onChange={(e) => setGithubRepoUrl(e.target.value)}
+                    placeholder="https://github.com/username/repository"
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                  />
+                  <div className="mt-3 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsGithubModalOpen(false)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSyncing || !githubRepoUrl.trim()}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    >
+                      {isSyncing ? (
+                        "분석 중..."
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          AI 분석 및 인증
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="mt-4">
+                {syncResult.length > 0 ? (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    <p className="font-bold mb-2">🎉 축하합니다! 다음 스킬이 인증되었습니다.</p>
+                    <ul className="space-y-2 text-sm">
+                      {syncResult.map((node, idx) => (
+                        <li key={idx} className="flex flex-col gap-1">
+                          <span className="font-bold underline underline-offset-2">{node.skillTitle}</span>
+                          <span className="text-emerald-600/80 dark:text-emerald-400/80">{node.reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-4 text-xs">잠시 후 대시보드가 새로고침됩니다...</p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                    <p className="font-bold mb-2">아쉽게도 매칭된 스킬이 없습니다.</p>
+                    <p className="text-sm">현재 '미달성' 상태인 스킬과 레포지토리의 최근 커밋 기록 사이의 연관성을 찾지 못했습니다.</p>
+                    <button
+                      onClick={() => setSyncResult(null)}
+                      className="mt-4 rounded-lg bg-slate-200 px-4 py-2 text-sm font-bold transition hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20"
+                    >
+                      다시 시도
+                    </button>
+                  </div>
+                )}
+                {syncResult.length > 0 && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-400"
+                    >
+                      확인
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
