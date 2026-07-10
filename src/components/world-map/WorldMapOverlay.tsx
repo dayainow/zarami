@@ -133,10 +133,10 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
             <g>
               <g className="rpg-character">
                 {/* Character Image positioned so its feet are on the path */}
-                <image href={region.icon} x="-60" y="-105" width="120" height="120" preserveAspectRatio="xMidYMid slice" style={{ imageRendering: 'pixelated' }} />
+                <image href={region.icon} x="-45" y="-90" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
                 
                 {/* Simple position marker (bouncing arrow) above character */}
-                <path d="M -10 -125 L 10 -125 L 0 -105 Z" fill="#FFE128" stroke="black" strokeWidth="3" className="bounce-arrow" />
+                <path d="M -10 -115 L 10 -115 L 0 -95 Z" fill="#FFE128" stroke="black" strokeWidth="3" className="bounce-arrow" />
               </g>
               
               {/* Note: SVG animateMotion works great for this */}
