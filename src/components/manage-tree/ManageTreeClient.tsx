@@ -1047,7 +1047,7 @@ export function ManageTreeClient() {
                       
                       const newNode: SkillTreeNode = {
                         id,
-                        type: "skillNode",
+                        type: "skill",
                         position: { x, y },
                         data: {
                           id,
@@ -1055,6 +1055,8 @@ export function ManageTreeClient() {
                           description: rec.description,
                           category: rec.category as any,
                           is_completed: false,
+                          level: 1,
+                          status: "available",
                         },
                       };
                       setNodes((nds) => [...nds, newNode]);
