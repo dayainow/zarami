@@ -11,7 +11,6 @@ import { Folder, Map } from "lucide-react";
 
 export function WorldMapClient() {
   const [sessionUser, setSessionUser] = useState<{ id: string; email: string | null } | null>(null);
-  const [sessionUser, setSessionUser] = useState<{ id: string; email: string | null } | null>(null);
   const userId = sessionUser?.id ?? null;
   const { data: stats } = useProfileStats(userId);
   const { data: userTrees } = useUserTrees(userId);
@@ -40,11 +39,8 @@ export function WorldMapClient() {
         {/* Top bar over the map */}
         <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex justify-between p-6">
           <div className="pointer-events-auto flex flex-col gap-2">
-            <h1 className="text-3xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">스킬 지도</h1>
-            <p className="mt-1 text-sm font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              {activeTree ? activeTree.title : "전체 맵 한눈에 보기"} · {displayCompletedCount}/{displayTotalCount} 완료 ({progressPercent}%)
-            </p>
-            <p className="mt-1 text-sm font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            <h1 className="font-pixel text-4xl text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '2px black' }}>스킬 지도</h1>
+            <p className="mt-2 font-pixel text-sm text-white drop-shadow-[0_2px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '1px black' }}>
               {activeTree ? activeTree.title : "전체 맵 한눈에 보기"} · {displayCompletedCount}/{displayTotalCount} 완료 ({progressPercent}%)
             </p>
           </div>
@@ -73,41 +69,39 @@ export function WorldMapClient() {
         <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center bg-gradient-to-t from-black/80 via-black/40 to-transparent pb-8 pt-12">
           
           {/* Roadmap Tabs */}
-          <div className="mb-6 flex w-full max-w-4xl gap-2 overflow-x-auto px-6 pb-2 scrollbar-hide">
+          <div className="mb-4 flex w-full max-w-4xl gap-3 overflow-x-auto px-6 pb-4 pt-4 scrollbar-hide">
             <button
               onClick={() => setSelectedTreeId("all")}
-              className={`flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 font-bold transition-all ${
+              className={`font-pixel flex shrink-0 items-center gap-2 border-[3px] border-black px-5 py-3 transition-all ${
                 selectedTreeId === "all" 
-                  ? "bg-amber-400 text-slate-900 shadow-[0_-4px_15px_rgba(251,191,36,0.6)]" 
-                  : "bg-white/80 text-slate-700 hover:bg-white"
+                  ? "bg-[#FFE128] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] -translate-y-2" 
+                  : "bg-[#d2b48c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-1"
               }`}
-              style={{ transformOrigin: 'bottom', transform: selectedTreeId === "all" ? 'scale(1.05)' : 'scale(1)' }}
             >
-              <Map className="h-4 w-4" />
+              <Map className="h-5 w-5" />
               전체 맵
             </button>
             {userTrees?.map((tree) => (
               <button
                 key={tree.id}
                 onClick={() => setSelectedTreeId(tree.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-3 font-bold transition-all ${
+                className={`font-pixel flex shrink-0 items-center gap-2 border-[3px] border-black px-5 py-3 transition-all ${
                   selectedTreeId === tree.id 
-                    ? "bg-emerald-400 text-slate-900 shadow-[0_-4px_15px_rgba(52,211,153,0.6)]" 
-                    : "bg-white/80 text-slate-700 hover:bg-white"
+                    ? "bg-[#6be05c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] -translate-y-2" 
+                    : "bg-[#d2b48c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-1"
                 }`}
-                style={{ transformOrigin: 'bottom', transform: selectedTreeId === tree.id ? 'scale(1.05)' : 'scale(1)' }}
               >
-                <Folder className="h-4 w-4" />
+                <Folder className="h-5 w-5 fill-black/20" />
                 {tree.title}
               </button>
             ))}
           </div>
 
           <div className="mx-auto w-full max-w-4xl px-6">
-            <div className="h-4 w-full overflow-hidden rounded-full border border-white/40 bg-black/60 shadow-inner backdrop-blur-md">
+            <div className="h-6 w-full overflow-hidden border-[3px] border-black bg-[#2d2d2d] shadow-[0_4px_0_rgba(0,0,0,0.3)]">
               <div
-                className="h-full rounded-full bg-[#FFE128] shadow-[0_0_12px_rgba(255,225,40,0.8)] transition-all"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full bg-[#FFE128] transition-all"
+                style={{ width: `${progressPercent}%`, backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1) 75%, transparent 75%, transparent)' }}
               />
             </div>
           </div>

@@ -43,11 +43,14 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
       let progress = displayTotal > 0 ? displayCompleted / displayTotal : 0.05;
       progress = Math.max(0.05, Math.min(progress, 1.0));
       
+      // Truncate long labels
+      const shortLabel = activeTree.title.length > 15 ? activeTree.title.slice(0, 15) + "..." : activeTree.title;
+
       return [{
         ...REGIONS[0], // just use the first path template for individual trees
         category: "Custom",
         progress,
-        label: activeTree.title,
+        label: shortLabel,
         color: "#10b981", // Emerald green for active tree
       }];
     }
@@ -134,8 +137,9 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
                 {/* Character Image without wrapper */}
                 <image href={region.icon} x="-40" y="-50" width="80" height="80" preserveAspectRatio="xMidYMid slice" style={{ imageRendering: 'pixelated' }} />
                 {/* Tooltip-like label above the avatar */}
-                <rect x="-60" y="-85" width="120" height="30" rx="4" fill="rgba(0,0,0,0.8)" stroke={region.color} strokeWidth="3" />
-                <text x="0" y="-63" fontSize="16" textAnchor="middle" fill="white" fontWeight="bold" className="rpg-dialogue">
+                <rect x="-70" y="-95" width="140" height="36" rx="0" fill="#2d2d2d" stroke="white" strokeWidth="2" />
+                <rect x="-72" y="-97" width="144" height="40" rx="0" fill="none" stroke="black" strokeWidth="2" />
+                <text x="0" y="-71" fontSize="14" textAnchor="middle" fill="white" className="font-pixel rpg-dialogue" style={{ letterSpacing: '1px' }}>
                   {region.label} ({Math.round(region.progress * 100)}%)
                 </text>
               </g>
