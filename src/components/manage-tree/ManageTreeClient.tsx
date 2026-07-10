@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2, ChevronDown, TrendingUp } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -21,6 +21,7 @@ import {
   useUserTrees,
 } from "@/hooks/useUserTree";
 import { useProfileStats } from "@/hooks/useProfileStats";
+import { useSkillTrends } from "@/hooks/useSkillTrends";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
@@ -112,6 +113,18 @@ export function ManageTreeClient() {
   const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
 
   const { data: stats } = useProfileStats(userId);
+  const { data: trends } = useSkillTrends();
+
+  const topMissingTrends = useMemo(() => {
+    if (!trends) return [];
+    const currentTitles = nodes.map(n => n.data.title);
+    return trends
+      .filter(t => !currentTitles.includes(t.title))
+      .sort((a,b) => ((b.wanted_mentions || 0) + (b.jumpit_mentions || 0)) - ((a.wanted_mentions || 0) + (a.jumpit_mentions || 0)))
+      .slice(0, 5);
+  }, [trends, nodes]);
+
+  const [isAddNodeMenuOpen, setIsAddNodeMenuOpen] = useState(false);
 
   // Tracked as its own piece of state (not derived from treeList.find(...))
   // because a freshly AI-generated tree has no id/treeList entry yet until
@@ -312,6 +325,15 @@ export function ManageTreeClient() {
 
     setNodes((currentNodes) => [...currentNodes, nextNode]);
     setSelectedNodeId(nextNode.id);
+  }, [nodes.length, setNodes]);
+
+  const handleAddTrendNode = useCallback((trendTitle: string) => {
+    const nextNode = createGoalNode(nodes.length);
+    nextNode.data.title = trendTitle;
+    nextNode.data.description = "채용 시장 트렌드 기반 추천 스킬입니다. 실전 미니 퀘스트를 설계해보세요.";
+    setNodes((currentNodes) => [...currentNodes, nextNode]);
+    setSelectedNodeId(nextNode.id);
+    setIsAddNodeMenuOpen(false);
   }, [nodes.length, setNodes]);
 
   const handleStartBlank = useCallback(() => {
@@ -733,14 +755,65 @@ export function ManageTreeClient() {
                 <Lightbulb className="h-4 w-4" aria-hidden />
                 {isRecommending ? "생각 중..." : "AI 노드 추천"}
               </button>
-              <button
-                type="button"
-                onClick={handleAddNode}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-sky-500 px-3 text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
-              >
-                <Plus className="h-4 w-4" aria-hidden />
-                노드 추가
-              </button>
+              
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsAddNodeMenuOpen(!isAddNodeMenuOpen)}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-sky-500 px-3 text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  노드 추가
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </button>
+                
+                {isAddNodeMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsAddNodeMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
+                      <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">직접 추가</div>
+                      <button
+                        onClick={() => {
+                          handleAddNode();
+                          setIsAddNodeMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <Plus className="h-4 w-4 text-sky-500 shrink-0" />
+                        빈 노드 추가
+                      </button>
+                      
+                      {topMissingTrends && topMissingTrends.length > 0 && (
+                        <>
+                          <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
+                          <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">🔥 채용 트렌드 추천 스킬</div>
+                          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+                            {topMissingTrends.map(trend => (
+                              <button
+                                key={trend.id}
+                                onClick={() => handleAddTrendNode(trend.title)}
+                                className="group flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-sky-900/30"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <TrendingUp className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                                  <span className="truncate">{trend.title}</span>
+                                </div>
+                                <span className="text-[10px] font-medium text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
+                                  추가
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={handleAutoLayout}
