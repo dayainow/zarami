@@ -96,11 +96,11 @@ export function WorldMapClient() {
 
   const displayTotalCount = activeTree 
     ? activeTree.nodes.filter((n: any) => !n.id.includes('-')).length
-    : stats?.totalNodes ?? 0;
+    : stats?.totalCount ?? 0;
   
   const displayCompletedCount = activeTree
     ? activeTree.nodes.filter((n: any) => !n.id.includes('-') && n.data.is_completed).length
-    : stats?.completedNodes ?? 0;
+    : stats?.completedCount ?? 0;
 
   const progressPercent = displayTotalCount === 0 ? 0 : Math.round((displayCompletedCount / displayTotalCount) * 100);
 

@@ -25,6 +25,7 @@ export type SkillNodeData = {
   isCelebrating?: boolean;
   isTrending?: boolean;
   status?: SkillStatus;
+  certified_by_github?: boolean;
   /** Job-market evidence behind isTrending, from scripts/update-trend.ts. */
   trendScore?: "High" | "Medium" | "Low";
   wantedMentions?: number;
