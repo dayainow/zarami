@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, TrendingUp, ChevronDown, ChevronUp, Briefcase } from "lucide-react";
+import { ExternalLink, TrendingUp, ChevronDown, ChevronUp, Briefcase, Sparkles } from "lucide-react";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
 
 export function TrendsClient() {
@@ -113,40 +113,60 @@ export function TrendsClient() {
                     </div>
                   </div>
 
-                  {isExpanded && trend.sample_postings && trend.sample_postings.length > 0 && (
+                  {isExpanded && (
                     <div className="border-t border-slate-100 bg-slate-50/50 p-5 dark:border-white/5 dark:bg-black/20">
-                      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        <Briefcase className="h-4 w-4" />
-                        실제 지원 가능한 공고 ({trend.sample_postings.length}건)
-                      </h3>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {trend.sample_postings.map((posting, pIdx) => (
-                          <a
-                            key={pIdx}
-                            href={posting.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-sky-700"
-                          >
-                            <div>
-                              <p className="text-xs font-bold text-sky-600 dark:text-sky-400">{posting.companyName}</p>
-                              <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-sky-700 dark:text-slate-100 dark:group-hover:text-sky-300">
-                                {posting.title}
-                              </p>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-500">
-                              <span className="capitalize">{posting.site}</span>
-                              <ExternalLink className="h-3 w-3" />
-                            </div>
-                          </a>
-                        ))}
+                      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl bg-white p-4 shadow-sm border border-slate-200 dark:bg-slate-900/50 dark:border-white/10">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            이 스펙으로 로드맵을 설계해볼까요?
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {trend.title} 기반의 학습 로드맵을 AI가 즉시 생성해 드립니다.
+                          </p>
+                        </div>
+                        <a 
+                          href={`/manage-tree?generateSkill=${encodeURIComponent(trend.title)}`}
+                          className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 shadow-sm"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          로드맵 자동 생성 ⚡️
+                        </a>
                       </div>
-                    </div>
-                  )}
-                  
-                  {isExpanded && (!trend.sample_postings || trend.sample_postings.length === 0) && (
-                    <div className="border-t border-slate-100 bg-slate-50/50 p-5 text-center dark:border-white/5 dark:bg-black/20">
-                       <p className="text-sm text-slate-500">샘플 채용 공고 데이터가 없습니다.</p>
+
+                      {trend.sample_postings && trend.sample_postings.length > 0 ? (
+                        <>
+                          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            <Briefcase className="h-4 w-4" />
+                            실제 지원 가능한 공고 ({trend.sample_postings.length}건)
+                          </h3>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {trend.sample_postings.map((posting, pIdx) => (
+                              <a
+                                key={pIdx}
+                                href={posting.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-slate-900 dark:hover:border-sky-700"
+                              >
+                                <div>
+                                  <p className="text-xs font-bold text-sky-600 dark:text-sky-400">{posting.companyName}</p>
+                                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-sky-700 dark:text-slate-100 dark:group-hover:text-sky-300">
+                                    {posting.title}
+                                  </p>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-500">
+                                  <span className="capitalize">{posting.site}</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center py-4">
+                           <p className="text-sm text-slate-500">샘플 채용 공고 데이터가 없습니다.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

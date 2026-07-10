@@ -9,6 +9,7 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2 } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
@@ -67,6 +68,9 @@ function createGoalNode(index: number): SkillTreeNode {
 }
 
 export function ManageTreeClient() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, handleTestLogin, authChecked } =
     useMagicLinkAuth();
   
@@ -273,6 +277,19 @@ export function ManageTreeClient() {
       setSelectedNodeId(null);
     }
   }, [savedTree, treeList, currentTreeId, setEdges, setNodes]);
+
+  // Handle URL parameter for automatic AI generation from Trends page
+  useEffect(() => {
+    const generateSkill = searchParams.get("generateSkill");
+    if (generateSkill && authChecked && userId && !isGeneratingAI) {
+      // Small timeout to allow states to settle before starting Generation
+      setTimeout(() => {
+        handleAIGenerate(`최신 채용 트렌드 반영: ${generateSkill} 마스터를 위한 실무 기반 로드맵`);
+        // Remove the parameter from the URL so it doesn't trigger again on reload
+        router.replace("/manage-tree");
+      }, 500);
+    }
+  }, [searchParams, authChecked, userId, isGeneratingAI, handleAIGenerate, router]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
