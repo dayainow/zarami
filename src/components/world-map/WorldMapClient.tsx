@@ -37,10 +37,10 @@ export function WorldMapClient() {
     <main className="flex h-screen min-h-screen flex-col bg-[#73C856] transition-colors duration-300">
       <div className="relative flex flex-1 flex-col overflow-hidden">
         {/* Top bar over the map */}
-        <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex justify-between p-6">
+        <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex justify-between p-6 md:p-8">
           <div className="pointer-events-auto flex flex-col gap-2">
-            <h1 className="font-pixel text-4xl text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '2px black' }}>스킬 지도</h1>
-            <p className="mt-2 font-pixel text-sm text-white drop-shadow-[0_2px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '1px black' }}>
+            <h1 className="font-pixel text-5xl md:text-7xl text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '3px black' }}>스킬 지도</h1>
+            <p className="mt-3 font-pixel text-base md:text-xl text-white drop-shadow-[0_3px_0_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '2px black' }}>
               {activeTree ? activeTree.title : "전체 맵 한눈에 보기"} · {displayCompletedCount}/{displayTotalCount} 완료 ({progressPercent}%)
             </p>
           </div>
@@ -91,8 +91,8 @@ export function WorldMapClient() {
                     : "bg-[#d2b48c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-1"
                 }`}
               >
-                <Folder className="h-5 w-5 fill-black/20" />
-                {tree.title}
+                <Folder className="h-5 w-5 shrink-0 fill-black/20" />
+                <span className="max-w-[120px] sm:max-w-[200px] truncate">{tree.title}</span>
               </button>
             ))}
           </div>
