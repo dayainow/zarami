@@ -7,7 +7,7 @@ import { useProfileStats } from "@/hooks/useProfileStats";
 import { useUserTrees } from "@/hooks/useUserTree";
 import { createClient } from "@/utils/supabase/client";
 import { WorldMapOverlay } from "./WorldMapOverlay";
-import { Folder, Map } from "lucide-react";
+import { Folder, Map, ArrowLeft } from "lucide-react";
 
 export function WorldMapClient() {
   const [sessionUser, setSessionUser] = useState<{ id: string; email: string | null } | null>(null);
@@ -40,13 +40,22 @@ export function WorldMapClient() {
         <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex justify-between p-6 md:p-8">
           <div className="pointer-events-auto flex flex-col gap-2">
             {activeTree ? (
-              <div className="inline-block border-[3px] border-black bg-[#2d2d2d] px-6 py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                <p className="font-pixel text-lg md:text-2xl text-white">
-                  {activeTree.title} <span className="text-[#FFE128]">({progressPercent}%)</span>
-                </p>
-                <p className="mt-1 font-pixel text-sm text-slate-300">
-                  {displayCompletedCount}/{displayTotalCount} 완료
-                </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedTreeId("all")}
+                  className="flex h-[4.5rem] w-14 shrink-0 items-center justify-center border-[3px] border-black bg-[#FFE128] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all hover:-translate-y-1 hover:shadow-[4px_6px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[2px_2px_0_rgba(0,0,0,1)]"
+                  title="갤러리로 돌아가기"
+                >
+                  <ArrowLeft className="h-6 w-6" strokeWidth={3} />
+                </button>
+                <div className="inline-block border-[3px] border-black bg-[#2d2d2d] px-6 py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                  <p className="font-pixel text-lg md:text-2xl text-white">
+                    {activeTree.title} <span className="text-[#FFE128]">({progressPercent}%)</span>
+                  </p>
+                  <p className="mt-1 font-pixel text-sm text-slate-300">
+                    {displayCompletedCount}/{displayTotalCount} 완료
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="inline-block border-[3px] border-black bg-[#FFE128] px-6 py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
@@ -100,7 +109,7 @@ export function WorldMapClient() {
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black bg-[#FFE128] shadow-[inset_-3px_-3px_0_rgba(0,0,0,0.2)]">
                         <Map className="h-8 w-8 text-black" />
                       </div>
-                      <h3 className="font-pixel mb-3 text-lg font-bold text-black line-clamp-2 h-12 flex items-center justify-center w-full">{tree.title}</h3>
+                      <h3 className="font-pixel mb-3 text-base font-bold text-black truncate w-full px-2 text-center">{tree.title}</h3>
                       <div className="w-full mt-auto">
                         <div className="mb-1 flex justify-between font-pixel text-xs text-slate-500">
                           <span>달성률</span>
@@ -128,17 +137,6 @@ export function WorldMapClient() {
           
           {/* Roadmap Tabs */}
           <div className="mb-4 flex w-full max-w-4xl gap-3 overflow-x-auto px-6 pb-4 pt-4 scrollbar-hide">
-            <button
-              onClick={() => setSelectedTreeId("all")}
-              className={`font-pixel flex shrink-0 items-center gap-2 border-[3px] border-black px-5 py-3 transition-all ${
-                selectedTreeId === "all" 
-                  ? "bg-[#FFE128] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] -translate-y-2" 
-                  : "bg-[#d2b48c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-1"
-              }`}
-            >
-              <Map className="h-5 w-5" />
-              전체 맵
-            </button>
             {userTrees?.map((tree) => (
               <button
                 key={tree.id}
