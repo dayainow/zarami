@@ -7,6 +7,7 @@ type CategoryStats = Record<string, { total: number; completed: number }>;
 interface WorldMapOverlayProps {
   categoryStats: CategoryStats;
   activeTree?: any;
+  theme?: any;
 }
 
 // We use a viewBox of 1000 1000 but make the paths jagged for a retro RPG feel
@@ -51,7 +52,8 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
         category: "Custom",
         progress,
         label: shortLabel,
-        color: "#10b981", // Emerald green for active tree
+        color: theme ? theme.pathColor : "#10b981",
+        icon: theme ? theme.icon : "/images/characters/hero_back.png",
       }];
     }
 
@@ -133,7 +135,7 @@ export function WorldMapOverlay({ categoryStats, activeTree }: WorldMapOverlayPr
             <g>
               <g className="rpg-character">
                 {/* Character Image positioned so its feet are on the path */}
-                <image href={region.icon} x="-45" y="-90" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
+                <image href={region.icon || "/images/characters/hero_back.png"} x="-45" y="-90" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
                 
                 {/* Simple position marker (bouncing arrow) above character */}
                 <path d="M -10 -115 L 10 -115 L 0 -95 Z" fill="#FFE128" stroke="black" strokeWidth="3" className="bounce-arrow" />

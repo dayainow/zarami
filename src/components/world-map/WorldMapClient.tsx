@@ -9,6 +9,64 @@ import { createClient } from "@/utils/supabase/client";
 import { WorldMapOverlay } from "./WorldMapOverlay";
 import { Folder, Map, ArrowLeft } from "lucide-react";
 
+export const THEMES = {
+  forest: {
+    id: 'forest',
+    name: '기본 숲',
+    filter: 'none',
+    icon: '/images/characters/hero_back.png',
+    pathColor: '#10b981', // Emerald
+    bgColor: '#73C856', // Map wrapper bg
+    cardColor: '#6be05c', // Gallery card primary
+  },
+  desert: {
+    id: 'desert',
+    name: '사막',
+    filter: 'sepia(0.6) hue-rotate(-20deg) saturate(1.5)',
+    icon: '/images/characters/hero_desert.png',
+    pathColor: '#f59e0b',
+    bgColor: '#e6c875',
+    cardColor: '#fcd34d',
+  },
+  winter: {
+    id: 'winter',
+    name: '설원',
+    filter: 'grayscale(0.2) hue-rotate(160deg) brightness(1.2) saturate(0.8)',
+    icon: '/images/characters/hero_snow.png',
+    pathColor: '#38bdf8',
+    bgColor: '#a6d6d6',
+    cardColor: '#bae6fd',
+  },
+  volcano: {
+    id: 'volcano',
+    name: '화산',
+    filter: 'hue-rotate(300deg) saturate(2) brightness(0.9)',
+    icon: '/images/characters/hero_volcano.png',
+    pathColor: '#ef4444',
+    bgColor: '#a84545',
+    cardColor: '#fca5a5',
+  },
+  cyberpunk: {
+    id: 'cyberpunk',
+    name: '사이버펑크',
+    filter: 'invert(1) hue-rotate(180deg) saturate(1.5)',
+    icon: '/images/characters/hero_cyber.png',
+    pathColor: '#a855f7',
+    bgColor: '#231c3b',
+    cardColor: '#d8b4fe',
+  }
+};
+
+export function getThemeForTree(treeId: string) {
+  let hash = 0;
+  for (let i = 0; i < treeId.length; i++) {
+    hash = treeId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % 5;
+  const themeKeys = Object.keys(THEMES) as Array<keyof typeof THEMES>;
+  return THEMES[themeKeys[index]];
+}
+
 export function WorldMapClient() {
   const [sessionUser, setSessionUser] = useState<{ id: string; email: string | null } | null>(null);
   const userId = sessionUser?.id ?? null;
@@ -28,13 +86,21 @@ export function WorldMapClient() {
     return () => { subscription.unsubscribe(); };
   }, []);
 
-  const activeTree = userTrees?.find(t => t.id === selectedTreeId);
-  const displayTotalCount = activeTree ? activeTree.nodes.filter(n => !n.id.includes('-')).length : (stats?.totalCount ?? 0);
-  const displayCompletedCount = activeTree ? activeTree.nodes.filter(n => !n.id.includes('-') && n.data.is_completed).length : (stats?.completedCount ?? 0);
+  const activeTree = selectedTreeId === "all" ? undefined : userTrees?.find(t => t.id === selectedTreeId);
+  const activeTreeTheme = activeTree ? getThemeForTree(activeTree.id) : THEMES.forest;
+
+  const displayTotalCount = activeTree 
+    ? activeTree.nodes.filter((n: any) => !n.id.includes('-')).length
+    : stats?.totalNodes ?? 0;
+  
+  const displayCompletedCount = activeTree
+    ? activeTree.nodes.filter((n: any) => !n.id.includes('-') && n.data.is_completed).length
+    : stats?.completedNodes ?? 0;
+
   const progressPercent = displayTotalCount === 0 ? 0 : Math.round((displayCompletedCount / displayTotalCount) * 100);
 
   return (
-    <main className="flex h-screen min-h-screen flex-col bg-[#73C856] transition-colors duration-300">
+    <main className="flex h-screen min-h-screen flex-col transition-colors duration-300" style={{ backgroundColor: activeTreeTheme.bgColor }}>
       <div className="relative flex flex-1 flex-col overflow-hidden">
         {/* Top bar over the map */}
         <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex justify-between p-6 md:p-8">
@@ -68,15 +134,15 @@ export function WorldMapClient() {
         </div>
 
         {/* Map Container */}
-        <div className="relative w-full flex-1 overflow-auto bg-[#73C856]">
+        <div className="relative w-full flex-1 overflow-auto transition-colors duration-300" style={{ backgroundColor: activeTreeTheme.bgColor }}>
           {/* Map Container */}
           <div className="relative h-full w-full">
             <Image 
               src="/images/world_map.png" 
               alt="World Map Base" 
               fill 
-              className="object-contain object-center" 
-              style={{ imageRendering: "pixelated" }} 
+              className="object-contain object-center transition-all duration-700" 
+              style={{ imageRendering: "pixelated", filter: activeTreeTheme.filter }} 
               priority
             />
             
@@ -84,6 +150,7 @@ export function WorldMapClient() {
               <WorldMapOverlay 
                 categoryStats={stats?.categoryStats ?? {}} 
                 activeTree={activeTree}
+                theme={activeTreeTheme}
               />
             )}
           </div>
@@ -100,6 +167,7 @@ export function WorldMapClient() {
                   const tTotal = tree.nodes.filter(n => !n.id.includes('-')).length;
                   const tCompleted = tree.nodes.filter(n => !n.id.includes('-') && n.data.is_completed).length;
                   const tProgress = tTotal === 0 ? 0 : Math.round((tCompleted / tTotal) * 100);
+                  const tTheme = getThemeForTree(tree.id);
 
                   return (
                     <button
@@ -107,7 +175,7 @@ export function WorldMapClient() {
                       onClick={() => setSelectedTreeId(tree.id)}
                       className="group relative flex flex-col items-center justify-center border-[3px] border-black bg-white p-6 transition-all hover:-translate-y-2 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] text-center cursor-pointer"
                     >
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black bg-[#FFE128] shadow-[inset_-3px_-3px_0_rgba(0,0,0,0.2)]">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black shadow-[inset_-3px_-3px_0_rgba(0,0,0,0.2)]" style={{ backgroundColor: tTheme.cardColor }}>
                         <Map className="h-8 w-8 text-black" />
                       </div>
                       <h3 className="font-pixel mb-3 text-base font-bold text-black truncate w-full px-2 text-center">{tree.title}</h3>
@@ -117,7 +185,7 @@ export function WorldMapClient() {
                           <span>{tProgress}%</span>
                         </div>
                         <div className="h-4 w-full overflow-hidden border-2 border-black bg-slate-200">
-                          <div className="h-full bg-[#6be05c] transition-all" style={{ width: `${tProgress}%` }} />
+                          <div className="h-full transition-all" style={{ width: `${tProgress}%`, backgroundColor: tTheme.pathColor }} />
                         </div>
                       </div>
                     </button>
