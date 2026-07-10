@@ -62,8 +62,8 @@ export function ProfileClient() {
       if (data.certifiedNodes && data.certifiedNodes.length > 0) {
         window.setTimeout(() => window.location.reload(), 3000);
       }
-    } catch (err: any) {
-      alert("GitHub 연동 중 오류: " + err.message);
+    } catch (err: unknown) {
+      alert("GitHub 연동 중 오류: " + (err as Error).message);
     } finally {
       setIsSyncing(false);
     }
@@ -104,7 +104,6 @@ export function ProfileClient() {
 
   const totalCount = stats?.totalCount ?? 0;
   const completedCount = stats?.completedCount ?? 0;
-  const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
   // Guests never fetch stats (query is disabled) and a signed-in user's first
   // render is always mid-fetch, so fall back to the placeholder grid whenever
   // real data isn't available yet - never render a visually empty section.
@@ -420,7 +419,7 @@ export function ProfileClient() {
                 ) : (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                     <p className="font-bold mb-2">아쉽게도 매칭된 스킬이 없습니다.</p>
-                    <p className="text-sm">현재 '미달성' 상태인 스킬과 레포지토리의 최근 커밋 기록 사이의 연관성을 찾지 못했습니다.</p>
+                    <p className="text-sm">현재 &apos;미달성&apos; 상태인 스킬과 레포지토리의 최근 커밋 기록 사이의 연관성을 찾지 못했습니다.</p>
                     <button
                       onClick={() => setSyncResult(null)}
                       className="mt-4 rounded-lg bg-slate-200 px-4 py-2 text-sm font-bold transition hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20"

@@ -4,10 +4,12 @@ import { useMemo } from "react";
 
 type CategoryStats = Record<string, { total: number; completed: number }>;
 
+import type { SkillTreeNode } from "@/types/skill-tree";
+
 interface WorldMapOverlayProps {
   categoryStats: CategoryStats;
-  activeTree?: any;
-  theme?: any;
+  activeTree?: { title: string; nodes: SkillTreeNode[] };
+  theme?: { pathColor: string; icon: string; [key: string]: unknown };
 }
 
 // We use a viewBox of 1000 1000 but make the paths jagged for a retro RPG feel
@@ -39,8 +41,8 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
   const activeRegions = useMemo(() => {
     // If activeTree is provided, we show only one path for this tree
     if (activeTree) {
-      const displayTotal = activeTree.nodes.filter((n: any) => !n.id.includes('-')).length;
-      const displayCompleted = activeTree.nodes.filter((n: any) => !n.id.includes('-') && n.data.is_completed).length;
+      const displayTotal = activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-')).length;
+      const displayCompleted = activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-') && n.data.is_completed).length;
       let progress = displayTotal > 0 ? displayCompleted / displayTotal : 0.05;
       progress = Math.max(0.05, Math.min(progress, 1.0));
       
@@ -72,7 +74,7 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
       
       return { ...region, progress, stat, label: matchedKey };
     });
-  }, [categoryStats, activeTree]);
+  }, [categoryStats, activeTree, theme]);
 
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">

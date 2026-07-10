@@ -121,7 +121,7 @@ async function fetchProfileStats(userId: string): Promise<ProfileStats> {
     
     if (diffDays <= 1) {
       currentStreak = 1;
-      let checkDate = new Date(firstDate);
+      const checkDate = new Date(firstDate);
       for (let i = 1; i < uniqueDates.length; i++) {
         checkDate.setDate(checkDate.getDate() - 1);
         if (uniqueDates[i] === checkDate.toISOString().slice(0, 10)) {

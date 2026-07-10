@@ -1170,7 +1170,7 @@ export function ManageTreeClient() {
                           id,
                           title: rec.title,
                           description: rec.description,
-                          category: rec.category as any,
+                          category: rec.category as string,
                           is_completed: false,
                           level: 1,
                           status: "available",

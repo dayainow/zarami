@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     const userPrompt = `
 Current Roadmap Nodes:
-${JSON.stringify(nodes.map((n: any) => n.data.title), null, 2)}
+${JSON.stringify(nodes.map((n: { data: { title: string } }) => n.data.title), null, 2)}
 `;
 
     const result = await model.generateContent(userPrompt);
@@ -54,7 +54,7 @@ ${JSON.stringify(nodes.map((n: any) => n.data.title), null, 2)}
     let parsed: { recommendations: { title: string; description: string; category: string }[] };
     try {
       parsed = JSON.parse(cleanedText);
-    } catch (e) {
+    } catch {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 

@@ -8,6 +8,7 @@ import { useUserTrees } from "@/hooks/useUserTree";
 import { createClient } from "@/utils/supabase/client";
 import { WorldMapOverlay } from "./WorldMapOverlay";
 import { Folder, Map, ArrowLeft } from "lucide-react";
+import type { SkillTreeNode } from "@/types/skill-tree";
 
 export const THEMES = {
   forest: {
@@ -95,11 +96,11 @@ export function WorldMapClient() {
   const activeTreeTheme = activeTree ? getThemeForTree(activeTree.id) : THEMES.forest;
 
   const displayTotalCount = activeTree 
-    ? activeTree.nodes.filter((n: any) => !n.id.includes('-')).length
+    ? activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-')).length
     : stats?.totalCount ?? 0;
   
   const displayCompletedCount = activeTree
-    ? activeTree.nodes.filter((n: any) => !n.id.includes('-') && n.data.is_completed).length
+    ? activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-') && n.data.is_completed).length
     : stats?.completedCount ?? 0;
 
   const progressPercent = displayTotalCount === 0 ? 0 : Math.round((displayCompletedCount / displayTotalCount) * 100);

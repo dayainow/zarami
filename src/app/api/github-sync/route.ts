@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     }
 
     const commitsData = await githubRes.json();
-    const commitMessages = commitsData.map((c: any) => c.commit.message);
+    const commitMessages = commitsData.map((c: { commit: { message: string } }) => c.commit.message);
 
     // 3. Fetch user's incomplete skills from Supabase
     const { data: trees, error: dbError } = await supabase
@@ -83,10 +83,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to fetch user trees" }, { status: 500 });
     }
 
-    const incompleteNodes: any[] = [];
+    const incompleteNodes: { treeId: string; nodeId: string; title: string; description: string }[] = [];
     trees.forEach(tree => {
       if (tree.nodes && Array.isArray(tree.nodes)) {
-        tree.nodes.forEach((node: any) => {
+        tree.nodes.forEach((node: { id: string; data: { is_completed: boolean; title: string; description: string } }) => {
           if (!node.data.is_completed) {
             incompleteNodes.push({
               treeId: tree.id,
@@ -124,7 +124,7 @@ ${JSON.stringify(incompleteNodes, null, 2)}
     let parsed: { certifiedNodes: { treeId: string; nodeId: string; skillTitle: string; reason: string }[] };
     try {
       parsed = JSON.parse(cleanedText);
-    } catch (e) {
+    } catch {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
@@ -136,7 +136,7 @@ ${JSON.stringify(incompleteNodes, null, 2)}
         const nodesToUpdate = certified.filter(c => c.treeId === tree.id).map(c => c.nodeId);
         
         if (nodesToUpdate.length > 0) {
-          const updatedNodes = tree.nodes.map((node: any) => {
+          const updatedNodes = tree.nodes.map((node: { id: string; data: Record<string, unknown> }) => {
             if (nodesToUpdate.includes(node.id)) {
               treeChanged = true;
               return {
