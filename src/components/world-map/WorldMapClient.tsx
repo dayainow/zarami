@@ -115,23 +115,23 @@ export function WorldMapClient() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedTreeId("all")}
-                  className="flex h-[4.5rem] w-14 shrink-0 items-center justify-center border-[3px] border-black bg-[#FFE128] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all hover:-translate-y-1 hover:shadow-[4px_6px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[2px_2px_0_rgba(0,0,0,1)]"
+                  className="flex h-12 w-12 md:h-[4.5rem] md:w-14 shrink-0 items-center justify-center border-[3px] border-black bg-[#FFE128] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all hover:-translate-y-1 hover:shadow-[4px_6px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[2px_2px_0_rgba(0,0,0,1)]"
                   title="갤러리로 돌아가기"
                 >
                   <ArrowLeft className="h-6 w-6" strokeWidth={3} />
                 </button>
-                <div className="inline-block border-[3px] border-black bg-[#2d2d2d] px-6 py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                  <p className="font-pixel text-lg md:text-2xl text-white">
+                <div className="inline-block border-[3px] border-black bg-[#2d2d2d] px-4 py-2 md:px-6 md:py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                  <p className="font-pixel text-base md:text-2xl text-white">
                     {activeTree.title} <span className="text-[#FFE128]">({progressPercent}%)</span>
                   </p>
-                  <p className="mt-1 font-pixel text-sm text-slate-300">
+                  <p className="mt-0.5 md:mt-1 font-pixel text-xs md:text-sm text-slate-300">
                     {displayCompletedCount}/{displayTotalCount} 완료
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="inline-block border-[3px] border-black bg-[#FFE128] px-6 py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                <p className="font-pixel text-lg md:text-2xl text-black font-bold">
+              <div className="inline-block border-[3px] border-black bg-[#FFE128] px-4 py-2 md:px-6 md:py-3 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                <p className="font-pixel text-base md:text-2xl text-black font-bold">
                   나의 모험 일지 (로드맵 목록)
                 </p>
               </div>
@@ -216,14 +216,14 @@ export function WorldMapClient() {
               <button
                 key={tree.id}
                 onClick={() => setSelectedTreeId(tree.id)}
-                className={`font-pixel flex shrink-0 items-center gap-2 border-[3px] border-black px-5 py-3 transition-all ${
+                className={`font-pixel flex shrink-0 items-center gap-2 border-[3px] border-black px-4 py-2 md:px-5 md:py-3 transition-all ${
                   selectedTreeId === tree.id 
                     ? "bg-[#6be05c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] -translate-y-2" 
                     : "bg-[#d2b48c] text-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-1"
                 }`}
               >
-                <Folder className="h-5 w-5 shrink-0 fill-black/20" />
-                <span className="max-w-[120px] sm:max-w-[200px] truncate">{tree.title}</span>
+                <Folder className="h-4 w-4 md:h-5 md:w-5 shrink-0 fill-black/20" />
+                <span className="max-w-[120px] sm:max-w-[200px] text-sm md:text-base truncate">{tree.title}</span>
               </button>
             ))}
           </div>
