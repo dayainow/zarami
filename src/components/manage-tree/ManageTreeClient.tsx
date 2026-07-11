@@ -642,12 +642,12 @@ export function ManageTreeClient() {
       <section className="relative flex min-h-[620px] min-w-0 flex-1">
         <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-6 py-4 shadow-sm shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
+            <div className="flex min-w-0 flex-col gap-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
                 My Tree Studio
               </p>
-              <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                내 트리 관리
+              <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                <span className="shrink-0">내 트리 관리</span>
                 {treeList && treeList.length > 0 && (
                   <>
                     {isRenaming ? (
@@ -661,11 +661,11 @@ export function ManageTreeClient() {
                           if (e.key === "Enter") handleRenameSubmit();
                           if (e.key === "Escape") setIsRenaming(false);
                         }}
-                        className="rounded-md border border-sky-400 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
+                        className="w-full max-w-[200px] rounded-md border border-sky-400 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
                       />
                     ) : (
                       <select
-                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+                        className="max-w-xs truncate rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
                         value={currentTreeId || ""}
                         onChange={(e) => {
                           const val = e.target.value;
