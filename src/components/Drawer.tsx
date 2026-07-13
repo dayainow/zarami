@@ -3,6 +3,7 @@
 import { Fragment, useMemo } from "react";
 import { Award, ExternalLink, ShieldCheck, TrendingUp, X, CheckCircle2, Lock } from "lucide-react";
 import { formatEstimatedTime } from "@/utils/format";
+import { getCategoryColor } from "@/lib/categoryColors";
 
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import { useSkillStore } from "@/stores/useSkillStore";
