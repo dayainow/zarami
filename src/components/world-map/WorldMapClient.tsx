@@ -115,32 +115,32 @@ export function WorldMapClient() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSelectedTreeId("all")}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-black/50 text-white backdrop-blur-md transition-all hover:bg-white/10 hover:scale-105"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center border-4 border-white bg-blue-900 text-white transition-transform hover:scale-105 shadow-[4px_4px_0_0_#000]"
                   title="갤러리로 돌아가기"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-6 w-6 font-black" />
                 </button>
-                <div className="flex flex-col justify-center rounded-2xl border border-white/20 bg-slate-900/80 px-6 py-3 backdrop-blur-md shadow-2xl">
+                <div className="flex flex-col justify-center border-4 border-white bg-black px-6 py-3 shadow-[4px_4px_0_0_#000] font-mono">
                   <div className="flex items-center gap-3">
-                    <p className="text-lg font-bold tracking-tight text-white">
+                    <p className="text-lg font-black tracking-widest text-white">
                       {activeTree.title}
                     </p>
-                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
+                    <span className="bg-yellow-400 px-2.5 py-0.5 text-xs font-black text-black border-2 border-white">
                       진행도 {progressPercent}%
                     </span>
                   </div>
-                  <p className="mt-1 text-sm font-medium text-slate-400">
-                    전체 <span className="text-white">{displayTotalCount}</span>개의 실전 퀘스트 중 <span className="text-emerald-400">{displayCompletedCount}</span>개 클리어
+                  <p className="mt-1 text-sm font-bold text-gray-300">
+                    전체 <span className="text-white">{displayTotalCount}</span>개의 실전 퀘스트 중 <span className="text-yellow-400">{displayCompletedCount}</span>개 클리어
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/80 px-6 py-3 backdrop-blur-md shadow-2xl">
-                <span className="grid h-6 w-6 place-items-center rounded-md bg-emerald-500 text-white text-xs">
+              <div className="inline-flex items-center gap-3 border-4 border-white bg-blue-900 px-6 py-4 shadow-[4px_4px_0_0_#000] font-mono">
+                <span className="grid h-8 w-8 place-items-center bg-black text-white text-sm border-2 border-white">
                   🚀
                 </span>
-                <p className="text-lg font-black tracking-tight text-white">
-                  커리어 상황판 (로드맵 목록)
+                <p className="text-xl font-black tracking-widest text-white">
+                  커리어 상황판
                 </p>
               </div>
             )}
@@ -160,25 +160,23 @@ export function WorldMapClient() {
               priority
             />
             
-            {activeTree && (
-              <WorldMapOverlay 
-                categoryStats={stats?.categoryStats ?? {}} 
-                activeTree={activeTree}
-                theme={activeTreeTheme}
-              />
-            )}
+            <WorldMapOverlay 
+              categoryStats={stats?.categoryStats ?? {}} 
+              activeTree={activeTree}
+              theme={activeTreeTheme}
+            />
           </div>
         </div>
 
         {/* Gallery Overlay (shown only when selectedTreeId === "all") */}
         {!activeTree && (
-          <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-slate-950/60 p-4 md:p-8 backdrop-blur-sm overflow-y-auto">
-            <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/95 p-8 md:p-12 shadow-2xl backdrop-blur-xl mt-16 md:mt-0">
-              <div className="mb-10 flex flex-col items-center">
-                <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-3">
+          <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-4 md:p-8 backdrop-blur-sm overflow-y-auto">
+            <div className="w-full max-w-5xl border-4 border-white bg-blue-900 p-8 md:p-12 shadow-[8px_8px_0_0_#000] mt-16 md:mt-0">
+              <div className="mb-10 flex flex-col items-center border-b-4 border-white pb-6">
+                <h2 className="text-3xl md:text-4xl font-black tracking-widest text-white mb-3 font-mono">
                   진행 중인 커리어 퀘스트
                 </h2>
-                <p className="text-slate-400">
+                <p className="text-white font-mono font-bold text-center">
                   시장 트렌드와 일치하는 실전 로드맵을 확인하고 GitHub 자산을 쌓아보세요.
                 </p>
               </div>
@@ -188,7 +186,6 @@ export function WorldMapClient() {
                   const tTotal = tree.nodes.filter(n => !n.id.includes('-')).length;
                   const tCompleted = tree.nodes.filter(n => !n.id.includes('-') && n.data.is_completed).length;
                   const tProgress = tTotal === 0 ? 0 : Math.round((tCompleted / tTotal) * 100);
-                  const tTheme = getThemeForTree(tree.id);
                   const trendMatches = Math.max(1, Math.min(3, Math.floor(tTotal / 3))); // Mock trend logic
                   const githubCerts = Math.floor(tCompleted / 2); // Mock github certs
 
@@ -196,45 +193,45 @@ export function WorldMapClient() {
                     <button
                       key={tree.id}
                       onClick={() => setSelectedTreeId(tree.id)}
-                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 transition-all hover:-translate-y-2 hover:bg-white/10 hover:shadow-2xl hover:shadow-emerald-500/10 text-left"
+                      className="group relative flex flex-col overflow-hidden border-4 border-white bg-black p-6 transition-transform hover:-translate-y-2 text-left shadow-[4px_4px_0_0_#fff] hover:shadow-[6px_6px_0_0_#fff]"
                     >
                       {/* Top Badges */}
                       <div className="flex w-full justify-between mb-6">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                          <Map className="h-6 w-6 text-white opacity-80 group-hover:text-emerald-400 transition-colors" />
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-white bg-blue-900">
+                          <Map className="h-6 w-6 text-white group-hover:text-yellow-400" />
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-500/20">
+                        <div className="flex flex-col items-end gap-1 font-mono">
+                          <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 text-[10px] font-black text-white border-2 border-white">
                             🔥 트렌드 일치 {trendMatches}건
                           </span>
                           {githubCerts > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-400 border border-indigo-500/20">
+                            <span className="inline-flex items-center gap-1 bg-blue-600 px-2 py-0.5 text-[10px] font-black text-white border-2 border-white">
                               ✓ GitHub 인증 {githubCerts}건
                             </span>
                           )}
                         </div>
                       </div>
                       
-                      <h3 className="mb-2 text-lg font-bold text-white tracking-tight">{tree.title}</h3>
-                      <p className="text-xs text-slate-400 mb-6 line-clamp-2">실제 채용 공고를 분석하여 생성된 맞춤형 퀘스트 목록입니다.</p>
+                      <h3 className="mb-2 text-lg font-black text-white tracking-widest font-mono">{tree.title}</h3>
+                      <p className="text-xs text-gray-300 mb-6 line-clamp-2 font-mono font-bold">실제 채용 공고를 분석하여 생성된 맞춤형 퀘스트 목록입니다.</p>
                       
-                      <div className="w-full mt-auto space-y-2">
-                        <div className="flex justify-between text-xs font-semibold text-slate-300">
+                      <div className="w-full mt-auto space-y-2 font-mono">
+                        <div className="flex justify-between text-xs font-black text-white">
                           <span>스펙 달성률</span>
-                          <span className="text-emerald-400">{tProgress}%</span>
+                          <span className="text-yellow-400">{tProgress}%</span>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                          <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${tProgress}%`, backgroundColor: tTheme.pathColor, boxShadow: `0 0 10px ${tTheme.pathColor}` }} />
+                        <div className="h-4 w-full overflow-hidden border-2 border-white bg-black p-0.5">
+                          <div className="h-full transition-all duration-1000 ease-out bg-yellow-400" style={{ width: `${tProgress}%` }} />
                         </div>
                       </div>
                     </button>
                   );
                 })}
                 {(!userTrees || userTrees.length === 0) && (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-slate-500">
-                    <Folder className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="text-lg font-medium">진행 중인 로드맵이 없습니다.</p>
-                    <p className="text-sm mt-1">대시보드에서 새로운 로드맵을 생성해 보세요.</p>
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-white font-mono border-4 border-dashed border-white bg-black">
+                    <Folder className="h-12 w-12 mb-4 text-gray-500" />
+                    <p className="text-lg font-black tracking-widest">진행 중인 로드맵이 없습니다.</p>
+                    <p className="text-sm mt-1 font-bold">대시보드에서 새로운 로드맵을 생성해 보세요.</p>
                   </div>
                 )}
               </div>
@@ -251,31 +248,28 @@ export function WorldMapClient() {
               <button
                 key={tree.id}
                 onClick={() => setSelectedTreeId(tree.id)}
-                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-5 py-3 transition-all backdrop-blur-md border ${
+                className={`flex shrink-0 items-center gap-2.5 px-5 py-3 transition-transform border-4 font-mono font-black ${
                   selectedTreeId === tree.id 
-                    ? "bg-white/10 border-white/30 text-white shadow-lg shadow-white/5 -translate-y-1" 
-                    : "bg-black/40 border-white/5 text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                    ? "bg-blue-900 border-white text-white shadow-[4px_4px_0_0_#000] -translate-y-1" 
+                    : "bg-black border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-white"
                 }`}
               >
-                <Folder className={`h-5 w-5 shrink-0 ${selectedTreeId === tree.id ? 'fill-emerald-500/20 text-emerald-400' : 'opacity-50'}`} />
-                <span className="max-w-[150px] sm:max-w-[250px] text-sm font-semibold tracking-tight truncate">{tree.title}</span>
+                <Folder className={`h-5 w-5 shrink-0 ${selectedTreeId === tree.id ? 'fill-yellow-400 text-black' : 'opacity-50'}`} />
+                <span className="max-w-[150px] sm:max-w-[250px] text-sm tracking-widest truncate">{tree.title}</span>
               </button>
             ))}
           </div>
 
           <div className="mx-auto w-full max-w-5xl px-6">
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-xs font-bold text-slate-400">전체 스펙 달성률</span>
-              <span className="text-sm font-black text-emerald-400">{progressPercent}%</span>
+            <div className="flex justify-between items-end mb-2 font-mono">
+              <span className="text-xs font-black text-white bg-black border-2 border-white px-2 py-0.5">전체 스펙 달성률</span>
+              <span className="text-sm font-black text-yellow-400 bg-black border-2 border-white px-2 py-0.5">{progressPercent}%</span>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800/80 backdrop-blur-sm border border-white/5 shadow-inner">
+            <div className="h-6 w-full overflow-hidden border-4 border-white bg-black p-1 shadow-[4px_4px_0_0_#000]">
               <div
-                className="h-full rounded-full transition-all duration-1000 ease-out relative"
-                style={{ width: `${progressPercent}%`, backgroundColor: activeTreeTheme.pathColor, boxShadow: `0 0 15px ${activeTreeTheme.pathColor}` }}
-              >
-                {/* Glossy overlay for the progress bar */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent rounded-full" />
-              </div>
+                className="h-full transition-all duration-1000 ease-out bg-yellow-400"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
           </div>
         </div>
