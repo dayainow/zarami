@@ -47,6 +47,22 @@ export function LoginClient() {
     }
   };
 
+  const handleTestLogin = async () => {
+    setIsSending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "test@example.com",
+      password: "testpassword123",
+    });
+    setIsSending(false);
+
+    if (error) {
+      alert("테스트 계정 로그인 실패: Supabase 대시보드에서 test@example.com (PW: testpassword123) 계정을 먼저 생성해주세요.");
+    } else {
+      router.replace("/dashboard");
+    }
+  };
+
   return (
     <main className="min-h-screen grid place-items-center bg-slate-50 px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
       <div className="absolute left-4 top-4 md:left-8 md:top-8 z-10">
@@ -132,10 +148,20 @@ export function LoginClient() {
           )}
         </div>
         
-        <p className="mt-8 text-center text-xs font-medium text-slate-500 dark:text-slate-500">
-          이메일만으로 간편하게 시작할 수 있습니다.<br />
-          비밀번호를 기억할 필요가 없어요.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-500">
+            이메일만으로 간편하게 시작할 수 있습니다.<br />
+            비밀번호를 기억할 필요가 없어요.
+          </p>
+          <button
+            type="button"
+            onClick={handleTestLogin}
+            disabled={isSending}
+            className="text-[10px] font-semibold text-slate-400 underline underline-offset-4 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          >
+            개발/테스트용 임시 계정으로 빠른 로그인
+          </button>
+        </div>
       </div>
     </main>
   );
