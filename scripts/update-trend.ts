@@ -228,8 +228,8 @@ async function main(): Promise<void> {
   }
 
   console.log("실제 채용 공고(원티드, 점핏)를 스크래핑합니다...");
-  const wantedJobs = [...await scrapeWantedJobs(872, 25), ...await scrapeWantedJobs(669, 25)];
-  const jumpitJobs = [...await scrapeJumpitJobs(1, 25), ...await scrapeJumpitJobs(2, 25)];
+  const wantedJobs = [...await scrapeWantedJobs(872, 50), ...await scrapeWantedJobs(669, 50)];
+  const jumpitJobs = [...await scrapeJumpitJobs(1, 50), ...await scrapeJumpitJobs(2, 50)];
 
   const allPostings: TaggedPosting[] = [
     ...wantedJobs.map((p) => ({ ...p, site: "wanted" as const })),
