@@ -360,26 +360,7 @@ export function DashboardClient() {
         </div>
       ) : (
         <>
-          {/* 캔버스 내 진행률 오버레이 */}
-          <div className="pointer-events-none absolute left-1/2 top-28 z-30 flex w-full max-w-sm -translate-x-1/2 flex-col items-center px-4">
-            <div className="w-full rounded-2xl border border-white/60 bg-white/70 p-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
-              <div className="mb-2 flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">진행률</span>
-                <span className="group relative cursor-help text-xs font-bold text-emerald-600 border-b border-dashed border-emerald-400/50 dark:text-emerald-400">
-                  {progress}% (스킬 노드: {completedCount}/{totalCount})
-                  <div className="pointer-events-none absolute right-0 top-full mt-1.5 z-50 w-max rounded bg-slate-800 px-2.5 py-1 text-[11px] font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
-                    서브 퀘스트가 아닌 전체 스킬 노드 기준입니다.
-                  </div>
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-700 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          </div>
+
           <TechTreeCanvas
             nodes={nodes}
             edges={edges}
