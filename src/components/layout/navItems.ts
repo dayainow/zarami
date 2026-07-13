@@ -30,8 +30,8 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/world-map",
-    label: "전체 기술 로드맵",
-    subLabel: "전체 기술 모험 지도",
+    label: "스킬 모험 지도",
+    subLabel: "숨겨진 퀘스트를 찾아서",
     icon: Map,
   },
   {
