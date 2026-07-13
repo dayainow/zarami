@@ -51,7 +51,13 @@ export function DashboardClient() {
 
   useEffect(() => {
     if (!currentTreeId && treeList && treeList.length > 0) {
-      setCurrentTreeId(treeList[0].id);
+      const searchParams = new URLSearchParams(window.location.search);
+      const treeParam = searchParams.get("tree");
+      if (treeParam && treeList.some(t => t.id === treeParam)) {
+        setCurrentTreeId(treeParam);
+      } else {
+        setCurrentTreeId(treeList[0].id);
+      }
     }
   }, [currentTreeId, treeList]);
 
@@ -59,7 +65,12 @@ export function DashboardClient() {
 
   useEffect(() => {
     const syncSelectedNodeFromUrl = () => {
-      setSelectedNodeId(new URLSearchParams(window.location.search).get("node"));
+      const searchParams = new URLSearchParams(window.location.search);
+      setSelectedNodeId(searchParams.get("node"));
+      const treeParam = searchParams.get("tree");
+      if (treeParam) {
+        setCurrentTreeId(treeParam);
+      }
     };
 
     syncSelectedNodeFromUrl();
