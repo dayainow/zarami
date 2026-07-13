@@ -254,9 +254,20 @@ export function DashboardClient() {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">
-              {!userId ? "아직 스킬트리가 없어요. 로그인 후 바로 시작" : `${progress}% 완료 (${completedCount}/${totalCount})`}
-            </span>
+            {!userId ? (
+              <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">
+                아직 스킬트리가 없어요. 로그인 후 바로 시작
+              </span>
+            ) : (
+              <div className="group relative flex cursor-help items-center">
+                <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200 border-b border-dashed border-slate-400/50">
+                  {progress}% (스킬 노드: {completedCount}/{totalCount} 완료)
+                </span>
+                <div className="pointer-events-none absolute right-0 top-full mt-2 z-50 w-max rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                  서브 퀘스트가 아닌 전체 스킬 노드 기준입니다.
+                </div>
+              </div>
+            )}
 
             {currentStreak > 0 ? (
               <span className="flex items-center gap-1.5 rounded-xl border border-orange-400/30 bg-gradient-to-br from-amber-400 to-orange-500 px-3 py-1.5 text-sm font-black text-white shadow-[0_4px_15px_rgba(249,115,22,0.4)] backdrop-blur-md">
@@ -309,7 +320,21 @@ export function DashboardClient() {
         </div>
       ) : null}
 
-      {nodes.length === 0 && !isMyTreeLoading ? (
+      {isMyTreeLoading ? (
+        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+          <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-sky-100 text-sky-500 shadow-lg shadow-sky-500/20 dark:bg-sky-900/30 dark:text-sky-400 animate-pulse">
+              <TreePine className="h-7 w-7" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-lg font-bold text-slate-950 dark:text-white animate-pulse">
+              기술트리를 불러오는 중...
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              잠시만 기다려주세요.
+            </p>
+          </div>
+        </div>
+      ) : nodes.length === 0 ? (
         <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
           <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
@@ -325,9 +350,10 @@ export function DashboardClient() {
             </p>
             <Link
               href={userId ? "/manage-tree" : "/login"}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:shadow-emerald-900/40 dark:hover:bg-emerald-300"
             >
-              {userId ? "로드맵 만들러 가기" : "로그인하고 내 스킬트리 만들기"}
+              <span className="text-lg">✨</span> 
+              {userId ? "AI로 나만의 로드맵 생성하기" : "로그인하고 내 스킬트리 만들기"}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
@@ -339,8 +365,11 @@ export function DashboardClient() {
             <div className="w-full rounded-2xl border border-white/60 bg-white/70 p-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200">진행률</span>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  {progress}% ({completedCount}/{totalCount})
+                <span className="group relative cursor-help text-xs font-bold text-emerald-600 border-b border-dashed border-emerald-400/50 dark:text-emerald-400">
+                  {progress}% (스킬 노드: {completedCount}/{totalCount})
+                  <div className="pointer-events-none absolute right-0 top-full mt-1.5 z-50 w-max rounded bg-slate-800 px-2.5 py-1 text-[11px] font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                    서브 퀘스트가 아닌 전체 스킬 노드 기준입니다.
+                  </div>
                 </span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
