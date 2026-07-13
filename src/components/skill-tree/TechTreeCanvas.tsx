@@ -88,6 +88,26 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
     ? data.checklist!.filter(item => checkedKeys[checklistKey(data.id, item)]).length
     : 0;
 
+  // 상태별 확실한 시각적 분리를 위한 클래스 계산
+  let stateClasses = "";
+  if (status === "locked") {
+    stateClasses = "border-dashed border-slate-300 border-l-slate-300 bg-slate-100/50 opacity-60 grayscale-[80%] dark:border-slate-700 dark:border-l-slate-700 dark:bg-slate-900/50";
+  } else if (isCompleted) {
+    stateClasses = "border-emerald-200 border-l-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/10 dark:border-emerald-800 dark:border-l-emerald-500 dark:bg-emerald-950/40";
+  } else {
+    // available (진행 전)
+    stateClasses = "border-slate-200 border-l-sky-400 bg-white shadow-sm dark:border-slate-700 dark:border-l-sky-500 dark:bg-slate-900";
+  }
+
+  // GOAL 노드는 강력한 임팩트 부여
+  if (isGoal) {
+    if (isCompleted) {
+      stateClasses = "scale-105 border-emerald-400 border-l-[8px] border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50/50 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400/50 dark:from-emerald-950/40 dark:to-teal-950/20";
+    } else {
+      stateClasses = "scale-105 border-amber-400 border-l-[8px] border-l-amber-500 bg-gradient-to-br from-amber-50 to-orange-50/50 shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-1 ring-amber-400/50 dark:from-amber-950/40 dark:to-orange-950/20";
+    }
+  }
+
   return (
     <div
       role="button"
@@ -96,12 +116,9 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         "group relative w-72 rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
         "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
         selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
-        isCompleted ? "opacity-95" : "",
-        isNextAction ? "border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] animate-[pulse_3s_ease-in-out_infinite]" : "",
-        isGoal && !isCompleted ? "border-amber-300 shadow-[0_0_30px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/50" : "",
-        isGoal && isCompleted ? "border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/50" : "",
-        statusClassName[status],
-        categoryColor.border,
+        isNextAction && !isGoal ? "border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] animate-[pulse_3s_ease-in-out_infinite]" : "",
+        stateClasses,
+        !isGoal ? categoryColor.border : "", // GOAL 노드는 고유 보더 사용
       ].join(" ")}
     >
       <div className="absolute -left-4 -top-3 z-10 flex gap-2">
