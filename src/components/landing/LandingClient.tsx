@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, Play } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -140,11 +141,15 @@ export function LandingClient() {
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white flex flex-col">
       {/* Navbar Placeholder */}
       <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/70 bg-white/70 px-6 backdrop-blur-md dark:border-white/10 dark:bg-slate-950/70">
-        <div className="flex items-center gap-2 font-bold text-lg">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500 text-white dark:bg-emerald-400 dark:text-slate-950">
-            🌱
-          </span>
-          Zarami
+        <div className="flex items-center gap-2">
+          <Image
+            src="/images/brand/svg/zarami-logo-horizontal.svg"
+            alt="Zarami"
+            width={120}
+            height={32}
+            priority
+            className="dark:brightness-200 dark:grayscale"
+          />
         </div>
         <button
           onClick={handleStart}
@@ -387,11 +392,14 @@ export function LandingClient() {
       </section>
       {/* Footer */}
       <footer className="bg-slate-950 py-12 border-t border-white/10 text-center text-slate-400">
-        <div className="flex items-center justify-center gap-2 font-bold text-lg mb-4 text-white">
-          <span className="grid h-6 w-6 place-items-center rounded-lg bg-emerald-500 text-white text-sm">
-            🌱
-          </span>
-          Zarami
+        <div className="flex items-center justify-center mb-6">
+          <Image
+            src="/images/brand/svg/zarami-logo-horizontal.svg"
+            alt="Zarami"
+            width={100}
+            height={28}
+            className="opacity-50 grayscale hover:opacity-100 transition-opacity"
+          />
         </div>
         <p className="text-sm">© 2026 Zarami. All rights reserved. | 실전 지향형 커리어 가이드</p>
       </footer>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sprout } from "lucide-react";
+import Image from "next/image";
 
 import { navItems } from "@/components/layout/navItems";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -17,15 +17,27 @@ export function Sidebar() {
       <div className="flex h-full w-full flex-col">
         <Link
           href="/dashboard"
-          className="flex h-12 items-center gap-3 rounded-xl px-2 text-slate-950 transition hover:bg-white/70 dark:text-white dark:hover:bg-white/10"
+          className="flex h-16 items-center justify-center px-2"
           aria-label="Zarami 대시보드로 이동"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
-            <Sprout className="h-5 w-5" aria-hidden />
-          </span>
-          <span className="min-w-0 translate-x-2 whitespace-nowrap text-sm font-bold opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
-            Zarami
-          </span>
+          <div className="relative flex items-center justify-center">
+            <Image
+              src="/images/brand/svg/zarami-symbol.svg"
+              alt="Zarami"
+              width={32}
+              height={32}
+              priority
+              className="absolute opacity-100 transition-opacity duration-300 group-hover:opacity-0"
+            />
+            <Image
+              src="/images/brand/svg/zarami-logo-horizontal.svg"
+              alt="Zarami"
+              width={120}
+              height={32}
+              priority
+              className="opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:brightness-200 dark:grayscale"
+            />
+          </div>
         </Link>
 
         <nav className="mt-8 flex flex-1 flex-col gap-2" aria-label="전역 메뉴">
