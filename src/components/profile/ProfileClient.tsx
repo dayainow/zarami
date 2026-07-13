@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Image from "next/image";
 import { ExternalLink, Briefcase, FileText, GitCommit, Sparkles } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
@@ -198,24 +199,27 @@ export function ProfileClient() {
             {/* Top 3 Metrics Row */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:col-span-3">
               <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="flex items-center gap-1 text-3xl font-black text-rose-500">
-                  🎯 {marketFitCoverage}%
+                <p className="flex items-center gap-2 text-3xl font-black text-rose-500">
+                  <Image src="/images/assets/stat_target.png" alt="Target" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
+                  {marketFitCoverage}%
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">시장 적합 스킬 커버리지</p>
                 <p className="mt-1 text-[10px] text-slate-500">시장에서 수요가 높은 핵심 기술 달성률</p>
               </div>
               
               <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="flex items-center gap-1 text-3xl font-black text-amber-500">
-                  ⚔️ {stats?.practicalScore ?? 0}점
+                <p className="flex items-center gap-2 text-3xl font-black text-amber-500">
+                  <Image src="/images/assets/stat_swords.png" alt="Swords" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
+                  {stats?.practicalScore ?? 0}점
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">실전 역량 증명 점수</p>
                 <p className="mt-1 text-[10px] text-slate-500">미니 퀘스트 기반 실전 프로젝트 수행 증명</p>
               </div>
 
               <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="flex items-center gap-1 text-3xl font-black text-indigo-500">
-                  📦 {portfolioConversionRate}%
+                <p className="flex items-center gap-2 text-3xl font-black text-indigo-500">
+                  <Image src="/images/assets/stat_chest.png" alt="Chest" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
+                  {portfolioConversionRate}%
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">포트폴리오 전환율</p>
                 <p className="mt-1 text-[10px] text-slate-500">GitHub 등 이력서 실물 자산으로 연결된 비율</p>

@@ -21,6 +21,7 @@ export type SkillNodeData = {
   estimatedMinutes?: number;
   is_completed?: boolean;
   completedAt?: string;
+  certified_by_github?: boolean;
   isNextAction?: boolean;
   isCelebrating?: boolean;
   isTrending?: boolean;
