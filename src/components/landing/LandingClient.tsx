@@ -23,12 +23,24 @@ const demoNodes: SkillTreeNode[] = [
     },
   },
   {
+    id: "ts",
+    type: "skill",
+    position: { x: 0, y: 0 },
+    data: {
+      id: "ts",
+      title: "TypeScript 기반 설계",
+      category: "Frontend",
+      status: "completed",
+      certified_by_github: true,
+    },
+  },
+  {
     id: "react",
     type: "skill",
-    position: { x: 300, y: -100 },
+    position: { x: 0, y: 0 },
     data: {
       id: "react",
-      title: "React Hooks 심화",
+      title: "React 코어 아키텍처",
       category: "Frontend",
       status: "completed",
       certified_by_github: true,
@@ -38,10 +50,10 @@ const demoNodes: SkillTreeNode[] = [
   {
     id: "nextjs",
     type: "skill",
-    position: { x: 300, y: 100 },
+    position: { x: 0, y: 0 },
     data: {
       id: "nextjs",
-      title: "Next.js App Router",
+      title: "Next.js App Router 도입",
       category: "Frontend",
       status: "available",
       isTrending: true,
@@ -51,27 +63,58 @@ const demoNodes: SkillTreeNode[] = [
   {
     id: "zustand",
     type: "skill",
-    position: { x: 600, y: -100 },
+    position: { x: 0, y: 0 },
     data: {
       id: "zustand",
-      title: "Zustand 상태관리",
+      title: "Zustand 전역 상태관리",
       category: "Frontend",
+      status: "available",
+      isTrending: true,
+    },
+  },
+  {
+    id: "perf",
+    type: "skill",
+    position: { x: 0, y: 0 },
+    data: {
+      id: "perf",
+      title: "웹 성능 및 렌더링 최적화",
+      category: "Frontend",
+      status: "locked",
+    },
+  },
+  {
+    id: "cicd",
+    type: "skill",
+    position: { x: 0, y: 0 },
+    data: {
+      id: "cicd",
+      title: "GitHub Actions CI/CD",
+      category: "DevOps",
       status: "locked",
     },
   },
 ];
 
 const demoEdges: SkillTreeEdge[] = [
+  { id: "e-goal-ts", source: "goal", target: "ts", type: "custom" },
   { id: "e-goal-react", source: "goal", target: "react", type: "custom" },
-  { id: "e-goal-nextjs", source: "goal", target: "nextjs", type: "custom", animated: true },
+  { id: "e-ts-nextjs", source: "ts", target: "nextjs", type: "custom" },
+  { id: "e-react-nextjs", source: "react", target: "nextjs", type: "custom", animated: true },
   { id: "e-react-zustand", source: "react", target: "zustand", type: "custom" },
+  { id: "e-nextjs-perf", source: "nextjs", target: "perf", type: "custom", animated: true },
+  { id: "e-nextjs-cicd", source: "nextjs", target: "cicd", type: "custom" },
 ];
+
+const { nodes: initialLayoutedNodes, edges: initialLayoutedEdges } = getLayoutedElements(demoNodes, demoEdges, "LR");
 
 export function LandingClient() {
   const router = useRouter();
   const { data: trends } = useSkillTrends();
-  const [layoutedNodes, setLayoutedNodes] = useState<SkillTreeNode[]>(demoNodes);
-  const [layoutedEdges, setLayoutedEdges] = useState<SkillTreeEdge[]>(demoEdges);
+  
+  // Use pre-calculated layouted nodes for initial state so ReactFlow can fitView properly on mount
+  const [layoutedNodes, setLayoutedNodes] = useState<SkillTreeNode[]>(initialLayoutedNodes);
+  const [layoutedEdges, setLayoutedEdges] = useState<SkillTreeEdge[]>(initialLayoutedEdges);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -85,12 +128,7 @@ export function LandingClient() {
     });
   }, []);
 
-  useEffect(() => {
-    // Layout the demo nodes
-    const { nodes: layoutedN, edges: layoutedE } = getLayoutedElements(demoNodes, demoEdges, "LR");
-    setLayoutedNodes(layoutedN);
-    setLayoutedEdges(layoutedE);
-  }, []);
+  // (Removed layout calculation useEffect since it's done synchronously above)
 
   const handleStart = () => {
     router.push("/dashboard");
@@ -150,15 +188,24 @@ export function LandingClient() {
         </div>
 
         {/* Right: Interactive Canvas Demo */}
-        <div className="flex-1 w-full h-[400px] lg:h-[500px] rounded-3xl border border-white/60 bg-white/40 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 overflow-hidden relative group">
-          <div className="absolute inset-0 z-0 opacity-50 dark:opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-300/20 via-slate-50/0 to-transparent" />
+        <div className="flex-1 w-full h-[400px] lg:h-[550px] rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-sky-900/5 overflow-hidden flex flex-col relative group dark:border-white/10 dark:bg-slate-950 dark:shadow-none transition-transform hover:scale-[1.02] duration-500">
           
-          <div className="absolute top-4 left-4 z-10 rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm backdrop-blur-md dark:bg-slate-800/80 dark:text-slate-200 flex items-center gap-2">
-            <Target className="h-3.5 w-3.5 text-rose-500" />
-            인터랙티브 데모: 직접 움직여보세요!
+          {/* macOS Style Window Bar */}
+          <div className="h-10 w-full bg-slate-50/80 border-b border-slate-200/80 flex items-center px-4 justify-between backdrop-blur-sm dark:bg-slate-900/80 dark:border-white/5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
+              <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+              <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
+            </div>
+            <div className="text-[11px] font-bold tracking-wider text-slate-400 flex items-center gap-1 uppercase">
+              <Target className="h-3 w-3 text-rose-400" />
+              Live Interactive Demo
+            </div>
+            <div className="w-12" /> {/* Spacer for balance */}
           </div>
 
-          <div className="h-full w-full">
+          <div className="flex-1 relative w-full h-full">
+            <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-400/5 via-transparent to-transparent pointer-events-none" />
             <TechTreeCanvas
               nodes={layoutedNodes}
               edges={layoutedEdges}
