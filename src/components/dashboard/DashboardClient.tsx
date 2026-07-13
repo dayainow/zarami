@@ -34,6 +34,19 @@ export function DashboardClient() {
   const currentStreak = useStreakStore((state) => state.currentStreak);
   const recordActivity = useStreakStore((state) => state.recordActivity);
   const [celebratingSkillId, setCelebratingSkillId] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("has_seen_canvas_onboarding");
+    if (!hasSeen && userId) {
+      setShowOnboarding(true);
+    }
+  }, [userId]);
+
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem("has_seen_canvas_onboarding", "true");
+  }, []);
 
   useEffect(() => {
     if (!currentTreeId && treeList && treeList.length > 0) {
@@ -141,8 +154,9 @@ export function DashboardClient() {
     (node: SkillTreeNode) => {
       setSelectedNodeId(node.id);
       router.push(`/dashboard?node=${node.id}`, { scroll: false });
+      dismissOnboarding();
     },
-    [router],
+    [router, dismissOnboarding],
   );
 
   const handleCloseDrawer = useCallback(() => {
@@ -186,29 +200,38 @@ export function DashboardClient() {
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
               Zarami Dashboard
             </p>
-            <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-              기술트리 성장 캔버스
+            <div className="mt-1 flex flex-col gap-2 md:flex-row md:items-start md:gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                기술트리 성장 캔버스
+              </h1>
               {treeList && treeList.length > 0 && (
-                <div className="relative inline-flex items-center">
-                  <select
-                    className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
-                    value={currentTreeId || ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val) setCurrentTreeId(val);
-                    }}
-                  >
-                    <option value="" disabled>로드맵 선택</option>
-                    {treeList.map(tree => (
-                      <option key={tree.id} value={tree.id}>{tree.title}</option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute right-3 flex items-center text-slate-400 dark:text-slate-500">
-                    <ChevronDown className="h-4 w-4" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative inline-flex items-center">
+                    <select
+                      className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
+                      value={currentTreeId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) setCurrentTreeId(val);
+                      }}
+                    >
+                      <option value="" disabled>로드맵 선택</option>
+                      {treeList.map(tree => (
+                        <option key={tree.id} value={tree.id}>{tree.title}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-3 flex items-center text-slate-400 dark:text-slate-500">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
                   </div>
+                  {myTree && (
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 pl-1">
+                      {`선택한 로드맵: ${myTree.title} | ${progress}% 완료 | 예상 소요 ${Math.round((myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0)) / 60)}시간`}
+                    </span>
+                  )}
                 </div>
               )}
-            </h1>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="h-3 w-48 overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
@@ -296,12 +319,31 @@ export function DashboardClient() {
           </div>
         </div>
       ) : (
-        <TechTreeCanvas
-          nodes={nodes}
-          edges={edges}
-          onNodeSelect={handleNodeSelect}
-          className="h-screen min-h-screen pt-20"
-        />
+        <>
+          <TechTreeCanvas
+            nodes={nodes}
+            edges={edges}
+            onNodeSelect={handleNodeSelect}
+            className="h-screen min-h-screen pt-20"
+          />
+          {showOnboarding && (
+            <div className="absolute bottom-10 left-1/2 z-40 flex w-max -translate-x-1/2 flex-col items-center animate-bounce">
+              <div className="relative rounded-2xl border border-sky-200/50 bg-white/95 px-5 py-3 shadow-[0_10px_40px_rgba(14,165,233,0.3)] backdrop-blur-xl dark:border-sky-400/20 dark:bg-slate-900/95 dark:shadow-[0_10px_40px_rgba(14,165,233,0.15)]">
+                <p className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                  <span className="text-xl">💡</span> 노드를 클릭하면 퀘스트 상세를 확인할 수 있어요!
+                </p>
+                <div className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-sky-200/50 bg-white/95 dark:border-sky-400/20 dark:bg-slate-900/95" />
+              </div>
+              <button
+                type="button"
+                onClick={dismissOnboarding}
+                className="mt-4 rounded-full bg-slate-900/10 px-4 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-900/20 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
+              >
+                알겠어요
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <Drawer

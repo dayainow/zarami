@@ -18,8 +18,8 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/manage-tree",
-    label: "나만의 로드맵 만들기",
-    subLabel: "퀘스트/목표 편집",
+    label: "퀘스트 편집",
+    subLabel: "나만의 목표 관리",
     icon: TreePine,
   },
   {

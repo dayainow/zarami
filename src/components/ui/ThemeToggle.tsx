@@ -48,7 +48,7 @@ export function ThemeToggle({ showLabel = false, className }: ThemeToggleProps) 
       </span>
       {showLabel ? (
         <span className="whitespace-nowrap text-sm font-semibold">
-          {isDark ? "라이트 모드" : "다크 모드"}
+          {isDark ? "현재 모드: 다크 🌙" : "현재 모드: 라이트 ☀️"}
         </span>
       ) : null}
     </button>

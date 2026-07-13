@@ -74,34 +74,37 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   const isCompleted = data.is_completed === true || status === "completed";
   const isNextAction = data.isNextAction === true && !isCompleted;
   const categoryColor = getCategoryColor(data.category);
+  const isGoal = data.category?.toLowerCase() === "goal" || data.id === "goal";
 
   return (
-    // A div, not a <button>: the branch collapse/expand toggle below needs
-    // its own interactive element nested inside, and browsers strip nested
-    // interactive semantics from anything inside a real <button>.
     <div
       role="button"
       tabIndex={0}
       className={[
-        "group relative w-72 rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
+        "group relative min-w-[280px] max-w-[360px] rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
         "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
         selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
         isCompleted ? "opacity-95" : "",
         isNextAction ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]" : "",
+        isGoal && !isCompleted ? "border-amber-300/90 shadow-[0_0_25px_rgba(251,191,36,0.4)] ring-1 ring-amber-400" : "",
+        isGoal && isCompleted ? "border-emerald-400/90 shadow-[0_0_25px_rgba(16,185,129,0.4)] ring-1 ring-emerald-500" : "",
         statusClassName[status],
         categoryColor.border,
       ].join(" ")}
     >
-      {isNextAction ? (
-        <div className="absolute -right-3 -top-3 z-10 rounded-md border border-amber-200 bg-amber-300 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow-lg">
-          Next Action
-        </div>
-      ) : null}
-      {data.isTrending ? (
-        <div className="absolute -left-4 -top-3 z-10 flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
-          <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
-        </div>
-      ) : null}
+      <div className="absolute -left-3 -top-3 z-10 flex gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+        {isNextAction ? (
+          <div className="rounded-md border border-amber-200 bg-amber-300 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow-lg">
+            Next Action
+          </div>
+        ) : null}
+        {data.isTrending ? (
+          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
+            <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
+          </div>
+        ) : null}
+      </div>
+
       {data.isCelebrating ? (
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-lg">
           <span className="absolute left-5 top-4 h-2 w-2 animate-bounce rounded-full bg-sky-300" />
@@ -109,61 +112,77 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           <span className="absolute bottom-4 left-1/2 h-2 w-2 animate-bounce rounded-full bg-amber-300 [animation-delay:120ms]" />
         </div>
       ) : null}
-      {typeof data.estimatedMinutes === "number" ? (
-        <div className="absolute -right-3 -top-3 z-10 flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold tracking-wide text-slate-600 shadow-sm dark:border-white/10 dark:bg-slate-800 dark:text-slate-300">
-          ⏳ {formatEstimatedTime(data.estimatedMinutes)}
-        </div>
-      ) : null}
+      
       <Handle
         type="target"
         position={Position.Bottom}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
+      
+      {/* Compact Main Row */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="shrink-0 flex items-center">
             {isCompleted ? (
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
             ) : status === "locked" ? (
-              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+              <Lock className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" aria-hidden />
             ) : (
               <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
             )}
-            {data.category ? (
-              <span
-                className={`truncate rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryColor.badge}`}
-              >
-                {data.category}
+          </div>
+          
+          <div className="flex items-center gap-2 truncate">
+            {typeof data.estimatedMinutes === "number" ? (
+              <span className="shrink-0 text-[11px] font-bold tracking-wide text-slate-500 dark:text-slate-400">
+                ⏳ {formatEstimatedTime(data.estimatedMinutes)}
               </span>
             ) : null}
+            
+            {(typeof data.estimatedMinutes === "number" || data.category) && (
+              <span className="text-slate-300 dark:text-slate-600">|</span>
+            )}
+            
+            {data.category ? (
+              <>
+                <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${categoryColor.badge}`}>
+                  {data.category}
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+              </>
+            ) : null}
+            
+            <h3 className={["truncate text-sm font-bold", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
+              {data.title}
+            </h3>
           </div>
-          <h3 className={["mt-2 truncate text-base font-semibold", isCompleted ? "line-through" : ""].join(" ")}>
-            {data.title}
-          </h3>
-          {data.description ? (
-            <p
-              className={[
-                "mt-1 line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-300",
-                isCompleted ? "line-through" : "",
-              ].join(" ")}
-            >
-              {data.description}
-            </p>
-          ) : null}
         </div>
+        
         {typeof data.level === "number" ? (
-          <span className="shrink-0 rounded-md bg-slate-900/90 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-slate-100 dark:text-slate-950">
+          <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
             Lv.{data.level}
           </span>
         ) : null}
       </div>
-      {isNextAction ? (
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <span className="h-1.5 rounded-full bg-amber-300" />
-          <span className="h-1.5 rounded-full bg-sky-300" />
-          <span className="h-1.5 rounded-full bg-emerald-300" />
+
+      {/* Expandable Details Area (Description) */}
+      <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-in-out group-hover:grid-rows-[1fr] group-hover:opacity-100 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100">
+        <div className="overflow-hidden">
+          {data.description ? (
+            <p className={["mt-3 line-clamp-3 text-xs leading-5 text-slate-600 dark:text-slate-300", isCompleted ? "line-through" : ""].join(" ")}>
+              {data.description}
+            </p>
+          ) : null}
+          {isNextAction ? (
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <span className="h-1.5 rounded-full bg-amber-300" />
+              <span className="h-1.5 rounded-full bg-sky-300" />
+              <span className="h-1.5 rounded-full bg-emerald-300" />
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </div>
+
       <Handle
         type="source"
         position={Position.Top}
@@ -173,8 +192,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         <div
           role="button"
           tabIndex={0}
-          aria-label={data.isCollapsed ? "하위 브랜치 펼치기" : "하위 브랜치 접기"}
-          title={data.isCollapsed ? "하위 브랜치 펼치기" : "하위 브랜치 접기"}
+          aria-label={data.isCollapsed ? "세부 퀘스트 보기" : "세부 퀘스트 숨기기"}
+          title={data.isCollapsed ? "세부 퀘스트 보기" : "세부 퀘스트 숨기기"}
           onClick={(event) => {
             event.stopPropagation();
             data.onToggleCollapse?.(data.id);
