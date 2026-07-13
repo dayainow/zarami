@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { Award, ExternalLink, ShieldCheck, TrendingUp, X } from "lucide-react";
+import { Award, ExternalLink, Github, ShieldCheck, TrendingUp, X } from "lucide-react";
 import { formatEstimatedTime } from "@/utils/format";
 
 import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
@@ -325,6 +325,29 @@ export function Drawer({
               <p className="mt-2 text-center text-xs text-amber-600 dark:text-amber-300">
                 오프라인 상태입니다. 재연결되면 자동으로 동기화됩니다.
               </p>
+            ) : null}
+
+            {isCompleted ? (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-slate-200 p-2 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <Github className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">GitHub에 잔디 심기</h4>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                      퀘스트 완료 내역을 GitHub와 연동하여 자동으로 포트폴리오를 성장시킬 수 있습니다.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => alert("GitHub 연동 기능은 현재 준비 중입니다! (데모 버전)")}
+                      className="mt-3 w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                    >
+                      GitHub 연동하기
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : null}
           </footer>
         </div>

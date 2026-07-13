@@ -22,6 +22,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { useSkillStore } from "@/stores/useSkillStore";
+import { checklistKey, useChecklistStore } from "@/stores/useChecklistStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 import { formatEstimatedTime } from "@/utils/format";
 
@@ -66,12 +67,26 @@ const fitViewOptions = {
 
 const proOptions = { hideAttribution: true };
 
+const categoryTooltips: Record<string, string> = {
+  CORE: "💡 기초 개념, 반드시 선행해야 합니다.",
+  ACTION: "🛠️ 실습 과제, 코드 작성이 필요합니다.",
+  GOAL: "🏆 최종 산출물, 포트폴리오에 연결됩니다.",
+  CUSTOM: "✨ 사용자가 직접 추가한 목표입니다.",
+};
+
 const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTreeNode>) {
   const status = data.status ?? "available";
   const isCompleted = data.is_completed === true || status === "completed";
   const isNextAction = data.isNextAction === true && !isCompleted;
   const categoryColor = getCategoryColor(data.category);
   const isGoal = data.category?.toLowerCase() === "goal" || data.id === "goal";
+  const categoryTooltip = categoryTooltips[data.category?.toUpperCase() ?? ""] || "스킬 타입";
+
+  const checkedKeys = useChecklistStore((state) => state.checkedKeys);
+  const checklistTotal = data.checklist?.length || 0;
+  const checklistCompleted = checklistTotal > 0 
+    ? data.checklist!.filter(item => checkedKeys[checklistKey(data.id, item)]).length
+    : 0;
 
   return (
     <div
@@ -130,18 +145,28 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           
           <div className="flex items-center gap-2 truncate">
             {data.category ? (
-              <>
-                <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${categoryColor.badge}`}>
+              <div className="group/category relative flex items-center">
+                <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider cursor-help ${categoryColor.badge}`}>
                   {data.category}
                 </span>
-                <span className="text-slate-300 dark:text-slate-600">|</span>
-              </>
+                <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-max opacity-0 transition-opacity group-hover/category:opacity-100 rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-white shadow-lg dark:bg-slate-700">
+                  {categoryTooltip}
+                </div>
+                <span className="text-slate-300 dark:text-slate-600 ml-2">|</span>
+              </div>
             ) : null}
             
-            <h3 className={["truncate text-sm font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
-              {data.title}
-              {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
-            </h3>
+            <div className="flex flex-col">
+              <h3 className={["truncate text-sm font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
+                {data.title}
+                {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
+              </h3>
+              {checklistTotal > 0 ? (
+                <span className={`text-[10px] font-semibold tracking-wide ${checklistCompleted === checklistTotal ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                  ✓ 서브 퀘스트 {checklistCompleted}/{checklistTotal}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
         

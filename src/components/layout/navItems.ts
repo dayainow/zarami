@@ -13,19 +13,19 @@ export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "나의 테크트리",
-    subLabel: "메인 대시보드",
+    subLabel: "현재 진행 중인 로드맵",
     icon: LayoutDashboard,
   },
   {
     href: "/manage-tree",
     label: "퀘스트 편집",
-    subLabel: "나만의 목표 관리",
+    subLabel: "노드 추가/수정",
     icon: TreePine,
   },
   {
     href: "/profile",
-    label: "성장 기록",
-    subLabel: "내 포트폴리오",
+    label: "퀘스트 완료 기록",
+    subLabel: "GitHub 포트폴리오 (연동)",
     icon: UserRound,
   },
   {
