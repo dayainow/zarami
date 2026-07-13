@@ -102,13 +102,6 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
         className="w-full h-full drop-shadow-2xl"
       >
         <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
           <style>
             {`
               @keyframes bob {
@@ -120,102 +113,106 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
               }
             `}
           </style>
+          {activeRegions.map((region) => (
+            <mask id={`progressMask-${region.category}`} key={`mask-${region.category}`}>
+              <path
+                d={region.path}
+                fill="none"
+                stroke="white"
+                strokeWidth="40"
+                pathLength="100"
+                strokeDasharray="100 100"
+                strokeDashoffset={100 - (region.progress * 100)}
+                style={{ transition: "stroke-dashoffset 1.5s linear" }}
+              />
+            </mask>
+          ))}
         </defs>
 
         {activeRegions.map((region) => (
           <g key={region.category}>
-            {/* The modern background path (Uncompleted) */}
+            {/* The retro background path (Uncompleted) */}
             <path
               d={region.path}
               fill="none"
-              stroke="rgba(255,255,255,0.15)"
+              stroke="#000000"
+              strokeWidth="12"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+              strokeDasharray="16 16"
+              opacity="0.3"
+            />
+            <path
+              d={region.path}
+              fill="none"
+              stroke="#451a03"
               strokeWidth="6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#glow)"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+              strokeDasharray="16 16"
+              opacity="0.5"
             />
-            {/* The modern fiber-optic path (Completed progress) */}
-            <path
-              d={region.path}
-              fill="none"
-              stroke={region.color}
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#glow)"
-              opacity="1"
-              pathLength="100"
-              strokeDashoffset={100 - (region.progress * 100)}
-              style={{ strokeDasharray: "100 100", transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
-            />
-            {/* Inner core line for intense neon look */}
-            <path
-              d={region.path}
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.8"
-              pathLength="100"
-              strokeDashoffset={100 - (region.progress * 100)}
-              style={{ strokeDasharray: "100 100", transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
-            />
+
+            {/* The retro progress path (Completed) */}
+            <g mask={`url(#progressMask-${region.category})`}>
+              <path
+                d={region.path}
+                fill="none"
+                stroke="#000000"
+                strokeWidth="12"
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeDasharray="16 16"
+              />
+              <path
+                d={region.path}
+                fill="none"
+                stroke={region.color}
+                strokeWidth="6"
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeDasharray="16 16"
+              />
+            </g>
 
             {/* Waypoints Render */}
             {region.waypoints?.map((wp, i) => (
-              <g key={`wp-${i}`} className="transition-all duration-300 hover:scale-110">
-                <circle
-                  cx={wp.x}
-                  cy={wp.y}
-                  r="12"
-                  fill="#0f172a"
-                  stroke={region.color}
-                  strokeWidth="3"
-                  filter="url(#glow)"
-                />
-                <circle
-                  cx={wp.x}
-                  cy={wp.y}
-                  r="4"
-                  fill="#ffffff"
-                />
-                <rect
-                  x={wp.x + 20}
-                  y={wp.y - 12}
-                  width="70"
-                  height="24"
-                  rx="12"
-                  fill="rgba(15, 23, 42, 0.8)"
-                  stroke={region.color}
-                  strokeWidth="1"
-                  className="backdrop-blur-sm"
-                />
+              <g key={`wp-${i}`} className="transition-transform duration-300 hover:scale-110">
+                {/* Pixel Art Style Waypoint Marker */}
+                <rect x={wp.x - 10} y={wp.y - 10} width="20" height="20" fill="#000000" />
+                <rect x={wp.x - 6} y={wp.y - 6} width="12" height="12" fill={region.color} />
+                <rect x={wp.x - 2} y={wp.y - 2} width="4" height="4" fill="#ffffff" />
+
+                {/* Pixel Banner Background */}
+                <rect x={wp.x + 16} y={wp.y - 16} width="95" height="32" fill="#000000" />
+                <rect x={wp.x + 19} y={wp.y - 13} width="89" height="26" fill="#ffffff" />
+                {/* Banner inner border */}
+                <rect x={wp.x + 21} y={wp.y - 11} width="85" height="22" fill="none" stroke="#e2e8f0" strokeWidth="2" />
                 <text
-                  x={wp.x + 55}
-                  y={wp.y + 4}
-                  fill="#ffffff"
-                  fontSize="12"
-                  fontWeight="bold"
+                  x={wp.x + 63.5}
+                  y={wp.y + 5}
+                  fill="#000000"
+                  fontSize="14"
+                  fontFamily="monospace"
+                  fontWeight="900"
                   textAnchor="middle"
-                  className="pointer-events-none drop-shadow-md select-none"
+                  className="pointer-events-none select-none tracking-widest"
                 >
                   {wp.label}
                 </text>
               </g>
             ))}
             
-            {/* Animated Character Avatar along the path using animateMotion */}
+            {/* Animated Character Avatar along the path */}
             <g>
               <g className="rpg-character">
-                {/* Character Image positioned so its feet are on the path */}
-                <image href={region.icon || "/images/characters/hero_back.png"} x="-45" y="-90" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
+                {/* Retro shadow */}
+                <ellipse cx="0" cy="0" rx="16" ry="6" fill="#000000" opacity="0.4" />
                 
-                {/* Modern glow indicator beneath character */}
-                <ellipse cx="0" cy="-5" rx="20" ry="8" fill={region.color} opacity="0.4" filter="url(#glow)" />
+                {/* Character Image */}
+                <image href={region.icon || "/images/characters/hero_back.png"} x="-45" y="-85" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
               </g>
               
-              {/* Note: SVG animateMotion works great for this */}
               <animateMotion
                 dur="1.5s"
                 repeatCount="1"
