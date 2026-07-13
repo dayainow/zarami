@@ -207,28 +207,41 @@ export function DashboardClient() {
               </h1>
               {treeList && treeList.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <div className="relative inline-flex items-center">
-                    <select
-                      className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
-                      value={currentTreeId || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val) setCurrentTreeId(val);
-                      }}
-                    >
-                      <option value="" disabled>로드맵 선택</option>
-                      {treeList.map(tree => (
-                        <option key={tree.id} value={tree.id}>{tree.title}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute right-3 flex items-center text-slate-400 dark:text-slate-500">
-                      <ChevronDown className="h-4 w-4" />
+                  <div className="flex items-center gap-2">
+                    <div className="relative inline-flex items-center">
+                      <select
+                        className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
+                        value={currentTreeId || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) setCurrentTreeId(val);
+                        }}
+                      >
+                        <option value="" disabled>로드맵 선택</option>
+                        {treeList.map(tree => (
+                          <option key={tree.id} value={tree.id}>{tree.title === "나의 테크트리" ? "나만의 커스텀 트리" : tree.title}</option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute right-3 flex items-center text-slate-400 dark:text-slate-500">
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
                     </div>
+                    <Link
+                      href="/manage-tree"
+                      className="group flex h-9 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/50 px-3 text-xs font-bold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                    >
+                      <span className="mr-1 text-base leading-none">+</span> 새 로드맵
+                    </Link>
                   </div>
                   {myTree && (
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 pl-1">
-                      {`선택한 로드맵: ${myTree.title} | ${progress}% 완료 | 총 예상 소요 ${formatEstimatedTime(myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0))}`}
-                    </span>
+                    <div className="group relative w-max pl-1">
+                      <span className="cursor-help border-b border-dashed border-slate-300/80 text-[11px] font-semibold text-slate-500 transition-colors hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200">
+                        {`선택한 로드맵: ${myTree.title === "나의 테크트리" ? "나만의 커스텀 트리" : myTree.title} | ${progress}% 완료 | 총 예상 소요 ${formatEstimatedTime(myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0))}`}
+                      </span>
+                      <div className="pointer-events-none absolute left-0 top-full mt-1.5 z-50 w-max rounded-md bg-slate-800 px-2.5 py-1.5 text-[11px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                        💡 진행 상태는 로드맵별로 독립적으로 자동 저장됩니다.
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
