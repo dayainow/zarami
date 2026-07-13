@@ -18,13 +18,13 @@ const REGIONS = [
     category: "Frontend",
     name: "Grass Castle (초원)",
     color: "#38bdf8", // Sky blue
-    icon: "/images/characters/hero_back.png", // Single Hero Character (Back View)
-    path: "M 250,850 L 250,500 L 350,500 L 350,300 L 250,300 L 250,150",
+    icon: "/images/characters/hero_back.png",
+    path: "M 520,850 L 520,540 L 280,540 L 280,460",
     waypoints: [
-      { x: 250, y: 850, label: "입문" },
-      { x: 350, y: 500, label: "기초" },
-      { x: 350, y: 300, label: "심화" },
-      { x: 250, y: 150, label: "최종 목표" }
+      { x: 520, y: 850, label: "입문" },      // 시작의 다리
+      { x: 520, y: 540, label: "기초" },      // 중앙 교차로
+      { x: 280, y: 540, label: "심화" },      // 성문 앞 다리
+      { x: 280, y: 460, label: "최종 목표" }  // 캐슬 입구
     ]
   },
   {
@@ -32,12 +32,12 @@ const REGIONS = [
     name: "Mountain Keep (바위 산맥)",
     color: "#f97316", // Orange
     icon: "/images/characters/hero_back.png",
-    path: "M 500,850 L 500,550 L 550,550 L 550,400 L 500,400 L 500,150",
+    path: "M 760,850 L 760,540 L 520,540 L 520,200",
     waypoints: [
-      { x: 500, y: 850, label: "입문" },
-      { x: 550, y: 550, label: "기초" },
-      { x: 550, y: 400, label: "심화" },
-      { x: 500, y: 150, label: "최종 목표" }
+      { x: 760, y: 850, label: "입문" },      // 남동쪽 버섯집
+      { x: 760, y: 540, label: "기초" },      // 동쪽 교차로
+      { x: 520, y: 540, label: "심화" },      // 중앙 교차로
+      { x: 520, y: 200, label: "최종 목표" }  // 북쪽 산맥
     ]
   },
   {
@@ -45,12 +45,12 @@ const REGIONS = [
     name: "Forest Castle (유령 숲)",
     color: "#a855f7", // Purple
     icon: "/images/characters/hero_back.png",
-    path: "M 750,850 L 750,650 L 650,650 L 650,450 L 800,450 L 800,200",
+    path: "M 520,850 L 520,540 L 760,540 L 760,240 L 880,240",
     waypoints: [
-      { x: 750, y: 850, label: "입문" },
-      { x: 650, y: 650, label: "기초" },
-      { x: 650, y: 450, label: "심화" },
-      { x: 800, y: 200, label: "최종 목표" }
+      { x: 520, y: 850, label: "입문" },      // 시작의 다리
+      { x: 520, y: 540, label: "기초" },      // 중앙 교차로
+      { x: 760, y: 540, label: "심화" },      // 동쪽 교차로
+      { x: 880, y: 240, label: "최종 목표" }  // 북동쪽 버섯집
     ]
   }
 ];
@@ -154,41 +154,34 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
             {/* Retro Waypoints Render (Blocky 8-bit style) */}
             {region.waypoints?.map((wp, i) => (
               <g key={`wp-${i}`} className="transition-all duration-300 hover:scale-110">
-                {/* Blocky square marker */}
-                <rect
-                  x={wp.x - 8}
-                  y={wp.y - 8}
-                  width="16"
-                  height="16"
-                  fill="#000000"
-                />
-                <rect
-                  x={wp.x - 4}
-                  y={wp.y - 4}
-                  width="8"
-                  height="8"
+                
+                {/* Pointer Triangle pointing at the object */}
+                <path
+                  d={`M ${wp.x - 8} ${wp.y - 10} L ${wp.x + 8} ${wp.y - 10} L ${wp.x} ${wp.y - 2} Z`}
                   fill={region.color}
+                  stroke="#000000"
+                  strokeWidth="3"
                 />
                 
-                {/* Blocky Label Badge */}
+                {/* Blocky Label Badge (Centered above the object) */}
                 <rect
-                  x={wp.x + 16}
-                  y={wp.y - 12}
-                  width="70"
-                  height="24"
+                  x={wp.x - 50}
+                  y={wp.y - 42}
+                  width="100"
+                  height="32"
                   fill="#FFE128"
                   stroke="#000000"
                   strokeWidth="3"
                 />
                 <text
-                  x={wp.x + 51}
-                  y={wp.y + 4}
+                  x={wp.x}
+                  y={wp.y - 21}
                   fill="#000000"
-                  fontSize="12"
-                  fontWeight="bold"
+                  fontSize="16"
+                  fontWeight="900"
                   fontFamily='"Courier New", Courier, monospace'
                   textAnchor="middle"
-                  className="pointer-events-none select-none"
+                  className="pointer-events-none select-none drop-shadow-sm"
                 >
                   {wp.label}
                 </text>
