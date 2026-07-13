@@ -48,9 +48,16 @@ export function Sidebar() {
                 <span className="grid h-9 w-9 shrink-0 place-items-center">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
-                <span className="min-w-0 translate-x-2 whitespace-nowrap opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
-                  {item.label}
-                </span>
+                <div className="flex min-w-0 flex-col translate-x-2 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
+                  <span className="whitespace-nowrap">
+                    {item.label}
+                  </span>
+                  {item.subLabel && (
+                    <span className="whitespace-nowrap text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">
+                      {item.subLabel}
+                    </span>
+                  )}
+                </div>
               </Link>
             );
           })}

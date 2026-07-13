@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { ExternalLink, Briefcase, FileText, GitCommit, Sparkles } from "lucide-react";
+import { ExternalLink, Briefcase, FileText, GitCommit, Sparkles, Target, TrendingUp } from "lucide-react";
 
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
@@ -156,7 +156,7 @@ export function ProfileClient() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
+    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:white">
       <div className="mx-auto max-w-3xl space-y-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -327,29 +327,80 @@ export function ProfileClient() {
           </div>
 
           {!userId ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/65 p-6 backdrop-blur-md dark:bg-slate-950/65">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">로그인하면 전체 대시보드를 볼 수 있어요</p>
-              {emailSent ? (
-                <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">이메일로 로그인 링크를 보냈습니다!</p>
-              ) : (
-                <form onSubmit={handleLogin} className="mt-2 flex w-full max-w-xs flex-col gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="이메일 주소 입력"
-                    required
-                    className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSending}
-                    className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
-                  >
-                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
-                  </button>
-                </form>
-              )}
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 rounded-2xl bg-white/85 p-6 backdrop-blur-xl dark:bg-slate-950/85 md:p-12 overflow-y-auto">
+              <div className="text-center max-w-2xl w-full">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                  <Sparkles className="h-3 w-3" />
+                  주니어에서 미들/시니어로 도약하기
+                </div>
+                <h2 className="mb-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white md:text-3xl lg:text-4xl">
+                  개인 기술트리를 직접 깎아 나가는<br />실전 커리어 가이드, Zarami
+                </h2>
+                <p className="mb-8 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300 md:text-base">
+                  어느 방향으로 성장해야 할지 막막하신가요? 잔디만 심는 것에 지치셨나요?<br className="hidden md:block"/>
+                  지금 로그인하면 AI가 당신만의 커리어 로드맵을 그려주고,<br className="hidden md:block"/>
+                  시장에서 원하는 최신 채용 공고 기반의 퀘스트를 즉시 제공해 드립니다.
+                </p>
+                
+                <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3 text-left">
+                  <div className="flex flex-col gap-2 rounded-xl border border-white/60 bg-white/50 p-5 shadow-sm transition-transform hover:-translate-y-1 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+                      <Target className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">실전 미니 프로젝트</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      원티드/점핏 JD를 분석하여 이력서에 바로 쓸 수 있는 2주 단기 스프린트 퀘스트를 제공합니다.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-xl border border-white/60 bg-white/50 p-5 shadow-sm transition-transform hover:-translate-y-1 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">채용 트렌드 시각화</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      100건 이상의 실제 채용 공고를 분석하여, 지금 시장에서 가장 많이 찾는 기술을 알려줍니다.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-xl border border-white/60 bg-white/50 p-5 shadow-sm transition-transform hover:-translate-y-1 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
+                      <GitCommit className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">GitHub 자동 인증</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      GitHub PR이나 레포지토리를 연동하여, 달성한 스킬 퀘스트를 내 포트폴리오의 실질적인 자산으로 만듭니다.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mx-auto max-w-sm rounded-2xl bg-slate-50 p-6 shadow-inner border border-slate-100 dark:bg-slate-900/50 dark:border-white/5">
+                  <p className="mb-4 text-sm font-bold text-slate-800 dark:text-slate-200">
+                    지금 무료로 모험을 시작하세요 🚀
+                  </p>
+                  {emailSent ? (
+                    <div className="rounded-xl bg-emerald-50 py-3 text-sm font-bold text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                      이메일로 로그인 링크를 보냈습니다! 메일함을 확인해주세요.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleLogin} className="flex flex-col gap-3">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="이메일 주소 입력"
+                        required
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 shadow-sm transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSending}
+                        className="w-full rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                      >
+                        {isSending ? "전송 중..." : "매직 링크로 1초 만에 로그인"}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
             </div>
           ) : null}
         </div>

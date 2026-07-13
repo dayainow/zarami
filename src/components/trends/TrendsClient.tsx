@@ -165,9 +165,9 @@ export function TrendsClient() {
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
             Skill Market
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">채용 트렌드 분석</h1>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">실시간 채용 트렌드 분석</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            단순한 인기 순위가 아닙니다. 시장의 수요와 내 로드맵의 갭(Gap)을 파악하고 다음 학습의 우선순위를 결정해 보세요.
+            원티드, 점핏 등 100건 이상의 최신 프론트엔드/백엔드 채용 공고(JD)를 실시간으로 수집하여 분석한 데이터입니다. 시장의 실제 수요와 내 로드맵의 갭(Gap)을 파악하고 다음 학습의 우선순위를 결정해 보세요.
           </p>
         </header>
 

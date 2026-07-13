@@ -7,7 +7,7 @@ import type { SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
 
 const getGapSystemPrompt = (completedSkills: string[]) => `
 You are an expert career counselor and tech lead. The user wants to apply to a specific company/role and will provide the Job Description (JD).
-Your task is to analyze the JD, compare it against the user's ALREADY COMPLETED SKILLS, and generate a learning roadmap (Directed Acyclic Graph) ONLY for the MISSING skills.
+Your task is to analyze the JD, compare it against the user's ALREADY COMPLETED SKILLS, and generate a **"2-Week Short-Term Sprint Roadmap"** (Directed Acyclic Graph) ONLY for the MISSING skills.
 
 User's Completed Skills (DO NOT include these in the generated tree):
 ${completedSkills.length > 0 ? completedSkills.map(s => `- ${s}`).join("\\n") : "None (The user is starting from scratch)"}
@@ -15,21 +15,21 @@ ${completedSkills.length > 0 ? completedSkills.map(s => `- ${s}`).join("\\n") : 
 Rules:
 1. Extract the core required skills and preferred qualifications from the provided JD.
 2. Filter out any skills that the user has already completed.
-3. Create exactly 3 to 5 key nodes representing ONLY the missing skills that the user must learn to meet the JD's requirements.
+3. Create exactly 3 to 5 key nodes representing a 2-week intensive sprint to learn and prove the missing skills before applying for the job.
 4. Output ONLY valid JSON matching this schema:
 {
-  "title": "A short Korean roadmap title (e.g. '토스 프론트엔드 대비 갭 보완 로드맵')",
+  "title": "A short Korean roadmap title (e.g. '당근마켓 프론트엔드 대비 2주 단기 스프린트')",
   "nodes": [
     {
       "id": "unique-node-id",
       "data": {
         "title": "Short title",
-        "description": "Brief explanation of why this skill is needed for this JD",
-        "category": "Gap",
+        "description": "Brief explanation of why this skill is urgently needed for this JD",
+        "category": "Gap Sprint",
         "level": number (1 for the starting node, 2 for next step, etc. up to 3),
-        "estimatedMinutes": number (realistic learning time in minutes),
+        "estimatedMinutes": number (realistic learning time in minutes for a 2-week sprint context),
         "isTrending": true,
-        "questMarkdown": "A short Korean practical quest in this exact format: '## 실전 미니 퀘스트\\n\\n(단순히 공부하라는 내용이 아니라, 무엇을 직접 만들어보아야 이 기술을 증명할 수 있는지 구체적인 미니 프로젝트나 구현 과제를 1-2문장으로 제시)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
+        "questMarkdown": "A short Korean practical quest in this exact format: '## 🚀 실전 미니 프로젝트 (2주 단기)\\n\\n(단순히 공부하라는 내용이 아니라, 무엇을 직접 만들어보아야 이력서/포트폴리오에 어필할 수 있는지 구체적인 미니 프로젝트나 트러블슈팅 과제를 1-2문장으로 제시)\\n\\n### 면접 대비 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
         "checklist": ["2 to 4 short Korean checklist items, each a concrete sub-step toward finishing this skill"]
       }
     }
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
       animated: true,
     }));
 
-    const title = parsed.title?.trim() || "JD 갭 보완 로드맵";
+    const title = parsed.title?.trim() || "JD 대비 2주 단기 스프린트";
 
     return NextResponse.json({ title, nodes: finalNodes, edges: finalEdges });
   } catch (error) {

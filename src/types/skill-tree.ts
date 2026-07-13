@@ -22,6 +22,7 @@ export type SkillNodeData = {
   is_completed?: boolean;
   completedAt?: string;
   certified_by_github?: boolean;
+  githubLink?: string;
   isNextAction?: boolean;
   isCelebrating?: boolean;
   isTrending?: boolean;

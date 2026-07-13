@@ -63,8 +63,8 @@ const edgeOptions = {
 
 const fitViewOptions = {
   padding: 0.24,
-  minZoom: 0.55,
-  maxZoom: 1,
+  minZoom: 0.1,
+  maxZoom: 1.2,
 };
 
 const proOptions = { hideAttribution: true };
@@ -341,11 +341,13 @@ export function TechTreeCanvas({
         defaultEdgeOptions={edgeOptions}
         fitView
         fitViewOptions={fitViewOptions}
-        minZoom={0.2}
+        minZoom={0.1}
         maxZoom={1.6}
         panOnDrag={interactive || !isDrawerOpen}
         zoomOnScroll={interactive || !isDrawerOpen}
         zoomOnPinch={interactive || !isDrawerOpen}
+        preventScrolling={false} // allows natural mobile scrolling outside canvas
+        panOnScroll={false}
         nodesDraggable={interactive}
         nodesConnectable={interactive}
         elementsSelectable={interactive || !isDrawerOpen}

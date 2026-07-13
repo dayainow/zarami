@@ -8,7 +8,7 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2, ChevronDown, TrendingUp } from "lucide-react";
+import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2, ChevronDown, TrendingUp, GitCommit } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
@@ -864,17 +864,42 @@ export function ManageTreeClient() {
         />
       </section>
 
-      <aside className="flex w-full shrink-0 flex-col border-t border-white/70 bg-white/72 p-5 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/72 dark:shadow-black/30 xl:w-[380px] xl:border-l xl:border-t-0">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
-            <Target className="h-5 w-5" aria-hidden />
-          </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-              Node Settings
-            </p>
-            <h2 className="text-lg font-bold text-slate-950 dark:text-white">목표 노드 편집</h2>
+      {/* Mobile Backdrop */}
+      {selectedNodeId && (
+        <div 
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity xl:hidden dark:bg-black/60"
+          onClick={() => setSelectedNodeId(null)}
+        />
+      )}
+
+      <aside className={`
+        flex shrink-0 flex-col bg-white/95 p-5 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-black/30
+        transition-transform duration-300 ease-out
+        fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/70 max-h-[85vh]
+        ${selectedNodeId ? "translate-y-0" : "translate-y-full"}
+        xl:relative xl:z-auto xl:w-[380px] xl:translate-y-0 xl:rounded-none xl:border-l xl:border-t-0 xl:bg-white/72 xl:dark:bg-slate-900/72
+      `}>
+        {/* Mobile handle */}
+        <div className="absolute left-1/2 top-2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700 xl:hidden" />
+        
+        <div className="mt-2 flex items-center justify-between xl:mt-0">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
+              <Target className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                Node Settings
+              </p>
+              <h2 className="text-lg font-bold text-slate-950 dark:text-white">목표 노드 편집</h2>
+            </div>
           </div>
+          <button 
+            className="xl:hidden p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            onClick={() => setSelectedNodeId(null)}
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {!data ? (
@@ -883,6 +908,29 @@ export function ManageTreeClient() {
           </p>
         ) : (
           <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 dark:border-white/5 dark:bg-black/20">
+              <label className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                <GitCommit className="h-4 w-4" />
+                GitHub 증빙 링크 (선택)
+              </label>
+              <input
+                type="url"
+                placeholder="https://github.com/.../pull/123"
+                value={data.githubLink || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateSelectedNodeData({
+                    githubLink: val,
+                    certified_by_github: !!val.trim(),
+                  });
+                }}
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-black/40 dark:text-white"
+              />
+              <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                해당 퀘스트를 수행한 PR이나 코드 링크를 첨부하세요. 포트폴리오 전환율 지표가 대폭 상승합니다!
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -1086,7 +1134,7 @@ export function ManageTreeClient() {
                 <div className="mt-2">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
                     가고 싶은 회사의 채용 공고(JD) 텍스트를 붙여넣어주세요. 
-                    현재 달성한 내 스킬 내역과 비교하여 <b>부족한 기술만</b>으로 갭 보완 로드맵을 설계해 줍니다.
+                    현재 달성한 내 스킬 내역과 비교하여 <b>부족한 기술 기반의 2주 완성 단기 스프린트</b>를 설계해 줍니다.
                   </p>
                 </div>
                 <form
@@ -1101,7 +1149,7 @@ export function ManageTreeClient() {
                     rows={6}
                     value={jdInput}
                     onChange={(e) => setJdInput(e.target.value)}
-                    placeholder="채용 공고 본문 (자격요건, 우대사항 등) 붙여넣기..."
+                    placeholder="여기에 원티드나 점핏의 JD(주요업무, 자격요건 등)를 붙여넣어주세요..."
                     className="w-full resize-none rounded-xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-white/10 dark:bg-black/40 dark:text-white"
                   />
                   <div className="mt-3 flex justify-end gap-3">
@@ -1118,7 +1166,7 @@ export function ManageTreeClient() {
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                     >
                       <Target className="h-4 w-4" aria-hidden />
-                      갭 분석 생성
+                      2주 단기 스프린트 생성
                     </button>
                   </div>
                 </form>
