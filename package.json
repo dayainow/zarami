@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3737",
     "build": "next build --turbopack",
-    "start": "next start",
+    "start": "next start -p 3737",
     "lint": "eslint",
     "test": "npm run lint && tsc --noEmit",
     "update-trend": "tsx --env-file=.env.local scripts/update-trend.ts"
