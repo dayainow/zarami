@@ -95,14 +95,10 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
             {`
               @keyframes bob {
                 0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-12px); }
+                50% { transform: translateY(-8px); }
               }
               .rpg-character {
-                animation: bob 1s infinite step-start;
-              }
-              .rpg-dialogue {
-                font-family: "Courier New", Courier, monospace;
-                paint-order: stroke;
+                animation: bob 2.5s ease-in-out infinite;
               }
             `}
           </style>
@@ -110,27 +106,42 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
 
         {activeRegions.map((region) => (
           <g key={region.category}>
-            {/* The dotted path (Background/Uncompleted) */}
+            {/* The modern background path (Uncompleted) */}
             <path
               d={region.path}
               fill="none"
-              stroke="rgba(0,0,0,0.6)"
-              strokeWidth="12"
-              strokeDasharray="15 15"
-              strokeLinecap="square"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#glow)"
             />
-            {/* The glowing path (Completed progress) */}
+            {/* The modern fiber-optic path (Completed progress) */}
             <path
               d={region.path}
               fill="none"
               stroke={region.color}
-              strokeWidth="12"
-              strokeLinecap="square"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               filter="url(#glow)"
-              opacity="0.9"
+              opacity="1"
               pathLength="100"
               strokeDashoffset={100 - (region.progress * 100)}
-              style={{ strokeDasharray: "100 100", transition: "stroke-dashoffset 1s ease-in-out" }}
+              style={{ strokeDasharray: "100 100", transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
+            />
+            {/* Inner core line for intense neon look */}
+            <path
+              d={region.path}
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.8"
+              pathLength="100"
+              strokeDashoffset={100 - (region.progress * 100)}
+              style={{ strokeDasharray: "100 100", transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
             />
             
             {/* Animated Character Avatar along the path using animateMotion */}
@@ -139,8 +150,8 @@ export function WorldMapOverlay({ categoryStats, activeTree, theme }: WorldMapOv
                 {/* Character Image positioned so its feet are on the path */}
                 <image href={region.icon || "/images/characters/hero_back.png"} x="-45" y="-90" width="90" height="90" preserveAspectRatio="xMidYMid meet" style={{ imageRendering: 'pixelated' }} />
                 
-                {/* Simple position marker (bouncing arrow) above character */}
-                <path d="M -10 -115 L 10 -115 L 0 -95 Z" fill="#FFE128" stroke="black" strokeWidth="3" className="bounce-arrow" />
+                {/* Modern glow indicator beneath character */}
+                <ellipse cx="0" cy="-5" rx="20" ry="8" fill={region.color} opacity="0.4" filter="url(#glow)" />
               </g>
               
               {/* Note: SVG animateMotion works great for this */}
