@@ -16,6 +16,7 @@ import { getLayoutedElements } from "@/lib/autoLayout";
 import { useSkillStore } from "@/stores/useSkillStore";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
+import { formatEstimatedTime } from "@/utils/format";
 
 export function DashboardClient() {
   const router = useRouter();
@@ -226,7 +227,7 @@ export function DashboardClient() {
                   </div>
                   {myTree && (
                     <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 pl-1">
-                      {`선택한 로드맵: ${myTree.title} | ${progress}% 완료 | 예상 소요 ${Math.round((myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0)) / 60)}시간`}
+                      {`선택한 로드맵: ${myTree.title} | ${progress}% 완료 | 총 예상 소요 ${formatEstimatedTime(myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0))}`}
                     </span>
                   )}
                 </div>

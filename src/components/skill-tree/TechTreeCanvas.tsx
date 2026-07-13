@@ -81,7 +81,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       role="button"
       tabIndex={0}
       className={[
-        "group relative min-w-[280px] max-w-[360px] rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
+        "group relative min-w-[280px] max-w-[360px] rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out hover:z-50 focus-within:z-50",
         "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
         selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
         isCompleted ? "opacity-95" : "",
