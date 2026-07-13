@@ -170,15 +170,15 @@ export function LandingClient() {
           </div>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-snug text-slate-900 dark:text-white">
-            개인 기술트리를<br />
-            직접 깎아 나가는<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">실전 커리어 가이드</span>
+            실제 채용 시장이<br />
+            만드는 당신의<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">커리어 로드맵</span>
           </h1>
           
           <p className="text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-medium">
-            어느 방향으로 성장해야 할지 막막하신가요?<br />
-            원티드, 점핏의 실제 채용 공고 데이터를 기반으로<br />
-            당신만을 위한 <strong className="text-slate-900 dark:text-white">맞춤형 미니 프로젝트 퀘스트</strong>를 제안합니다.
+            "뭘 더 배워야 실제 취업·이직에 쓰이나요?"<br />
+            원티드·점핏·랠리·프로그래머스의 실채용공고 기반<br />
+            <strong className="text-slate-900 dark:text-white">맞춤 퀘스트</strong>로 포트폴리오를 자동 완성합니다.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
