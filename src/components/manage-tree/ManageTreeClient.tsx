@@ -433,6 +433,51 @@ export function ManageTreeClient() {
     [setEdges],
   );
 
+  const connectingNodeId = useRef<string | null>(null);
+
+  const onConnectStart = useCallback((_: any, { nodeId }: { nodeId: string | null }) => {
+    connectingNodeId.current = nodeId;
+  }, []);
+
+  const onConnectEnd = useCallback(
+    (event: any) => {
+      if (!connectingNodeId.current) return;
+
+      const targetIsPane = (event.target as Element).classList.contains('react-flow__pane');
+
+      if (targetIsPane && reactFlowInstanceRef.current) {
+        const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+        const position = reactFlowInstanceRef.current.screenToFlowPosition({
+          x: clientX,
+          y: clientY,
+        });
+        
+        const nextNode = createGoalNode(nodes.length);
+        nextNode.position = position;
+
+        setNodes((nds) => [...nds, nextNode]);
+        setEdges((eds) =>
+          addEdge({ source: connectingNodeId.current!, sourceHandle: null, target: nextNode.id, targetHandle: null, type: "smoothstep" }, eds)
+        );
+        setSelectedNodeId(nextNode.id);
+      }
+      connectingNodeId.current = null;
+    },
+    [nodes.length, setNodes, setEdges],
+  );
+
+  const handleAddChildNode = useCallback((parentId: string) => {
+    const parentNode = nodes.find(n => n.id === parentId);
+    if (!parentNode) return;
+    
+    const nextNode = createGoalNode(nodes.length);
+    nextNode.position = { x: parentNode.position.x, y: parentNode.position.y + 150 };
+    
+    setNodes((currentNodes) => [...currentNodes, nextNode]);
+    setEdges((currentEdges) => addEdge({ source: parentId, sourceHandle: null, target: nextNode.id, targetHandle: null, type: "smoothstep" }, currentEdges));
+    setSelectedNodeId(nextNode.id);
+  }, [nodes, setNodes, setEdges]);
+
   const handleExport = useCallback(async () => {
     const payload = JSON.stringify({ nodes, edges }, null, 2);
 
@@ -857,6 +902,10 @@ export function ManageTreeClient() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={handleConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
+          onAddChild={handleAddChildNode}
+          onDeleteNode={handleDeleteNode}
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance;
           }}

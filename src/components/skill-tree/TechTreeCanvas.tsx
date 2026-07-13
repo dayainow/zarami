@@ -16,8 +16,11 @@ import { ReactFlow,
   type OnEdgesChange,
   type OnNodesChange,
   type ReactFlowInstance,
+  type OnConnectEnd,
+  type OnConnectStart,
+  NodeToolbar,
 } from "@xyflow/react";
-import { CheckCircle2, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Lock, Plus, Trash2 } from "lucide-react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -34,6 +37,10 @@ type TechTreeCanvasProps = {
   onNodesChange?: OnNodesChange<SkillTreeNode>;
   onEdgesChange?: OnEdgesChange<SkillTreeEdge>;
   onConnect?: OnConnect;
+  onConnectStart?: OnConnectStart;
+  onConnectEnd?: OnConnectEnd;
+  onAddChild?: (parentId: string) => void;
+  onDeleteNode?: (nodeId: string) => void;
   /** Admin editor mode: enables node dragging/connecting and skips the
    * guest-facing drawer on node click (the caller owns selection instead). */
   interactive?: boolean;
@@ -111,9 +118,32 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <>
+      {data.isInteractive && (
+        <NodeToolbar isVisible={selected} position={Position.Top}>
+          <div className="mb-2 flex items-center gap-1 overflow-hidden rounded-xl border border-slate-200/80 bg-white/95 p-1.5 shadow-lg backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-800/95">
+            <button
+              onClick={() => data.onAddChild?.(data.id)}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-400"
+              title="하위 노드 생성"
+            >
+              <Plus className="h-4 w-4" />
+              <span>하위 노드 추가</span>
+            </button>
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+            <button
+              onClick={() => data.onDeleteNode?.(data.id)}
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-slate-500 dark:hover:bg-rose-500/20 dark:hover:text-rose-400"
+              title="노드 삭제"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </NodeToolbar>
+      )}
+      <div
+        role="button"
+        tabIndex={0}
       aria-label={`${data.title}, Lv.${data.level ?? 1}, ${data.estimatedMinutes ? formatEstimatedTime(data.estimatedMinutes) : "시간 미정"}, ${status === "locked" ? "잠김" : isCompleted ? "완료됨" : isNextAction ? "진행 중" : "진행 가능"}`}
       className={[
         "group relative w-72 rounded-2xl border-2 px-5 py-4 text-left transition-all duration-300 ease-out",
@@ -244,6 +274,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         </div>
       ) : null}
     </div>
+    </>
   );
 });
 
@@ -255,6 +286,10 @@ export function TechTreeCanvas({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onConnectStart,
+  onConnectEnd,
+  onAddChild,
+  onDeleteNode,
   interactive = false,
   className,
 }: TechTreeCanvasProps) {
@@ -374,9 +409,12 @@ export function TechTreeCanvas({
             hasChildren: (childrenMap.get(node.id)?.length ?? 0) > 0,
             isCollapsed: collapsedIds.has(node.id),
             onToggleCollapse: toggleCollapse,
+            onAddChild,
+            onDeleteNode,
+            isInteractive: interactive,
           },
         })),
-    [nodes, hiddenNodeIds, childrenMap, collapsedIds, toggleCollapse],
+    [nodes, hiddenNodeIds, childrenMap, collapsedIds, toggleCollapse, onAddChild, onDeleteNode, interactive],
   );
 
   const visibleEdges = useMemo(
@@ -423,6 +461,8 @@ export function TechTreeCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onInit={onInit}
         proOptions={proOptions}
         className="touch-none"
