@@ -225,14 +225,14 @@ export function LandingClient() {
               <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
               <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
             </div>
-            <div className="text-[11px] font-bold tracking-wider text-slate-400 flex items-center gap-1 uppercase">
+            <div className="text-[11px] font-bold tracking-wider text-slate-500 flex items-center gap-1 uppercase">
               <Target className="h-3 w-3 text-rose-400" />
-              Live Interactive Demo
+              이런 기술트리를 직접 만들 수 있어요
             </div>
             <div className="w-12" /> {/* Spacer for balance */}
           </div>
 
-          <div className="flex-1 relative w-full h-full">
+          <div className="flex-1 relative w-full h-full hidden md:block">
             <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-400/5 via-transparent to-transparent pointer-events-none animate-[pulse_4s_ease-in-out_infinite]" />
             <TechTreeCanvas
               nodes={layoutedNodes}
@@ -241,6 +241,12 @@ export function LandingClient() {
               onEdgesChange={() => {}}
               interactive={true}
             />
+          </div>
+          
+          <div className="flex-1 relative w-full h-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 md:hidden p-8 text-center border-t border-slate-100 dark:border-white/5">
+            <Target className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
+            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">인터랙티브 데모는<br/>데스크톱에서 확인 가능합니다</p>
+            <p className="text-xs text-slate-500 mt-2">PC 환경에서 자람이의 스킬트리를<br/>직접 체험해보세요.</p>
           </div>
         </div>
       </section>
@@ -289,24 +295,37 @@ export function LandingClient() {
           <p className="mb-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
             실시간 채용 공고 데이터 수집 및 분석 기반
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16 opacity-60 grayscale transition-all hover:grayscale-0 dark:opacity-40 dark:hover:opacity-100">
-            {/* Wanted Mock Logo */}
-            <div className="flex items-center gap-1 text-2xl font-black tracking-tighter text-[#3366FF]">
-              <span className="w-6 h-6 rounded-full bg-[#3366FF] text-white flex items-center justify-center text-sm font-bold">w</span>anted
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-60 grayscale transition-all hover:grayscale-0 dark:opacity-40 dark:hover:opacity-100">
+            {/* Wanted */}
+            <div className="flex items-center gap-2">
+              <img src="https://logo.clearbit.com/wanted.co.kr" alt="Wanted" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+              <div className="hidden text-2xl font-black tracking-tighter text-[#3366FF] flex items-center gap-1">
+                <span className="w-6 h-6 rounded-full bg-[#3366FF] text-white flex items-center justify-center text-sm font-bold">w</span>anted
+              </div>
             </div>
-            {/* Jumpit Mock Logo */}
-            <div className="text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
-            {/* Programmers Mock Logo */}
-            <div className="text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
-              <span className="text-[#0078FF] font-black">P</span>rogrammers
+            {/* Jumpit */}
+            <div className="flex items-center gap-2">
+              <img src="https://logo.clearbit.com/jumpit.co.kr" alt="Jumpit" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+              <div className="hidden text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
             </div>
-            {/* Rocketpunch Mock Logo */}
-            <div className="text-xl font-black tracking-tighter text-[#2188FB]">
-              RocketPunch
+            {/* Programmers */}
+            <div className="flex items-center gap-2">
+              <img src="https://logo.clearbit.com/programmers.co.kr" alt="Programmers" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+              <div className="hidden text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
+                <span className="text-[#0078FF] font-black">P</span>rogrammers
+              </div>
+            </div>
+            {/* RocketPunch */}
+            <div className="flex items-center gap-2">
+              <img src="https://logo.clearbit.com/rocketpunch.com" alt="RocketPunch" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+              <div className="hidden text-xl font-black tracking-tighter text-[#2188FB]">RocketPunch</div>
             </div>
             {/* GitHub */}
-            <div className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
-              <GitCommit className="w-6 h-6"/> GitHub
+            <div className="flex items-center gap-2">
+              <img src="https://logo.clearbit.com/github.com" alt="GitHub" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+              <div className="hidden text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                <GitCommit className="w-6 h-6"/> GitHub
+              </div>
             </div>
           </div>
         </div>
@@ -508,23 +527,49 @@ export function LandingClient() {
             onClick={handleStart}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-slate-900 shadow-xl transition-all hover:scale-105 hover:bg-slate-100"
           >
-            대시보드로 이동하기
+            {isLoggedIn ? "대시보드로 이동하기" : "무료로 내 스킬트리 만들기"}
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
       </section>
+      
       {/* Footer */}
-      <footer className="bg-slate-950 py-12 border-t border-white/10 text-center text-slate-400">
-        <div className="flex items-center justify-center mb-6">
-          <Image
-            src="/images/brand/svg/zarami-logo-horizontal.svg"
-            alt="Zarami"
-            width={100}
-            height={28}
-            className="opacity-50 grayscale hover:opacity-100 transition-opacity"
-          />
+      <footer className="bg-slate-950 py-16 border-t border-white/10 text-slate-400">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+          <div className="col-span-1 md:col-span-2">
+            <div className="flex items-center mb-6">
+              <Image
+                src="/images/brand/svg/zarami-logo-horizontal.svg"
+                alt="Zarami"
+                width={120}
+                height={32}
+                className="opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all"
+              />
+            </div>
+            <p className="text-sm leading-relaxed mb-6 max-w-sm">
+              실제 채용 공고 기반의 실무형 퀘스트로 당신의 커리어 로드맵을 완성하세요. 자람이는 여러분의 꾸준한 성장을 응원합니다.
+            </p>
+            <p className="text-xs">© 2026 Zarami. All rights reserved.</p>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-bold mb-4">서비스</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="#features" className="hover:text-white transition-colors">기능 안내</a></li>
+              <li><a href="#reviews" className="hover:text-white transition-colors">성장 후기</a></li>
+              <li><a href="#faq" className="hover:text-white transition-colors">자주 묻는 질문</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-bold mb-4">고객지원</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="#" className="hover:text-white transition-colors">이용약관</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">개인정보처리방침</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">문의하기 (support@zarami.io)</a></li>
+            </ul>
+          </div>
         </div>
-        <p className="text-sm">© 2026 Zarami. All rights reserved. | 실전 지향형 커리어 가이드</p>
       </footer>
     </main>
   );
