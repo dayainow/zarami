@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { scrapeWantedJobs, type ScrapedPosting } from "./scrape-wanted";
 import { scrapeJumpitJobs } from "./scrape-jumpit";
@@ -56,49 +56,7 @@ function requireEnv(key: string): string {
 // High/Medium/Low - the actual score is derived deterministically from
 // those indices in code, so it stays traceable back to real postings
 // instead of being an opaque LLM judgment call.
-const trendMentionSchema: Schema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    postings: {
-      type: SchemaType.ARRAY,
-      description: "Array of parsed information for each posting, maintaining the original order (index).",
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          position: { 
-            type: SchemaType.STRING, 
-            description: "One of: frontend, backend, fullstack, mobile, data, ai, or other" 
-          },
-          experience: { 
-            type: SchemaType.STRING, 
-            description: "One of: junior, mid, senior, or any" 
-          },
-          company_type: { 
-            type: SchemaType.STRING, 
-            description: "One of: startup, enterprise, agency, or unknown" 
-          }
-        },
-        required: ["position", "experience", "company_type"]
-      }
-    },
-    mentions: {
-      type: SchemaType.ARRAY,
-      description: "Which skills were mentioned in which postings.",
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          skill_id: { type: SchemaType.STRING },
-          posting_indices: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.INTEGER },
-          },
-        },
-        required: ["skill_id", "posting_indices"],
-      },
-    },
-  },
-  required: ["postings", "mentions"],
-};
+// The trend schema is now provided as a system prompt to Groq.
 
 async function fetchSkillCatalog(supabaseAdmin: SupabaseAdmin): Promise<SkillRow[]> {
   const { data, error } = await supabaseAdmin.from("skills").select("id, title").order("id");
@@ -120,20 +78,13 @@ function buildTaggedPostingsText(postings: TaggedPosting[]): string {
 }
 
 async function analyzeSkillMentions(
-  genAI: GoogleGenerativeAI,
+  groq: Groq,
   skills: SkillRow[],
   postingsText: string,
 ): Promise<{
   postings: { position: string; experience: string; company_type: string }[];
   mentions: { skill_id: string; posting_indices: number[] }[];
 }> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3.5-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: trendMentionSchema,
-    },
-  });
 
   const prompt = `
 당신은 채용 공고(JD) 분석 전문가입니다. 주어진 채용 공고 목록을 분석하여 다음 두 가지를 수행하세요.
@@ -154,8 +105,30 @@ ${skills.map((s) => `- ${s.id}: ${s.title}`).join("\n")}
 ${postingsText}
   `.trim();
 
-  const result = await model.generateContent(prompt);
-  const jsonText = result.response.text();
+  const response = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: `You are a helpful AI that returns ONLY valid JSON. Your response must exactly match this structure without any markdown wrapping:
+{
+  "postings": [
+    { "position": "frontend", "experience": "junior", "company_type": "startup" }
+  ],
+  "mentions": [
+    { "skill_id": "react", "posting_indices": [0, 1] }
+  ]
+}`,
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    model: "llama3-8b-8192",
+    response_format: { type: "json_object" },
+  });
+
+  const jsonText = response.choices[0]?.message?.content || "{}";
   return JSON.parse(jsonText) as {
     postings: { position: string; experience: string; company_type: string }[];
     mentions: { skill_id: string; posting_indices: number[] }[];
@@ -219,7 +192,7 @@ async function main(): Promise<void> {
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     { auth: { persistSession: false } },
   );
-  const genAI = new GoogleGenerativeAI(requireEnv("GEMINI_API_KEY"));
+  const groq = new Groq({ apiKey: requireEnv("GROQ_API_KEY") });
 
   const skills = await fetchSkillCatalog(supabaseAdmin);
   if (skills.length === 0) {
@@ -254,7 +227,7 @@ async function main(): Promise<void> {
 
     try {
       console.log(`Analyzing batch ${i / BATCH_SIZE + 1}...`);
-      const analysis = await analyzeSkillMentions(genAI, skills, postingsText);
+      const analysis = await analyzeSkillMentions(groq, skills, postingsText);
 
       for (const m of analysis.mentions) {
         if (!mentionCounts.has(m.skill_id)) {
