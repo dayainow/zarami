@@ -321,6 +321,23 @@ export function DashboardClient() {
         </div>
       ) : (
         <>
+          {/* 캔버스 내 진행률 오버레이 */}
+          <div className="pointer-events-none absolute left-1/2 top-28 z-30 flex w-full max-w-sm -translate-x-1/2 flex-col items-center px-4">
+            <div className="w-full rounded-2xl border border-white/60 bg-white/70 p-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
+              <div className="mb-2 flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">진행률</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  {progress}% ({completedCount}/{totalCount})
+                </span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
           <TechTreeCanvas
             nodes={nodes}
             edges={edges}

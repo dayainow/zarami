@@ -39,13 +39,10 @@ type TechTreeCanvasProps = {
   className?: string;
 };
 
-const statusClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
-  completed:
-    "border-emerald-300/50 bg-emerald-50/80 text-emerald-950 shadow-[0_8px_32px_rgba(16,185,129,0.15)] backdrop-blur-2xl glow-emerald dark:border-emerald-400/30 dark:bg-emerald-950/40 dark:text-emerald-50",
-  available:
-    "border-sky-300/50 bg-white/80 text-slate-950 shadow-[0_8px_32px_rgba(14,165,233,0.15)] backdrop-blur-2xl glow-sky dark:border-sky-400/30 dark:bg-slate-900/60 dark:text-white",
-  locked:
-    "border-slate-300/40 bg-slate-100/60 text-slate-500 shadow-sm backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-400",
+const statusClassName: Record<string, string> = {
+  completed: "border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20",
+  available: "border-l-slate-300 bg-white/95 dark:border-l-slate-600 dark:bg-slate-900/90",
+  locked: "border-l-slate-200 bg-slate-50/90 opacity-70 grayscale-[30%] dark:border-l-slate-800 dark:bg-slate-950/80",
 };
 
 const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
@@ -81,26 +78,25 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       role="button"
       tabIndex={0}
       className={[
-        "group relative min-w-[280px] max-w-[360px] rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out hover:z-50 focus-within:z-50",
-        "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
-        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
-        isCompleted ? "opacity-95" : "",
-        isNextAction ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]" : "",
-        isGoal && !isCompleted ? "border-amber-300/90 shadow-[0_0_25px_rgba(251,191,36,0.4)] ring-1 ring-amber-400" : "",
-        isGoal && isCompleted ? "border-emerald-400/90 shadow-[0_0_25px_rgba(16,185,129,0.4)] ring-1 ring-emerald-500" : "",
+        "group relative min-w-[240px] max-w-[320px] rounded-2xl border border-l-[6px] px-5 py-3.5 text-left transition-all duration-300 ease-out hover:z-50 focus-within:z-50",
+        "hover:-translate-y-1 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-105 dark:ring-offset-slate-950" : "",
+        isNextAction ? "border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] animate-[pulse_3s_ease-in-out_infinite]" : "",
+        isGoal && !isCompleted ? "scale-110 border-amber-300 shadow-[0_0_30px_rgba(251,191,36,0.3)] bg-gradient-to-r from-amber-50/40 to-transparent dark:from-amber-950/20 ring-1 ring-amber-400/50" : "",
+        isGoal && isCompleted ? "scale-110 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] bg-gradient-to-r from-emerald-50/40 to-transparent dark:from-emerald-950/20 ring-1 ring-emerald-400/50" : "",
         statusClassName[status],
         categoryColor.border,
       ].join(" ")}
     >
-      <div className="absolute -left-3 -top-3 z-10 flex gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="absolute -left-3 -top-3 z-10 flex gap-2">
         {isNextAction ? (
-          <div className="rounded-md border border-amber-200 bg-amber-300 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow-lg">
-            Next Action
+          <div className="rounded-md border border-sky-300 bg-sky-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
+            진행 중
           </div>
         ) : null}
         {data.isTrending ? (
-          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
-            <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
+          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
+            <span className="text-[11px] animate-pulse">🔥</span> 트렌드
           </div>
         ) : null}
       </div>
@@ -121,7 +117,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       
       {/* Compact Main Row */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 pr-4">
           <div className="shrink-0 flex items-center">
             {isCompleted ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
@@ -133,16 +129,6 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           </div>
           
           <div className="flex items-center gap-2 truncate">
-            {typeof data.estimatedMinutes === "number" ? (
-              <span className="shrink-0 text-[11px] font-bold tracking-wide text-slate-500 dark:text-slate-400">
-                ⏳ {formatEstimatedTime(data.estimatedMinutes)}
-              </span>
-            ) : null}
-            
-            {(typeof data.estimatedMinutes === "number" || data.category) && (
-              <span className="text-slate-300 dark:text-slate-600">|</span>
-            )}
-            
             {data.category ? (
               <>
                 <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${categoryColor.badge}`}>
@@ -152,34 +138,20 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
               </>
             ) : null}
             
-            <h3 className={["truncate text-sm font-bold", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
+            <h3 className={["truncate text-sm font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
               {data.title}
+              {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
             </h3>
           </div>
         </div>
         
-        {typeof data.level === "number" ? (
-          <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-            Lv.{data.level}
-          </span>
-        ) : null}
-      </div>
-
-      {/* Expandable Details Area (Description) */}
-      <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-in-out group-hover:grid-rows-[1fr] group-hover:opacity-100 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100">
-        <div className="overflow-hidden">
-          {data.description ? (
-            <p className={["mt-3 line-clamp-3 text-xs leading-5 text-slate-600 dark:text-slate-300", isCompleted ? "line-through" : ""].join(" ")}>
-              {data.description}
-            </p>
+        <div className="flex items-center gap-2 shrink-0">
+          {typeof data.level === "number" ? (
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+              Lv.{data.level}
+            </span>
           ) : null}
-          {isNextAction ? (
-            <div className="mt-3 grid grid-cols-3 gap-1.5">
-              <span className="h-1.5 rounded-full bg-amber-300" />
-              <span className="h-1.5 rounded-full bg-sky-300" />
-              <span className="h-1.5 rounded-full bg-emerald-300" />
-            </div>
-          ) : null}
+          <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400" />
         </div>
       </div>
 
@@ -378,28 +350,18 @@ export function TechTreeCanvas({
         proOptions={proOptions}
         className="touch-none"
       >
-        <Background
-          color="#94a3b8"
-          gap={32}
-          size={1}
-          variant={BackgroundVariant.Dots}
-          className="opacity-60 dark:opacity-45"
-        />
-        <MiniMap
-          pannable={interactive || !isDrawerOpen}
-          zoomable={interactive || !isDrawerOpen}
-          nodeColor={(node) => {
-            const status = (node.data as SkillNodeData | undefined)?.status ?? "available";
-            if (status === "completed") return "#10b981";
-            if (status === "locked") return "#cbd5e1";
-            return "#0ea5e9";
-          }}
-          className="!border !border-slate-200/80 !bg-white/75 !shadow-lg !backdrop-blur-2xl dark:!border-white/10 dark:!bg-slate-900/80"
-        />
-        <Controls
-          showInteractive={false}
-          className="!border !border-slate-200/80 !bg-white/75 !shadow-lg !backdrop-blur-2xl [&_button]:!border-slate-200/80 [&_button]:!bg-white/70 [&_button]:!text-slate-700 hover:[&_button]:!bg-slate-100 dark:!border-white/10 dark:!bg-slate-900/80 dark:[&_button]:!border-white/10 dark:[&_button]:!bg-slate-900/80 dark:[&_button]:!text-white dark:hover:[&_button]:!bg-slate-800"
-        />
+        <Background color="#64748b" gap={24} size={1} />
+        {nodes.length > 10 && (
+          <MiniMap
+            nodeStrokeWidth={3}
+            nodeColor={(node) => {
+              const data = node.data as SkillNodeData;
+              return data.is_completed ? "#10b981" : "#e2e8f0";
+            }}
+            className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50"
+          />
+        )}
+        {interactive && <Controls className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50" />}
       </ReactFlow>
     </section>
   );
