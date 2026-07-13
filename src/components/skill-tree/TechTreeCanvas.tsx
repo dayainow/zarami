@@ -93,25 +93,26 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       role="button"
       tabIndex={0}
       className={[
-        "group relative min-w-[240px] max-w-[320px] rounded-2xl border border-l-[6px] px-5 py-3.5 text-left transition-all duration-300 ease-out hover:z-50 focus-within:z-50",
-        "hover:-translate-y-1 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
-        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-105 dark:ring-offset-slate-950" : "",
+        "group relative w-72 rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
+        "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
+        isCompleted ? "opacity-95" : "",
         isNextAction ? "border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] animate-[pulse_3s_ease-in-out_infinite]" : "",
-        isGoal && !isCompleted ? "scale-110 border-amber-300 shadow-[0_0_30px_rgba(251,191,36,0.3)] bg-gradient-to-r from-amber-50/40 to-transparent dark:from-amber-950/20 ring-1 ring-amber-400/50" : "",
-        isGoal && isCompleted ? "scale-110 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] bg-gradient-to-r from-emerald-50/40 to-transparent dark:from-emerald-950/20 ring-1 ring-emerald-400/50" : "",
+        isGoal && !isCompleted ? "border-amber-300 shadow-[0_0_30px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/50" : "",
+        isGoal && isCompleted ? "border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/50" : "",
         statusClassName[status],
         categoryColor.border,
       ].join(" ")}
     >
-      <div className="absolute -left-3 -top-3 z-10 flex gap-2">
+      <div className="absolute -left-4 -top-3 z-10 flex gap-2">
         {isNextAction ? (
           <div className="rounded-md border border-sky-300 bg-sky-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
             진행 중
           </div>
         ) : null}
         {data.isTrending ? (
-          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
-            <span className="text-[11px] animate-pulse">🔥</span> 트렌드
+          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
+            <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
           </div>
         ) : null}
       </div>
@@ -123,60 +124,72 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
           <span className="absolute bottom-4 left-1/2 h-2 w-2 animate-bounce rounded-full bg-amber-300 [animation-delay:120ms]" />
         </div>
       ) : null}
-      
+
+      <div className="absolute -right-3 -top-4 flex flex-col items-end gap-1.5 z-10">
+        {typeof data.estimatedMinutes === "number" ? (
+          <div className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold tracking-wide text-slate-600 shadow-sm dark:border-white/10 dark:bg-slate-800 dark:text-slate-300">
+            ⏳ {formatEstimatedTime(data.estimatedMinutes)}
+          </div>
+        ) : null}
+        {typeof data.level === "number" ? (
+          <span className="rounded-md bg-slate-900/90 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-slate-100 dark:text-slate-950">
+            Lv.{data.level}
+          </span>
+        ) : null}
+      </div>
+
       <Handle
         type="target"
         position={Position.Bottom}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
       
-      {/* Compact Main Row */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0 pr-4">
-          <div className="shrink-0 flex items-center">
+      <div className="flex items-start justify-between gap-3 mt-1">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
             {isCompleted ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
             ) : status === "locked" ? (
-              <Lock className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" aria-hidden />
+              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
             ) : (
               <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
             )}
-          </div>
-          
-          <div className="flex items-center gap-2 truncate">
+            
             {data.category ? (
               <div className="group/category relative flex items-center">
-                <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider cursor-help ${categoryColor.badge}`}>
+                <span
+                  className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide cursor-help ${categoryColor.badge}`}
+                >
                   {data.category}
                 </span>
                 <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-max opacity-0 transition-opacity group-hover/category:opacity-100 rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-white shadow-lg dark:bg-slate-700">
                   {categoryTooltip}
                 </div>
-                <span className="text-slate-300 dark:text-slate-600 ml-2">|</span>
               </div>
             ) : null}
             
-            <div className="flex flex-col">
-              <h3 className={["truncate text-sm font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
-                {data.title}
-                {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
-              </h3>
-              {checklistTotal > 0 ? (
-                <span className={`text-[10px] font-semibold tracking-wide ${checklistCompleted === checklistTotal ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                  ✓ 서브 퀘스트 {checklistCompleted}/{checklistTotal}
-                </span>
-              ) : null}
-            </div>
+            {checklistTotal > 0 ? (
+              <span className={`text-[10px] font-semibold tracking-wide ml-auto ${checklistCompleted === checklistTotal ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                ✓ {checklistCompleted}/{checklistTotal}
+              </span>
+            ) : null}
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2 shrink-0">
-          {typeof data.level === "number" ? (
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-              Lv.{data.level}
-            </span>
+          
+          <h3 className={["mt-2 truncate text-base font-semibold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
+            {data.title}
+            {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
+          </h3>
+          
+          {data.description ? (
+            <p
+              className={[
+                "mt-1 line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-400",
+                isCompleted ? "line-through" : "",
+              ].join(" ")}
+            >
+              {data.description}
+            </p>
           ) : null}
-          <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400" />
         </div>
       </div>
 
@@ -376,16 +389,14 @@ export function TechTreeCanvas({
         className="touch-none"
       >
         <Background color="#64748b" gap={24} size={1} />
-        {nodes.length > 10 && (
-          <MiniMap
-            nodeStrokeWidth={3}
-            nodeColor={(node) => {
-              const data = node.data as SkillNodeData;
-              return data.is_completed ? "#10b981" : "#e2e8f0";
-            }}
-            className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50"
-          />
-        )}
+        <MiniMap
+          nodeStrokeWidth={3}
+          nodeColor={(node) => {
+            const data = node.data as SkillNodeData;
+            return data.is_completed ? "#10b981" : "#e2e8f0";
+          }}
+          className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50"
+        />
         {interactive && <Controls className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50" />}
       </ReactFlow>
     </section>
