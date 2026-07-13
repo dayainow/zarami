@@ -5,12 +5,16 @@ import { usePathname } from "next/navigation";
 
 import { navItems } from "@/components/layout/navItems";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
 
 // Sidebar.tsx's fixed left rail relies on mouse hover to reveal labels,
 // which doesn't exist on touch devices - this is the mobile equivalent,
 // shown only below the md breakpoint (see layout.tsx).
 export function MobileTabBar() {
   const pathname = usePathname();
+  const userId = useSupabaseUserId();
+
+  if (!userId) return null;
 
   return (
     <nav

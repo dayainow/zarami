@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Flame, TreePine, ChevronDown } from "lucide-react";
 
 import { Drawer } from "@/components/Drawer";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
@@ -217,7 +218,7 @@ export function DashboardClient() {
               />
             </div>
             <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">
-              {progress}% 완료 ({completedCount}/{totalCount})
+              {!userId ? "아직 스킬트리가 없어요. 로그인 후 바로 시작" : `${progress}% 완료 (${completedCount}/${totalCount})`}
             </span>
 
             {currentStreak > 0 ? (
@@ -228,16 +229,14 @@ export function DashboardClient() {
             ) : null}
 
             <div className="h-6 w-px bg-slate-200/80 dark:bg-white/10" />
+            
+            <ThemeToggle className="hidden md:flex" />
+
+            <div className="h-6 w-px bg-slate-200/80 dark:bg-white/10 hidden md:block" />
 
             {!userId ? (
-              <Link
-                href="/manage-tree"
-                className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
-              >
-                <TreePine className="h-4 w-4" aria-hidden />
-                로그인하고 내 트리 만들기
-                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
+              // Empty state handles the main CTA when logged out, so we don't need a duplicate here in the header
+              null
             ) : isMyTreeLoading ? null : (
               <Link
                 href="/manage-tree"
@@ -288,10 +287,10 @@ export function DashboardClient() {
                 : "목표를 입력하면 AI가 나만의 커리어 로드맵을 만들어줘요. 로그인 후 바로 시작할 수 있어요."}
             </p>
             <Link
-              href="/manage-tree"
+              href={userId ? "/manage-tree" : "/login"}
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
             >
-              {userId ? "로드맵 만들러 가기" : "로그인하러 가기"}
+              {userId ? "로드맵 만들러 가기" : "로그인하고 내 스킬트리 만들기"}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, ChevronDown, Play } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
 import { createClient } from "@/utils/supabase/client";
 import type { SkillTreeNode, SkillTreeEdge } from "@/types/skill-tree";
@@ -133,7 +134,11 @@ export function LandingClient() {
   // (Removed layout calculation useEffect since it's done synchronously above)
 
   const handleStart = () => {
-    router.push("/dashboard");
+    if (isLoggedIn) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
   };
 
   const topTrends = [...(trends || [])]
@@ -166,12 +171,15 @@ export function LandingClient() {
             <a href="#faq" className="hover:text-emerald-500 transition-colors">FAQ</a>
           </nav>
         </div>
-        <button
-          onClick={handleStart}
-          className="rounded-full bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          {isLoggedIn ? "대시보드로 가기" : "무료로 시작하기"}
-        </button>
+        <div className="flex items-center gap-4">
+          <ThemeToggle className="hidden md:flex" />
+          <button
+            onClick={handleStart}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            {isLoggedIn ? "대시보드로 가기" : "무료로 시작하기"}
+          </button>
+        </div>
       </header>
 
       {/* Hero & Interactive Demo Section */}

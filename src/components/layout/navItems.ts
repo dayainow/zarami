@@ -18,7 +18,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/manage-tree",
-    label: "내 트리 관리",
+    label: "나만의 로드맵 만들기",
     subLabel: "퀘스트/목표 편집",
     icon: TreePine,
   },
@@ -30,14 +30,14 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/world-map",
-    label: "스킬 모험 지도",
-    subLabel: "전체 로드맵 뷰",
+    label: "전체 기술 로드맵",
+    subLabel: "스킬 모험 지도",
     icon: Map,
   },
   {
     href: "/trends",
-    label: "채용 트렌드",
-    subLabel: "실시간 시장 분석",
+    label: "실시간 채용 트렌드",
+    subLabel: "시장 분석",
     icon: TrendingUp,
   },
 ];

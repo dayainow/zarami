@@ -5,10 +5,13 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 import { navItems } from "@/components/layout/navItems";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const userId = useSupabaseUserId();
+
+  if (!userId) return null;
 
   return (
     <aside
@@ -74,13 +77,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        <div className="border-t border-slate-200/70 pt-4 dark:border-white/10">
-          <ThemeToggle
-            showLabel
-            className="w-full justify-start overflow-hidden [&>span:last-child]:translate-x-2 [&>span:last-child]:opacity-0 [&>span:last-child]:transition [&>span:last-child]:duration-200 group-hover:[&>span:last-child]:translate-x-0 group-hover:[&>span:last-child]:opacity-100 group-focus-within:[&>span:last-child]:translate-x-0 group-focus-within:[&>span:last-child]:opacity-100"
-          />
-        </div>
       </div>
     </aside>
   );
