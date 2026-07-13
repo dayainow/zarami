@@ -91,20 +91,22 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   // 상태별 확실한 시각적 분리를 위한 클래스 계산
   let stateClasses = "";
   if (status === "locked") {
-    stateClasses = "border-dashed border-slate-300 border-l-slate-300 bg-slate-100/50 opacity-60 grayscale-[80%] dark:border-slate-700 dark:border-l-slate-700 dark:bg-slate-900/50";
+    stateClasses = "border-dashed border-slate-300 bg-slate-50 opacity-70 grayscale-[50%] dark:border-slate-700 dark:bg-slate-900/50";
   } else if (isCompleted) {
-    stateClasses = "border-emerald-200 border-l-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/10 dark:border-emerald-800 dark:border-l-emerald-500 dark:bg-emerald-950/40";
+    stateClasses = "border-green-600 bg-green-50 shadow-md shadow-green-600/10 dark:border-green-500 dark:bg-green-950/40";
+  } else if (isNextAction) {
+    stateClasses = "border-blue-600 bg-blue-50 shadow-[0_0_20px_rgba(37,99,235,0.4)] animate-[pulse_3s_ease-in-out_infinite] dark:border-blue-500 dark:bg-blue-950/40";
   } else {
     // available (진행 전)
-    stateClasses = "border-slate-200 border-l-sky-400 bg-white shadow-sm dark:border-slate-700 dark:border-l-sky-500 dark:bg-slate-900";
+    stateClasses = "border-blue-500 bg-white shadow-sm dark:border-blue-400 dark:bg-slate-900";
   }
 
   // GOAL 노드는 강력한 임팩트 부여
   if (isGoal) {
     if (isCompleted) {
-      stateClasses = "scale-105 border-emerald-400 border-l-[8px] border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50/50 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400/50 dark:from-emerald-950/40 dark:to-teal-950/20";
+      stateClasses = "scale-[1.10] border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50/50 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/50 dark:from-emerald-950/40 dark:to-teal-950/20";
     } else {
-      stateClasses = "scale-105 border-amber-400 border-l-[8px] border-l-amber-500 bg-gradient-to-br from-amber-50 to-orange-50/50 shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-1 ring-amber-400/50 dark:from-amber-950/40 dark:to-orange-950/20";
+      stateClasses = "scale-[1.10] border-[#f59e0b] bg-gradient-to-br from-amber-50 to-orange-50/50 shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-2 ring-amber-400/50 dark:from-amber-950/40 dark:to-orange-950/20";
     }
   }
 
@@ -112,24 +114,26 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
     <div
       role="button"
       tabIndex={0}
+      aria-label={`${data.title}, Lv.${data.level ?? 1}, ${data.estimatedMinutes ? formatEstimatedTime(data.estimatedMinutes) : "시간 미정"}, ${status === "locked" ? "잠김" : isCompleted ? "완료됨" : isNextAction ? "진행 중" : "진행 가능"}`}
       className={[
-        "group relative w-72 rounded-2xl border border-l-[6px] px-5 py-4 text-left transition-all duration-300 ease-out",
+        "group relative w-72 rounded-2xl border-2 px-5 py-4 text-left transition-all duration-300 ease-out",
         "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
-        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 scale-[1.02] dark:ring-offset-slate-950" : "",
-        isNextAction && !isGoal ? "border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] animate-[pulse_3s_ease-in-out_infinite]" : "",
+        selected ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950" : "",
         stateClasses,
-        !isGoal ? categoryColor.border : "", // GOAL 노드는 고유 보더 사용
       ].join(" ")}
     >
-      <div className="absolute -left-4 -top-3 z-10 flex gap-2">
-        {isNextAction ? (
-          <div className="rounded-md border border-sky-300 bg-sky-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
-            진행 중
-          </div>
-        ) : null}
-        {data.isTrending ? (
-          <div className="flex items-center gap-1 rounded-full border border-rose-400/50 bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(244,63,94,0.4)] backdrop-blur-md">
-            <span className="text-[12px] animate-pulse">🔥</span> 트렌딩 스킬
+      <div className="absolute -left-2 -top-3 z-10 flex gap-2">
+        {data.category ? (
+          <div className="group/category relative flex items-center">
+            <span
+              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide cursor-help shadow-sm ${categoryColor.badge}`}
+            >
+              <span className="text-[12px]">{categoryColor.icon}</span>
+              {categoryColor.label || data.category}
+            </span>
+            <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-max opacity-0 transition-opacity group-hover/category:opacity-100 rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-white shadow-lg dark:bg-slate-700">
+              {categoryTooltip}
+            </div>
           </div>
         ) : null}
       </div>
@@ -161,40 +165,22 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
       
-      <div className="flex items-start justify-between gap-3 mt-1">
+      <div className="flex items-start justify-between gap-3 mt-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {isCompleted ? (
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
             ) : status === "locked" ? (
-              <Lock className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+              <Lock className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+            ) : isNextAction ? (
+              <div className="h-4 w-4 shrink-0 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
             ) : (
-              <span className={`h-2.5 w-2.5 rounded-full ${statusDotClassName[status]}`} />
+              <div className="h-3 w-3 shrink-0 rounded-full border-2 border-blue-500" />
             )}
-            
-            {data.category ? (
-              <div className="group/category relative flex items-center">
-                <span
-                  className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide cursor-help ${categoryColor.badge}`}
-                >
-                  {data.category}
-                </span>
-                <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-max opacity-0 transition-opacity group-hover/category:opacity-100 rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-white shadow-lg dark:bg-slate-700">
-                  {categoryTooltip}
-                </div>
-              </div>
-            ) : null}
-            
-            {checklistTotal > 0 ? (
-              <span className={`text-[10px] font-semibold tracking-wide ml-auto ${checklistCompleted === checklistTotal ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                ✓ {checklistCompleted}/{checklistTotal}
-              </span>
-            ) : null}
           </div>
           
-          <h3 className={["mt-2 truncate text-base font-semibold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"].join(" ")}>
+          <h3 className={["mt-1 truncate font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100", isGoal ? "text-lg" : "text-base"].join(" ")}>
             {data.title}
-            {isGoal ? <span className="text-base" title="목표 스킬">🏆</span> : null}
           </h3>
           
           {data.description ? (
@@ -215,6 +201,21 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
         position={Position.Top}
         className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
+      
+      {checklistTotal > 0 ? (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+            <div 
+              className="h-full bg-green-500 transition-all" 
+              style={{ width: `${(checklistCompleted / checklistTotal) * 100}%` }}
+            />
+          </div>
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+            {checklistCompleted}/{checklistTotal} 완료
+          </span>
+        </div>
+      ) : null}
+
       {data.hasChildren ? (
         <div
           role="button"
@@ -233,7 +234,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
               data.onToggleCollapse?.(data.id);
             }
           }}
-          className="absolute -top-3 left-1/2 z-30 flex h-7 w-7 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-300/50 bg-white/80 text-slate-500 shadow-lg backdrop-blur-md transition-all hover:scale-110 hover:border-sky-400 hover:text-sky-600 hover:shadow-[0_0_15px_rgba(56,189,248,0.4)] dark:border-slate-600/50 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-sky-400 dark:hover:text-sky-400"
+          className="absolute -bottom-2 -right-2 z-30 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 shadow-sm transition-all hover:scale-110 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
         >
           {data.isCollapsed ? (
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -277,22 +278,43 @@ export function TechTreeCanvas({
           return edge;
         }
         const sourceNode = nodes.find((node) => node.id === edge.source);
+        const targetNode = nodes.find((node) => node.id === edge.target);
         const isActivated = sourceNode?.data.is_completed === true;
-        if (!isActivated) {
-          return edge;
+        const isTargetLocked = targetNode?.data.status === "locked";
+        const isTargetNextAction = targetNode?.data.isNextAction === true && targetNode?.data.status !== "completed";
+        
+        if (isActivated) {
+          return {
+            ...edge,
+            animated: isTargetNextAction,
+            style: {
+              strokeWidth: 2.5,
+              stroke: "#16a34a",
+              filter: "drop-shadow(0 0 4px rgba(22, 163, 74, 0.4))",
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "#16a34a",
+            },
+          };
         }
-        return {
-          ...edge,
-          style: {
-            strokeWidth: 2.5,
-            stroke: "#10b981",
-            filter: "drop-shadow(0 0 4px rgba(16, 185, 129, 0.65))",
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "#10b981",
-          },
-        };
+        
+        if (isTargetLocked) {
+          return {
+            ...edge,
+            style: {
+              strokeWidth: 2,
+              stroke: "#cbd5e1",
+              strokeDasharray: "4 4",
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "#cbd5e1",
+            },
+          };
+        }
+        
+        return edge;
       }),
     [edges, nodes],
   );
