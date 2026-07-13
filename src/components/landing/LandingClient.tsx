@@ -73,15 +73,17 @@ export function LandingClient() {
   const [layoutedNodes, setLayoutedNodes] = useState<SkillTreeNode[]>(demoNodes);
   const [layoutedEdges, setLayoutedEdges] = useState<SkillTreeEdge[]>(demoEdges);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   useEffect(() => {
     // Check if user is already logged in
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.push("/dashboard");
+        setIsLoggedIn(true);
       }
     });
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     // Layout the demo nodes
@@ -110,7 +112,7 @@ export function LandingClient() {
           onClick={handleStart}
           className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
         >
-          로그인 / 시작하기
+          {isLoggedIn ? "대시보드로 가기" : "로그인 / 시작하기"}
         </button>
       </header>
 
@@ -142,7 +144,7 @@ export function LandingClient() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40"
             >
               <Play className="h-5 w-5 fill-current" />
-              내 이력서로 나만의 로드맵 만들기
+              {isLoggedIn ? "내 대시보드 바로가기" : "내 이력서로 나만의 로드맵 만들기"}
             </button>
           </div>
         </div>
