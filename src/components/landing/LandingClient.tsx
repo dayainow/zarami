@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, Play } from "lucide-react";
+import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, ChevronDown, Play } from "lucide-react";
 
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
@@ -118,6 +118,7 @@ export function LandingClient() {
   const [layoutedEdges, setLayoutedEdges] = useState<SkillTreeEdge[]>(initialLayoutedEdges);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number>(0);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -139,23 +140,31 @@ export function LandingClient() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white flex flex-col">
-      {/* Navbar Placeholder */}
-      <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/70 bg-white/70 px-6 backdrop-blur-md dark:border-white/10 dark:bg-slate-950/70">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/images/brand/svg/zarami-logo-horizontal.svg"
-            alt="Zarami"
-            width={120}
-            height={32}
-            priority
-            className="dark:brightness-200 dark:grayscale"
-          />
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200/50 bg-white/70 px-6 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/70">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/images/brand/svg/zarami-logo-horizontal.svg"
+              alt="Zarami"
+              width={120}
+              height={32}
+              priority
+              className="dark:brightness-200 dark:grayscale cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            />
+          </div>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <a href="#features" className="hover:text-emerald-500 transition-colors">기능 안내</a>
+            <a href="#reviews" className="hover:text-emerald-500 transition-colors">성장 후기</a>
+            <a href="#faq" className="hover:text-emerald-500 transition-colors">FAQ</a>
+          </nav>
         </div>
         <button
           onClick={handleStart}
-          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          className="rounded-full bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
         >
-          {isLoggedIn ? "대시보드로 가기" : "로그인 / 시작하기"}
+          {isLoggedIn ? "대시보드로 가기" : "무료로 시작하기"}
         </button>
       </header>
 
@@ -163,7 +172,7 @@ export function LandingClient() {
       <section className="relative flex flex-col lg:flex-row items-center justify-between px-6 py-12 lg:py-24 max-w-7xl mx-auto w-full gap-12 flex-1">
         
         {/* Left: Copy & CTA */}
-        <div className="lg:w-[60%] lg:pr-12 space-y-8 z-10 w-full">
+        <div className="lg:w-[60%] lg:pr-12 space-y-8 z-10 w-full text-center lg:text-left flex flex-col items-center lg:items-start">
           <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-sky-500/20">
             <Sparkles className="h-3 w-3" />
             단 2주 만에 끝내는 실무형 스킬 퀘스트
@@ -181,22 +190,22 @@ export function LandingClient() {
             <strong className="text-slate-900 dark:text-white">맞춤 퀘스트</strong>로 포트폴리오를 자동 완성합니다.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 w-full sm:w-auto">
             <button
               onClick={handleStart}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40"
+              className="w-full sm:w-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40 active:scale-95"
             >
               <Play className="h-5 w-5 fill-current" />
               {isLoggedIn ? "대시보드로 가기" : "무료로 내 스킬트리 만들기"}
             </button>
           </div>
           
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1"><span className="text-amber-400">⭐</span> 100+ 채용공고 실시간 분석</span>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/5">
+            <span className="flex items-center gap-1"><span className="text-amber-400">⭐</span> 100+ 공고 분석</span>
             <span className="hidden sm:inline opacity-50">|</span>
-            <span className="flex items-center gap-1"><span className="text-blue-400">⏳</span> 평균 2주 퀘스트 완료</span>
+            <span className="flex items-center gap-1"><span className="text-blue-400">⏳</span> 평균 2주 완성</span>
             <span className="hidden sm:inline opacity-50">|</span>
-            <span className="flex items-center gap-1"><span className="text-emerald-400">💰</span> 100% 무료 시작</span>
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold"><span className="text-emerald-500">💎</span> 지금 가입 시 평생 무료 플랜 유지</span>
           </div>
         </div>
 
@@ -231,14 +240,27 @@ export function LandingClient() {
       </section>
 
       {/* Data Source Logo Band */}
-      <section className="w-full border-t border-slate-200 bg-white py-12 dark:border-white/5 dark:bg-slate-950/50">
+      <section className="w-full border-t border-slate-200 bg-slate-50 py-12 dark:border-white/5 dark:bg-slate-900/30">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <p className="mb-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
             실시간 채용 공고 데이터 수집 및 분석 기반
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-12 opacity-50 grayscale transition-all hover:grayscale-0 dark:opacity-40 dark:hover:opacity-100">
-            <div className="text-2xl font-black tracking-tighter text-[#3366FF]">wanted</div>
+          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16 opacity-60 grayscale transition-all hover:grayscale-0 dark:opacity-40 dark:hover:opacity-100">
+            {/* Wanted Mock Logo */}
+            <div className="flex items-center gap-1 text-2xl font-black tracking-tighter text-[#3366FF]">
+              <span className="w-6 h-6 rounded-full bg-[#3366FF] text-white flex items-center justify-center text-sm font-bold">w</span>anted
+            </div>
+            {/* Jumpit Mock Logo */}
             <div className="text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
+            {/* Programmers Mock Logo */}
+            <div className="text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
+              <span className="text-[#0078FF] font-black">P</span>rogrammers
+            </div>
+            {/* Rocketpunch Mock Logo */}
+            <div className="text-xl font-black tracking-tighter text-[#2188FB]">
+              RocketPunch
+            </div>
+            {/* GitHub */}
             <div className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
               <GitCommit className="w-6 h-6"/> GitHub
             </div>
@@ -247,100 +269,131 @@ export function LandingClient() {
       </section>
 
       {/* 3-Step Process Breakdown */}
-      <section className="bg-slate-50 py-32 dark:bg-slate-900 w-full border-t border-slate-200 dark:border-white/10 relative overflow-hidden">
+      <section id="features" className="bg-gradient-to-b from-white to-slate-50 py-32 dark:from-slate-950 dark:to-slate-900/50 w-full border-t border-slate-200 dark:border-white/10 relative overflow-hidden">
         {/* Background elements */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-[800px] h-[800px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-[600px] h-[600px] bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-20">
             <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-4">
               성장의 방향을 확신하는 3단계
             </h2>
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
               어디서부터 해야 할지 모른다면, 실무 데이터가 이끄는 대로 따라오세요.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {/* Step 1 */}
-            <div className="relative flex flex-col gap-4 rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-950/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
+            <div className="relative flex flex-col gap-4 rounded-3xl bg-white/80 backdrop-blur-sm p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-900/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
               <div className="absolute -top-5 -left-5 w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/30">1</div>
               <div className="h-14 w-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center dark:bg-indigo-900/40 dark:text-indigo-400">
                 <TrendingUp className="h-7 w-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-4">진단 및 트렌드 분석</h3>
+              <p className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">현재 기술 트리 진단</p>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
                 현재 채용 시장에서 가장 뜨겁게 요구되는 기술 트렌드를 시각화하여, 지금 당장 집중해야 할 학습 우선순위를 명확히 진단합니다.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative flex flex-col gap-4 rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-950/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
+            <div className="relative flex flex-col gap-4 rounded-3xl bg-white/80 backdrop-blur-sm p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-900/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
               <div className="absolute -top-5 -left-5 w-12 h-12 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-rose-500/30">2</div>
               <div className="h-14 w-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center dark:bg-rose-900/40 dark:text-rose-400">
                 <Target className="h-7 w-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-4">맞춤형 퀘스트 생성</h3>
+              <p className="font-semibold text-rose-600 dark:text-rose-400 mb-2">실전 미니 프로젝트</p>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
                 단순 튜토리얼이 아닙니다. 이력서에 작성 가능한 '트러블슈팅 경험'과 '아키텍처 설계' 중심의 2주짜리 실전 미니 프로젝트가 주어집니다.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex flex-col gap-4 rounded-3xl bg-white p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-950/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
+            <div className="relative flex flex-col gap-4 rounded-3xl bg-white/80 backdrop-blur-sm p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-900/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
               <div className="absolute -top-5 -left-5 w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-amber-500/30">3</div>
               <div className="h-14 w-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center dark:bg-amber-900/40 dark:text-amber-400">
                 <GitCommit className="h-7 w-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-4">GitHub 자산화</h3>
+              <p className="font-semibold text-amber-600 dark:text-amber-400 mb-2">포트폴리오 자동 완성</p>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
                 퀘스트를 해결한 PR 주소나 레포지토리를 연동하세요. AI가 커밋 내역을 분석하여 내 포트폴리오의 실질적인 자산으로 100% 인증합니다.
               </p>
             </div>
           </div>
+          
+          {/* Secondary CTA */}
+          <div className="mt-20 text-center">
+            <button
+              onClick={handleStart}
+              className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-slate-900 dark:bg-white px-8 py-4 text-base font-bold text-white dark:text-slate-900 shadow-xl transition-all hover:scale-105 active:scale-95"
+            >
+              무료로 내 스킬트리 진단받기
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-white py-32 dark:bg-slate-950 w-full border-t border-slate-200 dark:border-white/10">
+      <section id="reviews" className="bg-slate-50 py-32 dark:bg-slate-950/80 w-full border-t border-slate-200 dark:border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-4">
-              성장을 경험한 유저들의 이야기
+              성장을 증명한 유저들의 이야기
             </h2>
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
+              자람이와 함께 실전 스펙을 쌓고 목표를 달성한 생생한 후기입니다.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="rounded-3xl bg-slate-50 p-8 border border-slate-100 dark:bg-slate-900/40 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
-              <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">"어디서부터 해야 할지 막막했는데, 네이버 공고 기반의 2주 스프린트 덕에 당장 해야 할 명확한 목표를 잡았습니다."</p>
-              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400">K</div>
+            <div className="flex flex-col justify-between rounded-3xl bg-white p-8 border border-slate-100 shadow-lg shadow-slate-200/40 dark:bg-slate-900/50 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
+              <div>
+                <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
+                  "어디서부터 해야 할지 막막했는데, 네이버 공고 기반의 2주 스프린트 덕분에 <strong className="text-slate-900 dark:text-white">2주 만에 React 스킬트리를 완성</strong>하고 원티드를 통해 서류 합격했습니다."
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=e0e7ff" alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" />
                 <div>
-                  <div className="block">주니어 프론트엔드</div>
-                  <div className="text-xs text-slate-500 font-normal">사용 3주차</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">김*현</div>
+                  <div className="text-xs text-slate-500">주니어 프론트엔드 · 3주 만에 취업 성공</div>
                 </div>
               </div>
             </div>
-            <div className="rounded-3xl bg-slate-50 p-8 border border-slate-100 dark:bg-slate-900/40 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
-              <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">"단순히 인강 듣는 걸 넘어서서, GitHub PR을 올려 인증받는 시스템이라서 제 이력서에 실제로 쓸 스토리가 쌓여요!"</p>
-              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 dark:bg-rose-900/50 dark:text-rose-400">L</div>
+            
+            <div className="flex flex-col justify-between rounded-3xl bg-white p-8 border border-slate-100 shadow-lg shadow-slate-200/40 dark:bg-slate-900/50 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
+              <div>
+                <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
+                  "단순히 인강 듣는 걸 넘어서서, GitHub PR을 올려 인증받는 시스템이 최고예요. <strong className="text-slate-900 dark:text-white">3주 만에 4개의 실무형 퀘스트를 클리어</strong>하고 이력서가 꽉 찼습니다."
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffe4e6" alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" />
                 <div>
-                  <div className="block">취업 준비생</div>
-                  <div className="text-xs text-slate-500 font-normal">2개 퀘스트 완료</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">이*진</div>
+                  <div className="text-xs text-slate-500">취업 준비생 · 4개 퀘스트 자산화 완료</div>
                 </div>
               </div>
             </div>
-            <div className="rounded-3xl bg-slate-50 p-8 border border-slate-100 dark:bg-slate-900/40 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
-              <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
-              <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">"실시간 트렌드 보면서 내가 부족했던 '상태관리 아키텍처' 부분을 정확히 짚어냈습니다. 바로 다음 목표로 설정했어요."</p>
-              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">P</div>
+            
+            <div className="flex flex-col justify-between rounded-3xl bg-white p-8 border border-slate-100 shadow-lg shadow-slate-200/40 dark:bg-slate-900/50 dark:border-white/5 transition-all hover:shadow-xl hover:-translate-y-1">
+              <div>
+                <div className="flex text-amber-400 mb-4">⭐⭐⭐⭐⭐</div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
+                  "실시간 트렌드를 보면서 내가 부족했던 '상태관리 아키텍처' 부분을 정확히 짚어냈어요. 가이드대로 <strong className="text-slate-900 dark:text-white">PR 2개를 올리니 바로 잔디 뱃지</strong>를 받았습니다."
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jocelyn&backgroundColor=d1fae5" alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" />
                 <div>
-                  <div className="block">2년차 프론트엔드</div>
-                  <div className="text-xs text-slate-500 font-normal">사용 1개월차</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">박*수</div>
+                  <div className="text-xs text-slate-500">2년차 백엔드 · 트렌드 매칭 100% 달성</div>
                 </div>
               </div>
             </div>
@@ -349,23 +402,49 @@ export function LandingClient() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-slate-50 py-32 dark:bg-slate-900/50 w-full border-t border-slate-200 dark:border-white/10">
+      <section id="faq" className="bg-slate-100 py-32 dark:bg-slate-900 w-full border-t border-slate-200 dark:border-white/10">
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-10 text-center">
             자주 묻는 질문
           </h2>
           <div className="space-y-4">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm dark:bg-slate-900 dark:border-white/5 transition-transform hover:-translate-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white mb-2 text-lg">정말 전면 무료인가요?</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">네! 현재 베타 서비스 기간 동안 채용 공고 기반의 스킬 트리 생성과 GitHub 자동 인증 연동 기능을 100% 무료로 제공하고 있습니다.</p>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-950 dark:border-white/10 overflow-hidden transition-all">
+              <button 
+                className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-slate-900 dark:text-white text-lg focus:outline-none"
+                onClick={() => setOpenFaqIndex(openFaqIndex === 0 ? -1 : 0)}
+              >
+                <span>나중에 유료화되나요?</span>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${openFaqIndex === 0 ? 'rotate-180' : ''}`} />
+              </button>
+              <div className={`px-6 pb-5 text-slate-600 dark:text-slate-400 text-sm leading-relaxed ${openFaqIndex === 0 ? 'block' : 'hidden'}`}>
+                아닙니다! 현재 진행 중인 베타 서비스 기간 동안 가입하신 모든 회원님들께는 <strong className="text-slate-800 dark:text-slate-200">향후 유료 기능이 추가되더라도 평생 100% 무료 플랜</strong>을 약속드립니다. 지금 당장 부담 없이 시작해 보세요.
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm dark:bg-slate-900 dark:border-white/5 transition-transform hover:-translate-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white mb-2 text-lg">어떤 직무를 지원하나요?</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">초기 버전은 프론트엔드 및 백엔드 개발 직무의 기술 스택을 중심으로, 원티드 및 점핏 등 국내 유력 채용 플랫폼의 데이터를 수집해 제공합니다.</p>
+            
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-950 dark:border-white/10 overflow-hidden transition-all">
+              <button 
+                className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-slate-900 dark:text-white text-lg focus:outline-none"
+                onClick={() => setOpenFaqIndex(openFaqIndex === 1 ? -1 : 1)}
+              >
+                <span>어떤 직무를 지원하나요?</span>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${openFaqIndex === 1 ? 'rotate-180' : ''}`} />
+              </button>
+              <div className={`px-6 pb-5 text-slate-600 dark:text-slate-400 text-sm leading-relaxed ${openFaqIndex === 1 ? 'block' : 'hidden'}`}>
+                초기 버전은 프론트엔드 및 백엔드 개발 직무의 기술 스택을 중심으로, 원티드 및 점핏 등 국내 유력 채용 플랫폼의 최신 채용 공고 데이터를 실시간으로 분석하여 맞춤 퀘스트를 제공합니다.
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm dark:bg-slate-900 dark:border-white/5 transition-transform hover:-translate-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white mb-2 text-lg">GitHub 연동은 필수인가요?</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">필수는 아닙니다. 하지만 연동 시 나의 학습 이력과 커밋이 자람이 프로필에 자동 인증되어, 더욱 강력한 포트폴리오 자산으로 활용할 수 있습니다.</p>
+            
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-950 dark:border-white/10 overflow-hidden transition-all">
+              <button 
+                className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-slate-900 dark:text-white text-lg focus:outline-none"
+                onClick={() => setOpenFaqIndex(openFaqIndex === 2 ? -1 : 2)}
+              >
+                <span>GitHub 연동은 필수인가요?</span>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${openFaqIndex === 2 ? 'rotate-180' : ''}`} />
+              </button>
+              <div className={`px-6 pb-5 text-slate-600 dark:text-slate-400 text-sm leading-relaxed ${openFaqIndex === 2 ? 'block' : 'hidden'}`}>
+                필수는 아닙니다. 하지만 연동 시 나의 학습 이력과 커밋이 자람이 프로필에 자동 인증되어, 더욱 강력한 포트폴리오 자산으로 활용할 수 있습니다. 퀘스트를 마치고 PR을 올리는 경험 자체가 실무의 기본이기도 합니다.
+              </div>
             </div>
           </div>
         </div>
