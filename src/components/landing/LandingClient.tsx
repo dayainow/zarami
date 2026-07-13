@@ -136,7 +136,13 @@ export function LandingClient() {
     router.push("/dashboard");
   };
 
-  const topTrends = trends?.slice(0, 3) || [];
+  const topTrends = [...(trends || [])]
+    .sort((a, b) => {
+      const aTotal = (a.wanted_mentions || 0) + (a.jumpit_mentions || 0);
+      const bTotal = (b.wanted_mentions || 0) + (b.jumpit_mentions || 0);
+      return bTotal - aTotal;
+    })
+    .slice(0, 3);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white flex flex-col">
@@ -238,6 +244,44 @@ export function LandingClient() {
           </div>
         </div>
       </section>
+
+      {/* Trend Preview Widget */}
+      {topTrends.length > 0 && (
+        <section className="w-full relative z-20 px-6 -mt-16 lg:-mt-24 mb-12 max-w-5xl mx-auto">
+          <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-2xl shadow-sky-900/10 p-6 sm:p-8 dark:bg-slate-900/80 dark:border-white/10 flex flex-col md:flex-row items-center gap-6 md:gap-10 transition-transform hover:-translate-y-1 duration-500">
+            <div className="flex-shrink-0 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 mb-3 shadow-sm shadow-rose-500/10">
+                <TrendingUp className="h-4 w-4" />
+                실시간 채용 트렌드
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                이번 주 <br className="hidden md:block"/>가장 수요 많은 스택
+              </h3>
+            </div>
+            
+            <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {topTrends.map((trend, i) => {
+                const total = (trend.wanted_mentions || 0) + (trend.jumpit_mentions || 0);
+                return (
+                  <div key={trend.id} className="relative bg-white dark:bg-slate-950/80 rounded-2xl p-5 border border-slate-100 dark:border-white/5 flex flex-col justify-center items-center sm:items-start overflow-hidden group shadow-sm transition-all hover:border-emerald-500/30 hover:shadow-emerald-500/5">
+                    <div className="absolute -right-4 -bottom-6 opacity-[0.03] dark:opacity-[0.05] text-[100px] font-black italic select-none pointer-events-none group-hover:scale-110 transition-transform duration-500">{i + 1}</div>
+                    <div className="flex items-center gap-2 mb-1 z-10">
+                      <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : i === 1 ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400'}`}>
+                        {i + 1}
+                      </span>
+                      <span className="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{trend.title}</span>
+                    </div>
+                    <div className="text-emerald-600 dark:text-emerald-400 font-black mt-1 flex items-baseline gap-1 z-10">
+                      <span className="text-2xl tracking-tight">{total.toLocaleString()}</span>
+                      <span className="text-xs text-slate-500 font-medium">건 요구됨</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Data Source Logo Band */}
       <section className="w-full border-t border-slate-200 bg-slate-50 py-12 dark:border-white/5 dark:bg-slate-900/30">
