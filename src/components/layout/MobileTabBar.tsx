@@ -30,20 +30,22 @@ export function MobileTabBar() {
             key={item.href}
             href={item.href}
             className={[
-              "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition",
+              "flex flex-1 flex-col items-center justify-center gap-1 py-1.5 px-0.5 min-w-0 transition",
               isActive
                 ? "text-sky-600 dark:text-sky-300"
                 : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white",
             ].join(" ")}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon className="h-5 w-5" aria-hidden />
-            {item.label}
+            <Icon className="h-5 w-5 shrink-0" aria-hidden />
+            <span className="w-full text-center text-[10px] font-semibold truncate">
+              {item.mobileLabel || item.label}
+            </span>
           </Link>
         );
       })}
-      <div className="flex flex-1 flex-col items-center gap-0.5 py-2">
-        <ThemeToggle className="!h-9 !w-9 border-none !bg-transparent !shadow-none hover:!bg-transparent dark:!bg-transparent" />
+      <div className="flex flex-col items-center justify-center py-1.5 px-1 min-w-0">
+        <ThemeToggle className="!h-8 !w-8 border-none !bg-transparent !shadow-none hover:!bg-transparent dark:!bg-transparent" />
       </div>
     </nav>
   );

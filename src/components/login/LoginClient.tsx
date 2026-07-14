@@ -140,7 +140,7 @@ export function LoginClient() {
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4 transition-transform group-hover:-rotate-12" />
-                    매직 링크로 1초 만에 로그인
+                    매직 링크로 로그인 (이메일 확인 필요)
                   </>
                 )}
               </button>
@@ -148,20 +148,22 @@ export function LoginClient() {
           )}
         </div>
         
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-500">
-            이메일만으로 간편하게 시작할 수 있습니다.<br />
-            비밀번호를 기억할 필요가 없어요.
-          </p>
-          <button
-            type="button"
-            onClick={handleTestLogin}
-            disabled={isSending}
-            className="text-[10px] font-semibold text-slate-400 underline underline-offset-4 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-          >
-            개발/테스트용 임시 계정으로 빠른 로그인
-          </button>
-        </div>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-500">
+              이메일만으로 간편하게 시작할 수 있습니다.<br />
+              비밀번호를 기억할 필요가 없어요.
+            </p>
+            <button
+              type="button"
+              onClick={handleTestLogin}
+              disabled={isSending}
+              className="text-[10px] font-semibold text-slate-400 underline underline-offset-4 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            >
+              개발/테스트용 임시 계정으로 빠른 로그인
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

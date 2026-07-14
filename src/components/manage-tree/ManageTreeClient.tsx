@@ -138,6 +138,7 @@ export function ManageTreeClient() {
   const [targetCompany, setTargetCompany] = useState("");
   const [isEditingTargetCompany, setIsEditingTargetCompany] = useState(false);
   const [targetCompanyInput, setTargetCompanyInput] = useState("");
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
   const hasAutoSelectedInitialTreeRef = useRef(false);
 
@@ -684,71 +685,71 @@ export function ManageTreeClient() {
 
   return (
     <main className="flex min-h-screen w-full flex-col overflow-hidden bg-slate-50 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white xl:h-screen xl:flex-row">
-      <section className="relative flex min-h-[620px] min-w-0 flex-1">
-        <div className="absolute inset-x-0 top-0 z-20 border-b border-white/60 bg-white/70 px-6 py-4 shadow-sm shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+      <section className="relative flex min-h-[620px] min-w-0 flex-1 flex-col">
+        <div className="z-20 flex-none border-b border-white/60 bg-white/70 px-4 py-3 md:px-6 md:py-4 shadow-sm shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/70 dark:shadow-black/20">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 flex-col gap-1.5 md:gap-1">
+              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
                 My Tree Studio
               </p>
-              <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                <span className="shrink-0">내 트리 관리</span>
-                {treeList && treeList.length > 0 && (
-                  <>
-                    {isRenaming ? (
-                      <input
-                        type="text"
-                        autoFocus
-                        value={renameInput}
-                        onChange={(e) => setRenameInput(e.target.value)}
-                        onBlur={handleRenameSubmit}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleRenameSubmit();
-                          if (e.key === "Escape") setIsRenaming(false);
-                        }}
-                        className="w-full max-w-[200px] rounded-md border border-sky-400 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
-                      />
-                    ) : (
-                      <select
-                        className="max-w-xs truncate rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
-                        value={currentTreeId || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val) setCurrentTreeId(val);
-                        }}
-                      >
-                        <option value="" disabled>로드맵 선택</option>
-                        {treeList.map(tree => (
-                          <option key={tree.id} value={tree.id}>{tree.title}</option>
-                        ))}
-                      </select>
-                    )}
-                    {!isRenaming ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleStartRename}
-                          aria-label="로드맵 이름 변경"
-                          title="이름 변경"
-                          className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
-                        >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleDeleteTree}
-                          disabled={!currentTreeId}
-                          aria-label="로드맵 삭제"
-                          title={currentTreeId ? "로드맵 삭제" : "저장 후 삭제할 수 있습니다"}
-                          className="grid h-8 w-8 place-items-center rounded-md border border-red-200 bg-red-50/60 text-red-500 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        </button>
-                      </>
-                    ) : null}
-                  </>
-                )}
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                내 트리 관리
               </h1>
+              {treeList && treeList.length > 0 && (
+                <div className="flex w-full items-center gap-2">
+                  {isRenaming ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value)}
+                      onBlur={handleRenameSubmit}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenameSubmit();
+                        if (e.key === "Escape") setIsRenaming(false);
+                      }}
+                      className="flex-1 min-w-0 rounded-md border border-sky-400 bg-white px-2 py-1.5 text-xs md:text-sm font-medium text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
+                    />
+                  ) : (
+                    <select
+                      className="flex-1 min-w-0 truncate rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs md:text-sm font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+                      value={currentTreeId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) setCurrentTreeId(val);
+                      }}
+                    >
+                      <option value="" disabled>로드맵 선택</option>
+                      {treeList.map(tree => (
+                        <option key={tree.id} value={tree.id}>{tree.title}</option>
+                      ))}
+                    </select>
+                  )}
+                  {!isRenaming ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleStartRename}
+                        aria-label="로드맵 이름 변경"
+                        title="이름 변경"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteTree}
+                        disabled={!currentTreeId}
+                        aria-label="로드맵 삭제"
+                        title={currentTreeId ? "로드맵 삭제" : "저장 후 삭제할 수 있습니다"}
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-red-200 bg-red-50/60 text-red-500 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              )}
               {isTreeLoading ? (
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">저장된 트리 불러오는 중...</p>
               ) : null}
@@ -781,35 +782,25 @@ export function ManageTreeClient() {
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
               <button
                 type="button"
                 onClick={() => setIsPromptOpen(true)}
                 disabled={isGeneratingAI}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-500 px-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
+                className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg bg-indigo-500 px-2.5 md:px-3 text-xs md:text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
               >
-                <span>✨</span>
-                {isGeneratingAI ? "생성 중..." : "AI 자동 생성"}
+                <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                {isGeneratingAI ? "생성 중..." : "AI로 새 로드맵 설계"}
               </button>
-              <button
-                type="button"
-                onClick={handleRecommendNode}
-                disabled={isRecommending}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-3 text-sm font-bold text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 disabled:opacity-50 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300"
-              >
-                <Lightbulb className="h-4 w-4" aria-hidden />
-                {isRecommending ? "생각 중..." : "AI 노드 추천"}
-              </button>
-              
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsAddNodeMenuOpen(!isAddNodeMenuOpen)}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-sky-500 px-3 text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
+                  className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg bg-sky-500 px-2.5 md:px-3 text-xs md:text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
                 >
-                  <Plus className="h-4 w-4" aria-hidden />
+                  <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
                   노드 추가
-                  <ChevronDown className="h-3 w-3 ml-1" />
+                  <ChevronDown className="h-3 w-3 ml-0.5 md:ml-1" />
                 </button>
                 
                 {isAddNodeMenuOpen && (
@@ -818,7 +809,7 @@ export function ManageTreeClient() {
                       className="fixed inset-0 z-40"
                       onClick={() => setIsAddNodeMenuOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
+                    <div className="absolute right-0 md:left-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
                       <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">직접 추가</div>
                       <button
                         onClick={() => {
@@ -829,6 +820,20 @@ export function ManageTreeClient() {
                       >
                         <Plus className="h-4 w-4 text-sky-500 shrink-0" />
                         빈 노드 추가
+                      </button>
+
+                      <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
+                      <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI 추천</div>
+                      <button
+                        onClick={() => {
+                          handleRecommendNode();
+                          setIsAddNodeMenuOpen(false);
+                        }}
+                        disabled={isRecommending}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-amber-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-amber-900/30"
+                      >
+                        <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" aria-hidden />
+                        {isRecommending ? "생각 중..." : "AI 추천 노드 추가"}
                       </button>
                       
                       {topMissingTrends && topMissingTrends.length > 0 && (
@@ -861,38 +866,116 @@ export function ManageTreeClient() {
 
               <button
                 type="button"
-                onClick={handleAutoLayout}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/70 bg-white/70 px-3 text-sm font-bold text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-              >
-                <LayoutGrid className="h-4 w-4" aria-hidden />
-                자동 정렬
-              </button>
-              <button
-                type="button"
                 onClick={handleSave}
                 disabled={saveTreeMutation.isPending}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+                className={`inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg px-2.5 md:px-4 text-xs md:text-sm font-bold text-white shadow-lg transition-colors ${
+                  saveState === "saved"
+                    ? "bg-emerald-600 shadow-emerald-600/20 dark:bg-emerald-500"
+                    : saveState === "error"
+                      ? "bg-red-500 shadow-red-500/20 dark:bg-red-500"
+                      : "bg-emerald-500 shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+                } disabled:opacity-50`}
               >
-                <Save className="h-4 w-4" aria-hidden />
+                <Save className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
                 {saveState === "saved"
-                  ? "저장됨!"
+                  ? "저장됨 ✓"
                   : saveState === "error"
                     ? "저장 실패"
                     : saveState === "saving"
                       ? "저장 중..."
                       : "저장"}
               </button>
-              <button
-                type="button"
-                onClick={() => void handleExport()}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/70 bg-white/70 px-3 text-sm font-bold text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-              >
-                <Download className="h-4 w-4" aria-hidden />
-                {exportState === "copied" ? "복사됨" : exportState === "error" ? "복사 실패" : "JSON 복사"}
-              </button>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                  className="inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg border border-white/70 bg-white/70 text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                  aria-label="더보기"
+                >
+                  <MoreVertical className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </button>
+                
+                {isMoreMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsMoreMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
+                      <button
+                        onClick={() => {
+                          handleAutoLayout();
+                          setIsMoreMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
+                        의존성(Lv.) 기준 정렬
+                      </button>
+                      <button
+                        onClick={() => {
+                          void handleExport();
+                          setIsMoreMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <Download className="h-4 w-4 shrink-0" aria-hidden />
+                        JSON으로 내보내기
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Target Company Modal */}
+        {isEditingTargetCompany && (
+          <div className="fixed inset-0 z-[150] grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <Target className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">목표 기업 설정</h3>
+              </div>
+              
+              <p className="mb-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                목표 기업을 설정하면, 이후 <strong className="text-slate-900 dark:text-slate-200">AI 노드 추천</strong> 기능이 해당 기업의 최근 채용 스펙을 우선적으로 반영하여 기술을 추천해 줍니다.
+              </p>
+              
+              <input
+                type="text"
+                autoFocus
+                value={targetCompanyInput}
+                onChange={(e) => setTargetCompanyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleTargetCompanySubmit();
+                  if (e.key === "Escape") setIsEditingTargetCompany(false);
+                }}
+                placeholder="예: 네이버, 카카오, 토스"
+                className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-black/40 dark:text-white"
+              />
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setIsEditingTargetCompany(false)}
+                  className="rounded-lg px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleTargetCompanySubmit}
+                  className="rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+                >
+                  저장하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <TechTreeCanvas
           nodes={nodes}
@@ -909,7 +992,7 @@ export function ManageTreeClient() {
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance;
           }}
-          className="h-full min-h-screen pt-24"
+          className="flex-1 min-h-0"
         />
       </section>
 

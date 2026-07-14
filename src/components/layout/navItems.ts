@@ -4,6 +4,7 @@ export type NavItem = {
   href: string;
   label: string;
   subLabel?: string;
+  mobileLabel?: string;
   icon: LucideIcon;
 };
 
@@ -32,12 +33,14 @@ export const navItems: NavItem[] = [
     href: "/world-map",
     label: "스킬 모험 지도",
     subLabel: "숨겨진 퀘스트를 찾아서",
+    mobileLabel: "모험 지도",
     icon: Map,
   },
   {
     href: "/trends",
     label: "실시간 채용 트렌드",
     subLabel: "채용 시장 분석",
+    mobileLabel: "채용 트렌드",
     icon: TrendingUp,
   },
 ];

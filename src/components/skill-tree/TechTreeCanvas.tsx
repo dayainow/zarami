@@ -435,8 +435,8 @@ export function TechTreeCanvas({
   return (
     <section
       className={[
-        "h-[calc(100vh-4rem)] min-h-[560px] w-full overflow-hidden bg-slate-50 transition-colors duration-300 dark:bg-slate-950",
-        className ?? "",
+        "w-full overflow-hidden bg-slate-50 transition-colors duration-300 dark:bg-slate-950",
+        className || "h-[calc(100vh-4rem)] min-h-[560px]",
       ].join(" ")}
       aria-label="기술트리 캔버스"
     >

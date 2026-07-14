@@ -9,7 +9,7 @@ import { Drawer } from "@/components/Drawer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import { findSkillTrend, useSkillTrends } from "@/hooks/useSkillTrends";
 import { useToggleNodeCompletion, useUserTree, useUserTrees } from "@/hooks/useUserTree";
 import { getLayoutedElements } from "@/lib/autoLayout";
@@ -21,7 +21,7 @@ import { formatEstimatedTime } from "@/utils/format";
 export function DashboardClient() {
   const router = useRouter();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const userId = useSupabaseUserId();
+  const { userId, authChecked } = useMagicLinkAuth();
   const [currentTreeId, setCurrentTreeId] = useState<string | null>(null);
   const { data: treeList } = useUserTrees(userId);
   const { data: myTree, isLoading: isMyTreeLoading } = useUserTree(currentTreeId);
@@ -265,9 +265,17 @@ export function DashboardClient() {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            {!userId ? (
+            {!authChecked ? (
+              <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">
+                인증 정보 확인 중...
+              </span>
+            ) : !userId ? (
               <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">
                 아직 스킬트리가 없어요. 로그인 후 바로 시작
+              </span>
+            ) : totalCount === 0 ? (
+              <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200 border-b border-dashed border-slate-400/50">
+                아직 스킬트리가 없어요.
               </span>
             ) : (
               <div className="group relative flex cursor-help items-center">
@@ -293,7 +301,7 @@ export function DashboardClient() {
 
             <div className="h-6 w-px bg-slate-200/80 dark:bg-white/10 hidden md:block" />
 
-            {!userId ? (
+            {!authChecked || !userId ? (
               // Empty state handles the main CTA when logged out, so we don't need a duplicate here in the header
               null
             ) : isMyTreeLoading ? null : (
@@ -303,7 +311,7 @@ export function DashboardClient() {
               >
                 <TreePine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden />
                 {totalCount === 0 ? (
-                  "내 트리 시작하기"
+                  "내 스킬트리 만들기"
                 ) : (
                   <>
                     내 트리 {completedCount}/{totalCount}
@@ -345,6 +353,14 @@ export function DashboardClient() {
             </p>
           </div>
         </div>
+      ) : !authChecked ? (
+        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+          <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
+            <h2 className="mt-4 text-lg font-bold text-slate-950 dark:text-white animate-pulse">
+              사용자 정보 확인 중...
+            </h2>
+          </div>
+        </div>
       ) : nodes.length === 0 ? (
         <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
           <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
@@ -352,11 +368,11 @@ export function DashboardClient() {
               <TreePine className="h-7 w-7" aria-hidden />
             </span>
             <h2 className="mt-4 text-lg font-bold text-slate-950 dark:text-white">
-              {userId ? "아직 만든 로드맵이 없어요" : "로그인하고 로드맵을 만들어보세요"}
+              아직 스킬트리가 없어요
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
               {userId
-                ? "내 트리 관리에서 AI로 커리어 로드맵을 만들면 여기서 진행 상황을 확인할 수 있어요."
+                ? "목표를 입력하면 AI가 나만의 커리어 로드맵을 만들어줘요."
                 : "목표를 입력하면 AI가 나만의 커리어 로드맵을 만들어줘요. 로그인 후 바로 시작할 수 있어요."}
             </p>
             <Link
@@ -364,7 +380,7 @@ export function DashboardClient() {
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:shadow-emerald-900/40 dark:hover:bg-emerald-300"
             >
               <span className="text-lg">✨</span> 
-              {userId ? "AI로 나만의 로드맵 생성하기" : "로그인하고 내 스킬트리 만들기"}
+              내 스킬트리 만들기
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
