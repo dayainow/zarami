@@ -11,6 +11,7 @@ interface WorldMapOverlayProps {
   onTreeClick?: (treeId: string) => void;
   activeTree?: { title: string; nodes: SkillTreeNode[] };
   theme?: { pathColor: string; icon: string; [key: string]: unknown };
+  categoryStats?: CategoryStats;
 }
 
 // We use a viewBox of 1000 1000 but make the paths jagged for a retro RPG feel
@@ -74,31 +75,45 @@ export function WorldMapOverlay({ userTrees, onTreeClick, activeTree, theme }: W
         label: shortLabel,
         color: theme ? theme.pathColor : "#10b981",
         icon: theme ? theme.icon : "/images/characters/hero_back.png",
-        isActiveTree: true
+        isActiveTree: true,
+        treeId: "active",
+        displayTotal,
+        displayCompleted,
+        markerPos: REGIONS[0].waypoints[0]
       }];
     }
 
     // "All" overview mode: Map each userTree to a region on the map
     if (userTrees && userTrees.length > 0) {
+      const OVERVIEW_WAYPOINTS = [
+        { x: 500, y: 630 }, // Central Huge Castle
+        { x: 500, y: 180 }, // Top Snow Castle
+        { x: 200, y: 500 }, // Left Coastal City
+        { x: 750, y: 280 }, // Right Forest City
+        { x: 230, y: 780 }, // Bottom Left Tower
+        { x: 750, y: 430 }, // Middle Right Castle
+        { x: 820, y: 800 }, // Bottom Right Village
+        { x: 370, y: 560 }, // Small middle tower
+      ];
+
       return userTrees.map((tree, idx) => {
-        const regionTemplate = REGIONS[idx % REGIONS.length];
-        
         const displayTotal = tree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-')).length;
         const displayCompleted = tree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-') && n.data.is_completed).length;
-        let progress = displayTotal > 0 ? displayCompleted / displayTotal : 0;
+        const progress = displayTotal > 0 ? displayCompleted / displayTotal : 0;
         
         const shortLabel = tree.title.length > 15 ? tree.title.slice(0, 15) + "..." : tree.title;
         
         return {
-          ...regionTemplate,
+          category: "Overview",
           treeId: tree.id,
           label: shortLabel,
           progress,
           displayTotal,
           displayCompleted,
           isActiveTree: false,
-          // We'll place the marker at the last waypoint of the region
-          markerPos: regionTemplate.waypoints[regionTemplate.waypoints.length - 1]
+          markerPos: OVERVIEW_WAYPOINTS[idx % OVERVIEW_WAYPOINTS.length],
+          index: idx,
+          isLast: idx === userTrees.length - 1
         };
       });
     }
@@ -137,6 +152,8 @@ export function WorldMapOverlay({ userTrees, onTreeClick, activeTree, theme }: W
             `}
           </style>
         </defs>
+
+        {/* Paths are removed in Overview Mode as requested */}
 
         {activeRegions.map((region) => (
           <g key={region.category || region.treeId}>
@@ -216,79 +233,27 @@ export function WorldMapOverlay({ userTrees, onTreeClick, activeTree, theme }: W
                 className="cursor-pointer transition-all duration-300 hover:scale-110 pointer-events-auto"
                 onClick={() => onTreeClick && onTreeClick(region.treeId)}
               >
-                {/* Tooltip Background */}
-                <rect
-                  x={region.markerPos.x - 70}
-                  y={region.markerPos.y - 100}
-                  width="140"
-                  height="60"
-                  fill="#ffffff"
-                  stroke="#000000"
-                  strokeWidth="3"
-                  rx="8"
-                  className="drop-shadow-md"
-                />
-                
-                {/* Tree Title */}
-                <text
-                  x={region.markerPos.x}
-                  y={region.markerPos.y - 75}
-                  fill="#000000"
-                  fontSize="14"
-                  fontWeight="900"
-                  fontFamily='"Courier New", Courier, monospace'
-                  textAnchor="middle"
-                >
-                  {region.label}
-                </text>
-                
-                {/* Completion Rate / Tooltip content */}
-                <text
-                  x={region.markerPos.x}
-                  y={region.markerPos.y - 55}
-                  fill="#64748b"
-                  fontSize="11"
-                  fontWeight="bold"
-                  fontFamily='"Courier New", Courier, monospace'
-                  textAnchor="middle"
-                >
-                  달성률: {region.displayCompleted}/{region.displayTotal} ({Math.round(region.progress * 100)}%)
-                </text>
+                {/* Interactive City Node */}
+                <foreignObject x={region.markerPos.x - 80} y={region.markerPos.y - 80} width="160" height="160" className="overflow-visible">
+                  <div className="group relative w-full h-full flex flex-col items-center justify-center">
+                    
+                    {/* Tooltip Background (shows on hover) */}
+                    <div className="pointer-events-none absolute bottom-[110px] left-1/2 mb-2 w-max -translate-x-1/2 opacity-0 transition-all duration-300 group-hover:-translate-y-2 group-hover:opacity-100 z-50">
+                      <div className="relative flex flex-col items-center rounded-xl border-4 border-slate-900 bg-[#fef3c7] px-3 py-2 shadow-[4px_4px_0_0_rgba(0,0,0,0.8)]">
+                        <p className="max-w-[200px] truncate text-xs font-black tracking-wide text-slate-900">
+                          {region.label}
+                        </p>
+                        <p className="mt-0.5 text-[10px] font-bold text-slate-700">
+                          달성률: {region.displayCompleted}/{region.displayTotal} ({Math.round(region.progress * 100)}%)
+                        </p>
+                        <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b-4 border-r-4 border-slate-900 bg-[#fef3c7]" />
+                      </div>
+                    </div>
 
-                {/* Action Hint */}
-                <rect
-                  x={region.markerPos.x - 50}
-                  y={region.markerPos.y + 15}
-                  width="100"
-                  height="24"
-                  fill="#10b981"
-                  stroke="#000000"
-                  strokeWidth="2"
-                  rx="4"
-                />
-                <text
-                  x={region.markerPos.x}
-                  y={region.markerPos.y + 31}
-                  fill="#ffffff"
-                  fontSize="11"
-                  fontWeight="bold"
-                  fontFamily='"Courier New", Courier, monospace'
-                  textAnchor="middle"
-                >
-                  모험 시작 ⚔️
-                </text>
-
-                {/* Marker Icon */}
-                <image 
-                  href={region.icon || "/images/characters/hero_back.png"} 
-                  x={region.markerPos.x - 30} 
-                  y={region.markerPos.y - 45} 
-                  width="60" 
-                  height="60" 
-                  preserveAspectRatio="xMidYMid meet" 
-                  style={{ imageRendering: 'pixelated' }} 
-                  className="rpg-character"
-                />
+                    {/* Invisible Hitbox with Subtle Glow on Hover */}
+                    <div className="w-[100px] h-[100px] rounded-full transition-all duration-300 group-hover:bg-amber-100/20 group-hover:shadow-[0_0_30px_10px_rgba(251,191,36,0.3)]" />
+                  </div>
+                </foreignObject>
               </g>
             )}
           </g>

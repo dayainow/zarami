@@ -8,7 +8,7 @@ import { useUserTrees } from "@/hooks/useUserTree";
 import { createClient } from "@/utils/supabase/client";
 import { WorldMapOverlay } from "./WorldMapOverlay";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Map, Folder } from "lucide-react";
+import { ArrowLeft, Folder } from "lucide-react";
 import type { SkillTreeNode } from "@/types/skill-tree";
 
 export const THEMES = {
@@ -80,8 +80,7 @@ export function WorldMapClient() {
   const userId = sessionUser?.id ?? null;
   const { data: stats } = useProfileStats(userId);
   const { data: userTrees } = useUserTrees(userId);
-  const [selectedTreeId, setSelectedTreeId] = useState<string>("all");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedTreeId, setSelectedTreeId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -98,11 +97,11 @@ export function WorldMapClient() {
   const activeTreeTheme = activeTree ? getThemeForTree(activeTree.id) : THEMES.forest;
 
   const displayTotalCount = activeTree 
-    ? activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-')).length
+    ? activeTree.nodes.length
     : stats?.totalCount ?? 0;
   
   const displayCompletedCount = activeTree
-    ? activeTree.nodes.filter((n: SkillTreeNode) => !n.id.includes('-') && n.data.is_completed).length
+    ? activeTree.nodes.filter((n: SkillTreeNode) => n.data.is_completed).length
     : stats?.completedCount ?? 0;
 
   const progressPercent = displayTotalCount === 0 ? 0 : Math.round((displayCompletedCount / displayTotalCount) * 100);
@@ -146,12 +145,13 @@ export function WorldMapClient() {
           {/* Map Container */}
           <div className="relative h-full w-full">
             <Image 
-              src={activeTreeTheme.mapImage} 
+              src={activeTree ? activeTreeTheme.mapImage : "/images/rpg_world_map_new.png"} 
               alt="World Map Base" 
               fill 
-              className="object-contain object-center transition-all duration-700" 
-              style={{ imageRendering: "pixelated", filter: activeTreeTheme.filter }} 
+              className={`transition-all duration-700 ${activeTree ? "object-contain object-center" : "object-cover object-center"}`}
+              style={{ imageRendering: "pixelated", filter: activeTree ? activeTreeTheme.filter : "none" }} 
               priority
+              unoptimized
             />
             
             {activeTree ? (

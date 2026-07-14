@@ -8,10 +8,22 @@ import {
   type Connection,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import { Loader2, Plus, LayoutGrid, Save, FolderOpen, MoreVertical, X, AlertCircle, Edit2, Check, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2, ChevronDown, TrendingUp, GitCommit } from "lucide-react";
+import { Loader2, Plus, LayoutGrid, Save, MoreVertical, X, Sparkles, Target, Lightbulb, CheckCircle2, Download, Pencil, Trash2, ChevronDown, TrendingUp, GitCommit } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
-import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
+const TechTreeCanvas = dynamic(
+  () => import("@/components/skill-tree/TechTreeCanvas").then((mod) => mod.TechTreeCanvas),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-50 text-slate-400 dark:bg-slate-950">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="text-sm font-semibold text-slate-500">에디터 준비 중...</span>
+      </div>
+    )
+  }
+);
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import {
   useDeleteUserTree,
@@ -20,6 +32,9 @@ import {
   useUserTree,
   useUserTrees,
 } from "@/hooks/useUserTree";
+import { useChecklistStore } from "@/stores/useChecklistStore";
+import { computeNodeStatus, isNodeNextAction } from "@/utils/nodeStatus";
+import { NODE_CATEGORIES } from "@/config/nodeTypes";
 import { useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
 import { getLayoutedElements } from "@/lib/autoLayout";
@@ -94,7 +109,6 @@ export function ManageTreeClient() {
   const [nodes, setNodes, onNodesChange] = useNodesState<SkillTreeNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [onboardingGoal, setOnboardingGoal] = useState("");
@@ -125,6 +139,19 @@ export function ManageTreeClient() {
   }, [trends, nodes]);
 
   const [isAddNodeMenuOpen, setIsAddNodeMenuOpen] = useState(false);
+
+  const checkedKeys = useChecklistStore((s) => s.checkedKeys);
+
+  const visibleNodes = useMemo(() => {
+    return nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        status: computeNodeStatus(node, nodes, checkedKeys),
+        isNextAction: isNodeNextAction(node, nodes),
+      },
+    }));
+  }, [nodes, checkedKeys]);
 
   // Tracked as its own piece of state (not derived from treeList.find(...))
   // because a freshly AI-generated tree has no id/treeList entry yet until
@@ -165,7 +192,7 @@ export function ManageTreeClient() {
       const data = await res.json();
       setRecommendations(data.recommendations || []);
       setShowRecommendationsModal(true);
-    } catch (error) {
+    } catch {
       alert("추천을 받아오는 중 오류가 발생했습니다.");
     } finally {
       setIsRecommending(false);
@@ -181,6 +208,13 @@ export function ManageTreeClient() {
   const handleAIGenerate = useCallback(async (promptOverride?: string, targetCompanyOverride?: string, careerLevelOverride?: string) => {
     const promptText = promptOverride ?? promptInput;
     if (!promptText || promptText.trim() === "") return;
+    
+    if (nodes.length > 0) {
+      if (!window.confirm("기존 로드맵 내용이 모두 지워지고 새 로드맵으로 덮어쓰여집니다. 진행하시겠습니까? (저장되지 않은 변경사항은 사라집니다)")) {
+        return;
+      }
+    }
+
     const targetCompanyText = (targetCompanyOverride ?? "").trim();
     const careerLevelText = careerLevelOverride ?? promptCareerLevel;
 
@@ -214,13 +248,12 @@ export function ManageTreeClient() {
       window.setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
       }, 50);
-      setSelectedNodeId(data.nodes[0]?.id ?? null);
     } catch (error: unknown) {
       alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsGeneratingAI(false);
     }
-  }, [promptInput, promptCareerLevel, setNodes, setEdges]);
+  }, [promptInput, promptCareerLevel, setNodes, setEdges, nodes.length]);
 
   const handleGapGenerate = useCallback(async () => {
     if (!jdInput || jdInput.trim() === "") return;
@@ -254,7 +287,6 @@ export function ManageTreeClient() {
       window.setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
       }, 50);
-      setSelectedNodeId(data.nodes[0]?.id ?? null);
     } catch (error: unknown) {
       alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
     } finally {
@@ -270,9 +302,14 @@ export function ManageTreeClient() {
   // overwrites it instead of creating a separate one.
   useEffect(() => {
     if (!savedTree) {
-      if (!hasAutoSelectedInitialTreeRef.current && currentTreeId === null && treeList && treeList.length > 0) {
+      if (!hasAutoSelectedInitialTreeRef.current && currentTreeId === null && treeList) {
         hasAutoSelectedInitialTreeRef.current = true;
-        setCurrentTreeId(treeList[0].id);
+        const paramTreeId = searchParams.get("tree");
+        if (paramTreeId && treeList.find(t => t.id === paramTreeId)) {
+          setCurrentTreeId(paramTreeId);
+        } else if (treeList.length > 0) {
+          setCurrentTreeId(treeList[0].id);
+        }
       }
       return;
     }
@@ -284,26 +321,17 @@ export function ManageTreeClient() {
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
       setEdges(savedTree.edges);
-      setSelectedNodeId(savedTree.nodes[0]?.id ?? null);
+      window.setTimeout(() => {
+        reactFlowInstanceRef.current?.fitView({ padding: 0.24, duration: 400 });
+      }, 50);
     } else {
       setNodes([]);
       setEdges([]);
       setSelectedNodeId(null);
     }
-  }, [savedTree, treeList, currentTreeId, setEdges, setNodes]);
+  }, [savedTree, treeList, currentTreeId, setEdges, setNodes, searchParams]);
 
-  // Handle URL parameter for automatic AI generation from Trends page
-  useEffect(() => {
-    const generateSkill = searchParams.get("generateSkill");
-    if (generateSkill && authChecked && userId && !isGeneratingAI) {
-      // Small timeout to allow states to settle before starting Generation
-      setTimeout(() => {
-        handleAIGenerate(`최신 채용 트렌드 반영: ${generateSkill} 마스터를 위한 실무 기반 로드맵`);
-        // Remove the parameter from the URL so it doesn't trigger again on reload
-        router.replace("/manage-tree");
-      }, 500);
-    }
-  }, [searchParams, authChecked, userId, isGeneratingAI, handleAIGenerate, router]);
+
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -337,6 +365,17 @@ export function ManageTreeClient() {
     setIsAddNodeMenuOpen(false);
   }, [nodes.length, setNodes]);
 
+  // Handle URL parameter for adding trend skills from Trends page
+  useEffect(() => {
+    const addTrendSkill = searchParams.get("addTrendSkill");
+    if (addTrendSkill && authChecked && userId && !isGeneratingAI) {
+      setTimeout(() => {
+        handleAddTrendNode(addTrendSkill);
+        router.replace("/manage-tree");
+      }, 500);
+    }
+  }, [searchParams, authChecked, userId, isGeneratingAI, handleAddTrendNode, router]);
+
   const handleStartBlank = useCallback(() => {
     const rootNode = createBlankRootNode();
     setCurrentTreeId(null); // Create a new tree
@@ -344,7 +383,6 @@ export function ManageTreeClient() {
     setEdges([]);
     setCurrentTreeTitle("새 로드맵");
     setTargetCompany("");
-    setSelectedNodeId(rootNode.id);
   }, [setEdges, setNodes]);
 
   const handleStartRename = useCallback(() => {
@@ -436,12 +474,12 @@ export function ManageTreeClient() {
 
   const connectingNodeId = useRef<string | null>(null);
 
-  const onConnectStart = useCallback((_: any, { nodeId }: { nodeId: string | null }) => {
+  const onConnectStart = useCallback((_: MouseEvent | TouchEvent, { nodeId }: { nodeId: string | null }) => {
     connectingNodeId.current = nodeId;
   }, []);
 
   const onConnectEnd = useCallback(
-    (event: any) => {
+    (event: MouseEvent | TouchEvent) => {
       if (!connectingNodeId.current) return;
 
       const targetIsPane = (event.target as Element).classList.contains('react-flow__pane');
@@ -754,178 +792,194 @@ export function ManageTreeClient() {
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">저장된 트리 불러오는 중...</p>
               ) : null}
               {!isTreeLoading && (
-                <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <Target className="h-3.5 w-3.5" aria-hidden />
-                  {isEditingTargetCompany ? (
-                    <input
-                      type="text"
-                      autoFocus
-                      value={targetCompanyInput}
-                      onChange={(e) => setTargetCompanyInput(e.target.value)}
-                      onBlur={handleTargetCompanySubmit}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleTargetCompanySubmit();
-                        if (e.key === "Escape") setIsEditingTargetCompany(false);
-                      }}
-                      placeholder="목표 기업 또는 직무 (예: 네이버, 카카오)"
-                      className="rounded-md border border-sky-400 bg-white px-2 py-0.5 text-xs text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleStartTargetCompanyEdit}
-                      className="underline-offset-2 hover:text-slate-800 hover:underline dark:hover:text-slate-200"
-                    >
-                      {targetCompany ? `목표 기업: ${targetCompany}` : "목표 기업 추가하기"}
-                    </button>
+                <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <Target className="h-3.5 w-3.5" aria-hidden />
+                    {isEditingTargetCompany ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={targetCompanyInput}
+                        onChange={(e) => setTargetCompanyInput(e.target.value)}
+                        onBlur={handleTargetCompanySubmit}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleTargetCompanySubmit();
+                          if (e.key === "Escape") setIsEditingTargetCompany(false);
+                        }}
+                        placeholder="목표 기업 또는 직무 (예: 네이버, 카카오)"
+                        className="rounded-md border border-sky-400 bg-white px-2 py-0.5 text-xs text-slate-700 shadow-sm outline-none dark:bg-slate-900 dark:text-slate-200"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleStartTargetCompanyEdit}
+                        className="underline-offset-2 hover:text-slate-800 hover:underline dark:hover:text-slate-200"
+                      >
+                        {targetCompany ? `목표 기업: ${targetCompany}` : "목표 기업 추가하기"}
+                      </button>
+                    )}
+                  </div>
+                  {!isEditingTargetCompany && (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      (목표 기업을 설정하면 채용 트렌드 우선순위가 연동됩니다)
+                    </span>
                   )}
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-              <button
-                type="button"
-                onClick={() => setIsPromptOpen(true)}
-                disabled={isGeneratingAI}
-                className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg bg-indigo-500 px-2.5 md:px-3 text-xs md:text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 disabled:opacity-50 dark:bg-indigo-400 dark:text-slate-950 dark:hover:bg-indigo-300"
-              >
-                <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                {isGeneratingAI ? "생성 중..." : "AI로 새 로드맵 설계"}
-              </button>
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white/50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
+              
+              {/* 생성 그룹 */}
+              <div className="flex items-center gap-1.5 border-r border-slate-200/80 pr-2 md:gap-2 md:pr-3 dark:border-white/10">
                 <button
                   type="button"
-                  onClick={() => setIsAddNodeMenuOpen(!isAddNodeMenuOpen)}
-                  className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg bg-sky-500 px-2.5 md:px-3 text-xs md:text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
+                  onClick={() => setIsPromptOpen(true)}
+                  disabled={isGeneratingAI}
+                  className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-3 md:px-4 text-xs md:text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition hover:from-sky-400 hover:to-indigo-400 disabled:opacity-50"
                 >
-                  <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                  노드 추가
-                  <ChevronDown className="h-3 w-3 ml-0.5 md:ml-1" />
+                  <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                  {isGeneratingAI ? "생성 중..." : "AI로 새 로드맵 설계"}
                 </button>
-                
-                {isAddNodeMenuOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsAddNodeMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 md:left-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
-                      <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">직접 추가</div>
-                      <button
-                        onClick={() => {
-                          handleAddNode();
-                          setIsAddNodeMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                      >
-                        <Plus className="h-4 w-4 text-sky-500 shrink-0" />
-                        빈 노드 추가
-                      </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddNodeMenuOpen(!isAddNodeMenuOpen)}
+                    className="inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg border border-slate-200 bg-white px-2.5 md:px-3 text-xs md:text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  >
+                    <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                    노드 추가
+                    <ChevronDown className="h-3 w-3 ml-0.5 md:ml-1" />
+                  </button>
+                  
+                  {isAddNodeMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsAddNodeMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 md:left-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
+                        <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">직접 추가</div>
+                        <button
+                          onClick={() => {
+                            handleAddNode();
+                            setIsAddNodeMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <Plus className="h-4 w-4 text-sky-500 shrink-0" />
+                          빈 노드 추가
+                        </button>
 
-                      <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
-                      <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI 추천</div>
-                      <button
-                        onClick={() => {
-                          handleRecommendNode();
-                          setIsAddNodeMenuOpen(false);
-                        }}
-                        disabled={isRecommending}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-amber-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-amber-900/30"
-                      >
-                        <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" aria-hidden />
-                        {isRecommending ? "생각 중..." : "AI 추천 노드 추가"}
-                      </button>
-                      
-                      {topMissingTrends && topMissingTrends.length > 0 && (
-                        <>
-                          <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
-                          <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">🔥 채용 트렌드 추천 스킬</div>
-                          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-                            {topMissingTrends.map(trend => (
-                              <button
-                                key={trend.id}
-                                onClick={() => handleAddTrendNode(trend.title)}
-                                className="group flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-sky-900/30"
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <TrendingUp className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                                  <span className="truncate">{trend.title}</span>
-                                </div>
-                                <span className="text-[10px] font-medium text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
-                                  추가
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
+                        <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
+                        <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI 추천</div>
+                        <button
+                          onClick={() => {
+                            handleRecommendNode();
+                            setIsAddNodeMenuOpen(false);
+                          }}
+                          disabled={isRecommending}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-amber-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-amber-900/30"
+                        >
+                          <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" aria-hidden />
+                          {isRecommending ? "생각 중..." : "AI 추천 노드 추가"}
+                        </button>
+                        
+                        {topMissingTrends && topMissingTrends.length > 0 && (
+                          <>
+                            <div className="my-2 h-px w-full bg-slate-100 dark:bg-white/5" />
+                            <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">🔥 채용 트렌드 추천 스킬</div>
+                            <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+                              {topMissingTrends.map(trend => (
+                                <button
+                                  key={trend.id}
+                                  onClick={() => handleAddTrendNode(trend.title)}
+                                  className="group flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-sky-900/30"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <TrendingUp className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                                    <span className="truncate">{trend.title}</span>
+                                  </div>
+                                  <span className="text-[10px] font-medium text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
+                                    추가
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saveTreeMutation.isPending}
-                className={`inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg px-2.5 md:px-4 text-xs md:text-sm font-bold text-white shadow-lg transition-colors ${
-                  saveState === "saved"
-                    ? "bg-emerald-600 shadow-emerald-600/20 dark:bg-emerald-500"
-                    : saveState === "error"
-                      ? "bg-red-500 shadow-red-500/20 dark:bg-red-500"
-                      : "bg-emerald-500 shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
-                } disabled:opacity-50`}
-              >
-                <Save className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                {saveState === "saved"
-                  ? "저장됨 ✓"
-                  : saveState === "error"
-                    ? "저장 실패"
-                    : saveState === "saving"
-                      ? "저장 중..."
-                      : "저장"}
-              </button>
-
-              <div className="relative">
+              {/* 편집/저장 그룹 */}
+              <div className="flex items-center gap-1.5 md:gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className="inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg border border-white/70 bg-white/70 text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-                  aria-label="더보기"
+                  onClick={handleAutoLayout}
+                  className="inline-flex h-9 md:h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"
+                  title="의존성(Lv.) 기준 자동 정렬"
                 >
-                  <MoreVertical className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                  <span className="hidden sm:inline">자동 정렬</span>
                 </button>
-                
-                {isMoreMenuOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
-                      <button
-                        onClick={() => {
-                          handleAutoLayout();
-                          setIsMoreMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                      >
-                        <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
-                        의존성(Lv.) 기준 정렬
-                      </button>
-                      <button
-                        onClick={() => {
-                          void handleExport();
-                          setIsMoreMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                      >
-                        <Download className="h-4 w-4 shrink-0" aria-hidden />
-                        JSON으로 내보내기
-                      </button>
-                    </div>
-                  </>
-                )}
+
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saveTreeMutation.isPending}
+                  className={`inline-flex h-9 md:h-10 items-center gap-1.5 md:gap-2 rounded-lg px-2.5 md:px-4 text-xs md:text-sm font-bold text-white shadow-lg transition-colors ${
+                    saveState === "saved"
+                      ? "bg-emerald-600 shadow-emerald-600/20 dark:bg-emerald-500"
+                      : saveState === "error"
+                        ? "bg-red-500 shadow-red-500/20 dark:bg-red-500"
+                        : "bg-emerald-500 shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
+                  } disabled:opacity-50`}
+                >
+                  <Save className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                  {saveState === "saved"
+                    ? "저장됨 ✓"
+                    : saveState === "error"
+                      ? "저장 실패"
+                      : saveState === "saving"
+                        ? "저장 중..."
+                        : "저장"}
+                </button>
+
+                {/* 더보기 (고급) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                    className="inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    aria-label="더보기"
+                  >
+                    <MoreVertical className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  </button>
+                  
+                  {isMoreMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsMoreMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-[100] dark:border-white/10 dark:bg-slate-900">
+                        <div className="mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">고급 기능</div>
+                        <button
+                          onClick={() => {
+                            void handleExport();
+                            setIsMoreMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <Download className="h-4 w-4 shrink-0" aria-hidden />
+                          JSON으로 내보내기
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -978,7 +1032,7 @@ export function ManageTreeClient() {
         )}
 
         <TechTreeCanvas
-          nodes={nodes}
+          nodes={visibleNodes}
           edges={edges}
           interactive
           onNodeSelect={(node) => setSelectedNodeId(node.id)}
@@ -1119,12 +1173,17 @@ export function ManageTreeClient() {
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
                 분류
-                <input
-                  type="text"
-                  value={data.category ?? ""}
+                <select
+                  value={data.category ?? "CORE"}
                   onChange={(event) => updateSelectedNodeData({ category: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                />
+                >
+                  {NODE_CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">

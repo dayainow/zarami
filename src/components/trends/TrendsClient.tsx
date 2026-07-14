@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ExternalLink, ChevronDown, ChevronUp, Briefcase, Sparkles, Flame, Target, Lightbulb, BarChart3, BookOpen, Search, CheckCircle2, Circle } from "lucide-react";
 import { useSkillTrends, type SkillTrend } from "@/hooks/useSkillTrends";
 import { useProfileStats } from "@/hooks/useProfileStats";
@@ -11,15 +12,44 @@ export function TrendsClient() {
   const { data: trends, isLoading, isError } = useSkillTrends();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACQUIRED" | "NEEDED">("ALL");
-  const [sortBy, setSortBy] = useState<"TREND" | "FIT" | "GAP">("TREND");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [searchKeyword, setSearchKeyword] = useState(searchParams.get("q") ?? "");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACQUIRED" | "NEEDED">((searchParams.get("status") as "ALL" | "ACQUIRED" | "NEEDED") ?? "ALL");
+  const [sortBy, setSortBy] = useState<"TREND" | "FIT" | "GAP">((searchParams.get("sort") as "TREND" | "FIT" | "GAP") ?? "TREND");
 
   const [isPending, startTransition] = useTransition();
 
-  const [segmentPosition, setSegmentPosition] = useState<string>("ALL");
-  const [segmentExperience, setSegmentExperience] = useState<string>("ALL");
-  const [segmentCompanyType, setSegmentCompanyType] = useState<string>("ALL");
+  const [segmentPosition, setSegmentPosition] = useState<string>(searchParams.get("position") ?? "ALL");
+  const [segmentExperience, setSegmentExperience] = useState<string>(searchParams.get("years") ?? "ALL");
+  const [segmentCompanyType, setSegmentCompanyType] = useState<string>(searchParams.get("companyType") ?? "ALL");
+
+  // Sync URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (searchKeyword) params.set("q", searchKeyword);
+    else params.delete("q");
+    
+    if (filterStatus !== "ALL") params.set("status", filterStatus);
+    else params.delete("status");
+    
+    if (sortBy !== "TREND") params.set("sort", sortBy);
+    else params.delete("sort");
+    
+    if (segmentPosition !== "ALL") params.set("position", segmentPosition);
+    else params.delete("position");
+    
+    if (segmentExperience !== "ALL") params.set("years", segmentExperience);
+    else params.delete("years");
+    
+    if (segmentCompanyType !== "ALL") params.set("companyType", segmentCompanyType);
+    else params.delete("companyType");
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchKeyword, filterStatus, sortBy, segmentPosition, segmentExperience, segmentCompanyType, pathname, router, searchParams]);
 
   const getMentionsForTrend = useCallback((trend: SkillTrend) => {
     if (segmentPosition === "ALL" && segmentExperience === "ALL" && segmentCompanyType === "ALL") {
@@ -321,9 +351,6 @@ export function TrendsClient() {
               const isInRoadmap = stats?.allSkillTitles.includes(trend.title);
               const isCompleted = stats?.completedSkills.includes(trend.title);
 
-              // 50 mentions as a relative maximum for the sparkline bar
-              const fillPercentage = Math.min(100, (totalMentions / 50) * 100);
-
               return (
                 <div key={trend.id} className={`overflow-hidden rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-white/[0.04] ${isPending ? 'opacity-50 grayscale-[50%]' : 'opacity-100'}`}>
                   <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -362,7 +389,7 @@ export function TrendsClient() {
                     
                     <div className="flex items-center justify-between sm:justify-end gap-3 mt-2 sm:mt-0">
                       <a 
-                        href={`/manage-tree?generateSkill=${encodeURIComponent(trend.title)}`}
+                        href={`/manage-tree?addTrendSkill=${encodeURIComponent(trend.title)}`}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
                       >
                         <Sparkles className="h-3.5 w-3.5" />

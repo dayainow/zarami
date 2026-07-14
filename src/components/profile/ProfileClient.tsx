@@ -103,8 +103,6 @@ export function ProfileClient() {
     };
   }, []);
 
-  const totalCount = stats?.totalCount ?? 0;
-  const completedCount = stats?.completedCount ?? 0;
   // Guests never fetch stats (query is disabled) and a signed-in user's first
   // render is always mid-fetch, so fall back to the placeholder grid whenever
   // real data isn't available yet - never render a visually empty section.

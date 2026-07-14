@@ -3,11 +3,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Flame, TreePine, ChevronDown } from "lucide-react";
+import { ChevronRight, Flame, TreePine, ChevronDown, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import type { ReactFlowInstance } from "@xyflow/react";
 
-import { Drawer } from "@/components/Drawer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
+import { Drawer } from "@/components/Drawer";
+import { useNodesState, useEdgesState } from "@xyflow/react";
+import { useChecklistStore } from "@/stores/useChecklistStore";
+import { computeNodeStatus, isNodeNextAction } from "@/utils/nodeStatus";
+
+const TechTreeCanvas = dynamic(
+  () => import("@/components/skill-tree/TechTreeCanvas").then((mod) => mod.TechTreeCanvas),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-2 bg-slate-50 text-slate-400 dark:bg-slate-950">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="text-sm font-semibold text-slate-500">캔버스 준비 중...</span>
+      </div>
+    )
+  }
+);
+
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import { findSkillTrend, useSkillTrends } from "@/hooks/useSkillTrends";
@@ -90,25 +108,18 @@ export function DashboardClient() {
     closeDrawer();
   }, [closeDrawer, nodeIds, openDrawer, selectedNodeId]);
 
-  // Completion truth is node.data.is_completed, persisted directly inside
-  // the tree's own nodes JSONB by ManageTreeClient's toggle (and this
+  const checkedKeys = useChecklistStore((s) => s.checkedKeys);
+
+  // Derive tree layout only when data changes. (Sync changes are sent directly to the
   // page's Drawer, via useToggleNodeCompletion) - both surfaces read and
   // write the exact same field, so they can never silently disagree.
   const nodes = useMemo<SkillTreeNode[]>(() => {
     if (!myTree) return [];
 
     const withStatus = myTree.nodes.map((node) => {
-      const prerequisiteIds = node.data.prerequisiteIds ?? [];
       const isCompleted = node.data.is_completed === true;
-      const completedIds = new Set(myTree.nodes.filter((n) => n.data.is_completed === true).map((n) => n.id));
-      const prerequisitesCompleted =
-        prerequisiteIds.length === 0 || prerequisiteIds.every((skillId: string) => completedIds.has(skillId));
-      const isNextAction = !isCompleted && prerequisiteIds.length > 0 && prerequisitesCompleted;
-      const status: SkillNodeData["status"] = isCompleted
-        ? "completed"
-        : prerequisitesCompleted
-          ? "available"
-          : "locked";
+      const isNextAction = isNodeNextAction(node, myTree.nodes);
+      const status = computeNodeStatus(node, myTree.nodes, checkedKeys);
 
       // Personal tree nodes don't share ids with the skills catalog, so
       // job-market evidence is matched by title text - undefined (no
@@ -137,7 +148,7 @@ export function DashboardClient() {
     // Grow the tree bottom-up from completed roots instead of the data
     // file's fixed positions, so the canvas reads as a plant growing upward.
     return getLayoutedElements(withStatus, myTree.edges, "BT").nodes;
-  }, [myTree, celebratingSkillId, skillTrends]);
+  }, [myTree, celebratingSkillId, skillTrends, checkedKeys]);
 
   const edges = useMemo<SkillTreeEdge[]>(() => {
     if (!myTree) return [];
@@ -161,6 +172,48 @@ export function DashboardClient() {
       };
     });
   }, [myTree, nodes]);
+
+  const [layoutNodes, setLayoutNodes, onNodesChange] = useNodesState<SkillTreeNode>(nodes);
+  const [layoutEdges, setLayoutEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>(edges);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+
+  useEffect(() => {
+    if (nodes.length > 0 && layoutNodes.length === 0) {
+      setLayoutNodes(nodes);
+    } else if (nodes.length > 0 && layoutNodes.length > 0) {
+      setLayoutNodes((current) => {
+        return nodes.map((newNode) => {
+          const existing = current.find((c) => c.id === newNode.id);
+          if (existing) {
+            return {
+              ...newNode,
+              measured: existing.measured,
+              position: existing.position,
+              selected: existing.selected,
+              dragging: existing.dragging,
+            };
+          }
+          return newNode;
+        });
+      });
+    } else if (nodes.length === 0 && layoutNodes.length > 0) {
+      setLayoutNodes([]);
+    }
+  }, [nodes, layoutNodes.length, setLayoutNodes]);
+
+  useEffect(() => {
+    if (rfInstance && layoutNodes.length > 0) {
+      window.setTimeout(() => {
+        rfInstance.fitView({ padding: 0.24, duration: 600 });
+      }, 100);
+    }
+  }, [rfInstance, currentTreeId]); // Trigger fitView when instance is ready or tree changes
+
+  useEffect(() => {
+    if (edges.length > 0) {
+      setLayoutEdges(edges);
+    }
+  }, [edges, setLayoutEdges]);
 
   const handleNodeSelect = useCallback(
     (node: SkillTreeNode) => {
@@ -205,8 +258,8 @@ export function DashboardClient() {
   const progress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-50 mesh-gradient text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
-      <div className="absolute inset-x-0 top-0 z-20 border-b border-white/40 bg-white/60 px-6 py-4 shadow-[0_4px_30px_rgba(0,0,0,0.05)] backdrop-blur-3xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+    <main className="relative min-h-screen flex flex-col overflow-hidden bg-slate-50 mesh-gradient text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
+      <div className="z-20 flex-none border-b border-white/40 bg-white/60 px-6 py-4 shadow-[0_4px_30px_rgba(0,0,0,0.05)] backdrop-blur-3xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
@@ -216,9 +269,17 @@ export function DashboardClient() {
               <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 기술트리 성장 캔버스
               </h1>
-              {treeList && treeList.length > 0 && (
+            {treeList && treeList.length > 0 && (
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
+                    {currentTreeId ? (
+                      <button
+                        onClick={() => setCurrentTreeId(null)}
+                        className="group flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                      >
+                        🗺️ 전체 맵으로
+                      </button>
+                    ) : null}
                     <div className="relative inline-flex items-center">
                       <select
                         className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
@@ -238,7 +299,7 @@ export function DashboardClient() {
                       </div>
                     </div>
                     <Link
-                      href="/manage-tree"
+                      href={myTree ? `/manage-tree?tree=${myTree.id}` : "/manage-tree"}
                       className="group flex h-9 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/50 px-3 text-xs font-bold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
                     >
                       <span className="mr-1 text-base leading-none">+</span> 새 로드맵
@@ -275,7 +336,7 @@ export function DashboardClient() {
               </span>
             ) : totalCount === 0 ? (
               <span className="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200 border-b border-dashed border-slate-400/50">
-                아직 스킬트리가 없어요.
+                로그인 후 첫 퀘스트를 시작하세요
               </span>
             ) : (
               <div className="group relative flex cursor-help items-center">
@@ -306,7 +367,7 @@ export function DashboardClient() {
               null
             ) : isMyTreeLoading ? null : (
               <Link
-                href="/manage-tree"
+                href={myTree ? `/manage-tree?tree=${myTree.id}` : "/manage-tree"}
                 className="flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 <TreePine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden />
@@ -340,7 +401,7 @@ export function DashboardClient() {
       ) : null}
 
       {isMyTreeLoading ? (
-        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+        <div className="flex-1 grid place-items-center px-5">
           <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-sky-100 text-sky-500 shadow-lg shadow-sky-500/20 dark:bg-sky-900/30 dark:text-sky-400 animate-pulse">
               <TreePine className="h-7 w-7" aria-hidden />
@@ -354,15 +415,15 @@ export function DashboardClient() {
           </div>
         </div>
       ) : !authChecked ? (
-        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+        <div className="flex-1 grid place-items-center px-5">
           <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
             <h2 className="mt-4 text-lg font-bold text-slate-950 dark:text-white animate-pulse">
               사용자 정보 확인 중...
             </h2>
           </div>
         </div>
-      ) : nodes.length === 0 ? (
-        <div className="grid h-screen min-h-screen place-items-center px-5 pt-20">
+      ) : layoutNodes.length === 0 ? (
+        <div className="flex-1 grid place-items-center px-5">
           <div className="max-w-sm rounded-2xl border border-white/60 bg-white/70 p-8 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 dark:bg-emerald-400 dark:text-slate-950">
               <TreePine className="h-7 w-7" aria-hidden />
@@ -391,8 +452,11 @@ export function DashboardClient() {
           <TechTreeCanvas
             nodes={nodes}
             edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
             onNodeSelect={handleNodeSelect}
-            className="h-screen min-h-screen pt-20"
+            onInit={setRfInstance}
+            className="h-[calc(100vh-70px)] w-full"
           />
           {showOnboarding && (
             <div className="absolute bottom-10 left-1/2 z-40 flex w-max -translate-x-1/2 flex-col items-center animate-bounce">
@@ -401,6 +465,14 @@ export function DashboardClient() {
                   <span className="text-xl">💡</span> 노드를 클릭하면 퀘스트 상세를 확인할 수 있어요!
                 </p>
                 <div className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-sky-200/50 bg-white/95 dark:border-sky-400/20 dark:bg-slate-900/95" />
+                <div className="mt-4 flex justify-center">
+                  <Link
+                    href={myTree ? `/manage-tree?tree=${myTree.id}` : "/manage-tree"}
+                    className="flex items-center gap-2 rounded-lg bg-sky-500/10 px-3 py-1.5 text-sm font-bold text-sky-600 transition hover:bg-sky-500/20 dark:bg-sky-500/20 dark:text-sky-400 dark:hover:bg-sky-500/30"
+                  >
+                    내 로드맵 설정
+                  </Link>
+                </div>
               </div>
               <button
                 type="button"

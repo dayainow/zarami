@@ -1,6 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 
-export type SkillStatus = "locked" | "available" | "completed";
+export type SkillStatus = "locked" | "available" | "in-progress" | "completed";
 
 export type SamplePosting = {
   site: "wanted" | "jumpit";
@@ -38,6 +38,9 @@ export type SkillNodeData = {
   hasChildren?: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: (nodeId: string) => void;
+  isInteractive?: boolean;
+  onAddChild?: (nodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void;
 };
 
 export type SkillTreeNode = Node<SkillNodeData>;

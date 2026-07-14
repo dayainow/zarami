@@ -3,9 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, ChevronDown, Play } from "lucide-react";
+import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, ChevronDown, Play, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
 
-import { TechTreeCanvas } from "@/components/skill-tree/TechTreeCanvas";
+const TechTreeCanvas = dynamic(
+  () => import("@/components/skill-tree/TechTreeCanvas").then((mod) => mod.TechTreeCanvas),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-50 text-slate-400 dark:bg-slate-900">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="text-xs font-semibold">캔버스 불러오는 중...</span>
+      </div>
+    )
+  }
+);
+
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSkillTrends } from "@/hooks/useSkillTrends";
 import { createClient } from "@/utils/supabase/client";
@@ -115,8 +128,8 @@ export function LandingClient() {
   const { data: trends } = useSkillTrends();
   
   // Use pre-calculated layouted nodes for initial state so ReactFlow can fitView properly on mount
-  const [layoutedNodes, setLayoutedNodes] = useState<SkillTreeNode[]>(initialLayoutedNodes);
-  const [layoutedEdges, setLayoutedEdges] = useState<SkillTreeEdge[]>(initialLayoutedEdges);
+  const [layoutedNodes] = useState<SkillTreeNode[]>(initialLayoutedNodes);
+  const [layoutedEdges] = useState<SkillTreeEdge[]>(initialLayoutedEdges);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number>(0);
@@ -183,28 +196,27 @@ export function LandingClient() {
       </header>
 
       {/* Hero & Interactive Demo Section */}
-      <section className="relative flex flex-col lg:flex-row items-center justify-between px-6 py-12 lg:py-24 max-w-7xl mx-auto w-full gap-12 flex-1">
+      <section className="relative flex flex-col items-center px-6 pt-16 pb-8 lg:pt-24 lg:pb-12 max-w-7xl mx-auto w-full gap-12 md:gap-16 flex-1">
         
-        {/* Left: Copy & CTA */}
-        <div className="lg:w-[60%] lg:pr-12 space-y-8 z-10 w-full text-center lg:text-left flex flex-col items-center lg:items-start">
+        {/* Top: Copy & CTA */}
+        <div className="w-full max-w-4xl space-y-8 z-10 text-center flex flex-col items-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-sky-500/20">
             <Sparkles className="h-3 w-3" />
             단 2주 만에 끝내는 실무형 스킬 퀘스트
           </div>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-snug text-slate-900 dark:text-white">
-            실제 채용 시장이<br />
-            만드는 당신의<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500">커리어 로드맵</span>
+            실제 채용 시장이 만드는 당신의<br className="hidden sm:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-sky-500 mt-2 inline-block">커리어 로드맵</span>
           </h1>
           
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-medium">
-            "뭘 더 배워야 실제 취업·이직에 쓰이나요?"<br />
-            원티드·점핏·랠리·프로그래머스의 실채용공고 기반<br />
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed font-medium">
+            &quot;뭘 더 배워야 실제 취업·이직에 쓰이나요?&quot;<br />
+            원티드·점핏·랠리·프로그래머스의 실채용공고 기반<br className="sm:hidden" />
             <strong className="text-slate-900 dark:text-white">맞춤 퀘스트</strong>로 포트폴리오를 자동 완성합니다.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 w-full sm:w-auto">
             <button
               onClick={handleStart}
               className="w-full sm:w-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40 active:scale-95"
@@ -214,7 +226,7 @@ export function LandingClient() {
             </button>
           </div>
           
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/5">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/5">
             <span className="flex items-center gap-1"><span className="text-amber-400">⭐</span> 100+ 공고 분석</span>
             <span className="hidden sm:inline opacity-50">|</span>
             <span className="flex items-center gap-1"><span className="text-blue-400">⏳</span> 평균 2주 완성</span>
@@ -223,11 +235,11 @@ export function LandingClient() {
           </div>
         </div>
 
-        {/* Right: Interactive Canvas Demo */}
-        <div className="lg:w-[40%] w-full h-[400px] lg:h-[550px] rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-sky-900/5 overflow-hidden flex flex-col relative group dark:border-white/10 dark:bg-slate-950 dark:shadow-none transition-transform hover:-translate-y-2 duration-500">
+        {/* Bottom: Interactive Canvas Demo (Large) */}
+        <div className="w-full h-[450px] md:h-[500px] lg:h-[600px] rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-sky-900/5 overflow-hidden flex flex-col relative group dark:border-white/10 dark:bg-slate-950 dark:shadow-none transition-transform hover:-translate-y-1 duration-500">
           
           {/* macOS Style Window Bar */}
-          <div className="h-10 w-full bg-slate-50/80 border-b border-slate-200/80 flex items-center px-4 justify-between backdrop-blur-sm dark:bg-slate-900/80 dark:border-white/5">
+          <div className="h-10 w-full flex-none bg-slate-50/80 border-b border-slate-200/80 flex items-center px-4 justify-between backdrop-blur-sm dark:bg-slate-900/80 dark:border-white/5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
               <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
@@ -240,7 +252,7 @@ export function LandingClient() {
             <div className="w-12" /> {/* Spacer for balance */}
           </div>
 
-          <div className="flex-1 relative w-full h-full hidden md:block">
+          <div className="flex-1 relative w-full min-h-0">
             <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-400/5 via-transparent to-transparent pointer-events-none animate-[pulse_4s_ease-in-out_infinite]" />
             <TechTreeCanvas
               nodes={layoutedNodes}
@@ -248,20 +260,17 @@ export function LandingClient() {
               onNodesChange={() => {}}
               onEdgesChange={() => {}}
               interactive={true}
+              hideMinimap={true}
+              hideControls={true}
+              className="!h-full !min-h-0"
             />
-          </div>
-          
-          <div className="flex-1 relative w-full h-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 md:hidden p-8 text-center border-t border-slate-100 dark:border-white/5">
-            <Target className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">인터랙티브 데모는<br/>데스크톱에서 확인 가능합니다</p>
-            <p className="text-xs text-slate-500 mt-2">PC 환경에서 자람이의 스킬트리를<br/>직접 체험해보세요.</p>
           </div>
         </div>
       </section>
 
       {/* Trend Preview Widget */}
       {topTrends.length > 0 && (
-        <section className="w-full relative z-20 px-6 -mt-16 lg:-mt-24 mb-12 max-w-5xl mx-auto">
+        <section className="w-full relative z-20 px-6 mt-12 mb-12 max-w-5xl mx-auto">
           <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-2xl shadow-sky-900/10 p-6 sm:p-8 dark:bg-slate-900/80 dark:border-white/10 flex flex-col md:flex-row items-center gap-6 md:gap-10 transition-transform hover:-translate-y-1 duration-500">
             <div className="flex-shrink-0 text-center md:text-left">
               <div className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 mb-3 shadow-sm shadow-rose-500/10">
@@ -320,32 +329,27 @@ export function LandingClient() {
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-60 grayscale transition-all hover:grayscale-0 dark:opacity-40 dark:hover:opacity-100">
             {/* Wanted */}
             <div className="flex items-center gap-2">
-              <img src="https://logo.clearbit.com/wanted.co.kr" alt="Wanted" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-              <div className="hidden text-2xl font-black tracking-tighter text-[#3366FF] flex items-center gap-1">
+              <div className="text-2xl font-black tracking-tighter text-[#3366FF] flex items-center gap-1">
                 <span className="w-6 h-6 rounded-full bg-[#3366FF] text-white flex items-center justify-center text-sm font-bold">w</span>anted
               </div>
             </div>
             {/* Jumpit */}
             <div className="flex items-center gap-2">
-              <img src="https://logo.clearbit.com/jumpit.co.kr" alt="Jumpit" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-              <div className="hidden text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
+              <div className="text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
             </div>
             {/* Programmers */}
             <div className="flex items-center gap-2">
-              <img src="https://logo.clearbit.com/programmers.co.kr" alt="Programmers" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-              <div className="hidden text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
+              <div className="text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
                 <span className="text-[#0078FF] font-black">P</span>rogrammers
               </div>
             </div>
             {/* RocketPunch */}
             <div className="flex items-center gap-2">
-              <img src="https://logo.clearbit.com/rocketpunch.com" alt="RocketPunch" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-              <div className="hidden text-xl font-black tracking-tighter text-[#2188FB]">RocketPunch</div>
+              <div className="text-xl font-black tracking-tighter text-[#2188FB]">RocketPunch</div>
             </div>
             {/* GitHub */}
             <div className="flex items-center gap-2">
-              <img src="https://logo.clearbit.com/github.com" alt="GitHub" className="h-6 w-auto object-contain rounded" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-              <div className="hidden text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
+              <div className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
                 <GitCommit className="w-6 h-6"/> GitHub
               </div>
             </div>
@@ -369,7 +373,7 @@ export function LandingClient() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-10">
             {/* Step 1 */}
             <div className="relative flex flex-col gap-4 rounded-3xl bg-white/80 backdrop-blur-sm p-8 shadow-xl shadow-slate-200/50 border border-slate-100 dark:bg-slate-900/50 dark:border-white/5 dark:shadow-none transition-transform hover:-translate-y-2 duration-300">
               <div className="absolute -top-5 -left-5 w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/30">1</div>
@@ -436,11 +440,11 @@ export function LandingClient() {
               <div>
                 <div className="flex text-amber-400 mb-4 text-xl">⭐⭐⭐⭐⭐</div>
                 <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
-                  "어디서부터 해야 할지 막막했는데, 네이버 공고 기반의 2주 스프린트 덕분에 <strong className="text-slate-900 dark:text-white">2주 만에 React 스킬트리를 완성</strong>하고 원티드를 통해 서류 합격했습니다."
+                  &quot;어디서부터 해야 할지 막막했는데, 네이버 공고 기반의 2주 스프린트 덕분에 <strong className="text-slate-900 dark:text-white">2주 만에 React 스킬트리를 완성</strong>하고 원티드를 통해 서류 합격했습니다.&quot;
                 </p>
               </div>
               <div className="flex items-center gap-4 pt-5 border-t border-slate-100 dark:border-white/5">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=e0e7ff" alt="Avatar" className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" />
+                <Image src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=e0e7ff" alt="Avatar" width={48} height={48} className="rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" unoptimized />
                 <div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">김*현 <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm dark:bg-slate-800 dark:text-slate-400">주니어 프론트엔드</span></div>
                   <div className="text-xs text-emerald-600 font-semibold dark:text-emerald-400 mt-0.5">3주 만에 취업 성공</div>
@@ -452,11 +456,11 @@ export function LandingClient() {
               <div>
                 <div className="flex text-amber-400 mb-4 text-xl">⭐⭐⭐⭐⭐</div>
                 <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
-                  "단순히 인강 듣는 걸 넘어서서, GitHub PR을 올려 인증받는 시스템이 최고예요. <strong className="text-slate-900 dark:text-white">3주 만에 4개의 실무형 퀘스트를 클리어</strong>하고 이력서가 꽉 찼습니다."
+                  &quot;단순히 인강 듣는 걸 넘어서서, GitHub PR을 올려 인증받는 시스템이 최고예요. <strong className="text-slate-900 dark:text-white">3주 만에 4개의 실무형 퀘스트를 클리어</strong>하고 이력서가 꽉 찼습니다.&quot;
                 </p>
               </div>
               <div className="flex items-center gap-4 pt-5 border-t border-slate-100 dark:border-white/5">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffe4e6" alt="Avatar" className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" />
+                <Image src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffe4e6" alt="Avatar" width={48} height={48} className="rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" unoptimized />
                 <div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">이*진 <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm dark:bg-slate-800 dark:text-slate-400">취업 준비생</span></div>
                   <div className="text-xs text-emerald-600 font-semibold dark:text-emerald-400 mt-0.5">4개 퀘스트 자산화 완료</div>
@@ -468,11 +472,11 @@ export function LandingClient() {
               <div>
                 <div className="flex text-amber-400 mb-4 text-xl">⭐⭐⭐⭐⭐</div>
                 <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed mb-6">
-                  "실시간 트렌드를 보면서 내가 부족했던 '상태관리 아키텍처' 부분을 정확히 짚어냈어요. 가이드대로 <strong className="text-slate-900 dark:text-white">PR 2개를 올리니 바로 잔디 뱃지</strong>를 받았습니다."
+                  &quot;실시간 트렌드를 보면서 내가 부족했던 &apos;상태관리 아키텍처&apos; 부분을 정확히 짚어냈어요. 가이드대로 <strong className="text-slate-900 dark:text-white">PR 2개를 올리니 바로 잔디 뱃지</strong>를 받았습니다.&quot;
                 </p>
               </div>
               <div className="flex items-center gap-4 pt-5 border-t border-slate-100 dark:border-white/5">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jocelyn&backgroundColor=d1fae5" alt="Avatar" className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" />
+                <Image src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jocelyn&backgroundColor=d1fae5" alt="Avatar" width={48} height={48} className="rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm" unoptimized />
                 <div>
                   <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">박*수 <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm dark:bg-slate-800 dark:text-slate-400">2년차 백엔드</span></div>
                   <div className="text-xs text-emerald-600 font-semibold dark:text-emerald-400 mt-0.5">트렌드 매칭 100% 달성</div>

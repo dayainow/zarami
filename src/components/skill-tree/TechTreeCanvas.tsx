@@ -3,7 +3,6 @@
 import { memo, useCallback, useMemo, useState, type MouseEvent } from "react";
 import { ReactFlow,
   Background,
-  BackgroundVariant,
   Controls,
   Handle,
   MarkerType,
@@ -20,7 +19,7 @@ import { ReactFlow,
   type OnConnectStart,
   NodeToolbar,
 } from "@xyflow/react";
-import { CheckCircle2, ChevronDown, ChevronRight, Lock, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Lock, Plus, Trash2, PlayCircle } from "lucide-react";
 
 import { dashboardSkillEdges, dashboardSkillNodes } from "@/data/skill-tree";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -44,20 +43,12 @@ type TechTreeCanvasProps = {
   /** Admin editor mode: enables node dragging/connecting and skips the
    * guest-facing drawer on node click (the caller owns selection instead). */
   interactive?: boolean;
+  hideMinimap?: boolean;
+  hideControls?: boolean;
   className?: string;
 };
 
-const statusClassName: Record<string, string> = {
-  completed: "border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20",
-  available: "border-l-slate-300 bg-white/95 dark:border-l-slate-600 dark:bg-slate-900/90",
-  locked: "border-l-slate-200 bg-slate-50/90 opacity-70 grayscale-[30%] dark:border-l-slate-800 dark:bg-slate-950/80",
-};
 
-const statusDotClassName: Record<NonNullable<SkillNodeData["status"]>, string> = {
-  completed: "bg-emerald-500",
-  available: "bg-sky-500",
-  locked: "bg-slate-300",
-};
 
 const edgeOptions = {
   style: { strokeWidth: 2 },
@@ -95,25 +86,26 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
     ? data.checklist!.filter(item => checkedKeys[checklistKey(data.id, item)]).length
     : 0;
 
-  // 상태별 확실한 시각적 분리를 위한 클래스 계산
   let stateClasses = "";
   if (status === "locked") {
-    stateClasses = "border-dashed border-slate-300 bg-slate-50 opacity-70 grayscale-[50%] dark:border-slate-700 dark:bg-slate-900/50";
+    stateClasses = "border-slate-300 bg-slate-100 opacity-80 grayscale dark:border-slate-700 dark:bg-slate-800";
   } else if (isCompleted) {
-    stateClasses = "border-green-600 bg-green-50 shadow-md shadow-green-600/10 dark:border-green-500 dark:bg-green-950/40";
+    stateClasses = "border-green-500 bg-green-50 shadow-sm dark:border-green-500/50 dark:bg-green-950/40";
+  } else if (status === "in-progress") {
+    stateClasses = "border-amber-400 bg-amber-50 shadow-[0_0_15px_rgba(251,191,36,0.3)] dark:border-amber-500 dark:bg-amber-950/40";
   } else if (isNextAction) {
-    stateClasses = "border-blue-600 bg-blue-50 shadow-[0_0_20px_rgba(37,99,235,0.4)] animate-[pulse_3s_ease-in-out_infinite] dark:border-blue-500 dark:bg-blue-950/40";
+    stateClasses = "border-blue-500 bg-blue-50 shadow-[0_0_15px_rgba(59,130,246,0.3)] animate-[pulse_3s_ease-in-out_infinite] dark:border-blue-500 dark:bg-blue-950/40";
   } else {
-    // available (진행 전)
-    stateClasses = "border-blue-500 bg-white shadow-sm dark:border-blue-400 dark:bg-slate-900";
+    // available (진행 가능)
+    stateClasses = "border-blue-400 bg-white shadow-sm dark:border-blue-400/50 dark:bg-slate-900";
   }
 
   // GOAL 노드는 강력한 임팩트 부여
   if (isGoal) {
     if (isCompleted) {
-      stateClasses = "scale-[1.10] border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50/50 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/50 dark:from-emerald-950/40 dark:to-teal-950/20";
+      stateClasses = "scale-[1.10] border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50/50 shadow-[0_0_20px_rgba(16,185,129,0.3)] ring-2 ring-emerald-400/50 dark:from-emerald-950/40 dark:to-teal-950/20";
     } else {
-      stateClasses = "scale-[1.10] border-[#f59e0b] bg-gradient-to-br from-amber-50 to-orange-50/50 shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-2 ring-amber-400/50 dark:from-amber-950/40 dark:to-orange-950/20";
+      stateClasses = "scale-[1.10] border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50/50 shadow-[0_0_20px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/50 dark:from-amber-950/40 dark:to-orange-950/20";
     }
   }
 
@@ -144,7 +136,13 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       <div
         role="button"
         tabIndex={0}
-      aria-label={`${data.title}, Lv.${data.level ?? 1}, ${data.estimatedMinutes ? formatEstimatedTime(data.estimatedMinutes) : "시간 미정"}, ${status === "locked" ? "잠김" : isCompleted ? "완료됨" : isNextAction ? "진행 중" : "진행 가능"}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+        aria-label={`${data.title}, Lv.${data.level ?? 1}, ${data.estimatedMinutes ? formatEstimatedTime(data.estimatedMinutes) : "시간 미정"}, ${status === "locked" ? "잠김" : isCompleted ? "완료됨" : isNextAction ? "진행 중" : "진행 가능"}`}
       className={[
         "group relative w-72 rounded-2xl border-2 px-5 py-4 text-left transition-all duration-300 ease-out",
         "hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950",
@@ -153,7 +151,11 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       ].join(" ")}
     >
       <div className="absolute -left-2 -top-3 z-10 flex gap-2">
-        {data.category ? (
+        {isGoal ? (
+          <div className="flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-[11px] font-black text-white shadow-lg shadow-amber-500/30 border-2 border-white dark:border-slate-900">
+            🏆 GOAL
+          </div>
+        ) : data.category ? (
           <div className="group/category relative flex items-center">
             <span
               className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide cursor-help shadow-sm ${categoryColor.badge}`}
@@ -202,6 +204,8 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
               <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
             ) : status === "locked" ? (
               <Lock className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+            ) : status === "in-progress" ? (
+              <PlayCircle className="h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400" aria-hidden />
             ) : isNextAction ? (
               <div className="h-4 w-4 shrink-0 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
             ) : (
@@ -209,7 +213,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
             )}
           </div>
           
-          <h3 className={["mt-1 truncate font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100", isGoal ? "text-lg" : "text-base"].join(" ")}>
+          <h3 className={["mt-1 truncate font-bold flex items-center gap-1", isCompleted ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100", isGoal ? "text-lg" : "text-base"].join(" ")} title={data.title}>
             {data.title}
           </h3>
           
@@ -291,6 +295,8 @@ export function TechTreeCanvas({
   onAddChild,
   onDeleteNode,
   interactive = false,
+  hideMinimap = false,
+  hideControls = false,
   className,
 }: TechTreeCanvasProps) {
   const isDrawerOpen = useSkillStore((state) => state.isDrawerOpen);
@@ -432,6 +438,8 @@ export function TechTreeCanvas({
     [interactive, onNodeSelect, openDrawer],
   );
 
+  console.log("[TechTreeCanvas] nodes.length:", nodes.length, "visibleNodes.length:", visibleNodes.length, "firstNode:", visibleNodes[0]);
+
   return (
     <section
       className={[
@@ -468,15 +476,17 @@ export function TechTreeCanvas({
         className="touch-none"
       >
         <Background color="#64748b" gap={24} size={1} />
-        <MiniMap
-          nodeStrokeWidth={3}
-          nodeColor={(node) => {
-            const data = node.data as SkillNodeData;
-            return data.is_completed ? "#10b981" : "#e2e8f0";
-          }}
-          className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50"
-        />
-        {interactive && <Controls className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50" />}
+        {!hideMinimap && (
+          <MiniMap
+            nodeStrokeWidth={3}
+            nodeColor={(node) => {
+              const data = node.data as SkillNodeData;
+              return data.is_completed ? "#10b981" : "#e2e8f0";
+            }}
+            className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50"
+          />
+        )}
+        {!hideControls && interactive && <Controls className="overflow-hidden rounded-xl border border-slate-200/60 shadow-lg dark:border-slate-800/60 dark:bg-slate-900/50" />}
       </ReactFlow>
     </section>
   );
