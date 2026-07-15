@@ -68,9 +68,18 @@
 
 딱딱한 트리 대신 **레트로 픽셀 RPG 월드맵**으로 몰입감을 높였습니다. 로드맵 하나가 곧 하나의 **영토(섬)** 가 되고, 로드맵을 열면 각 지도의 실제 길을 따라 **입문 → 성장 → 최종 목표(성)** 로 이어지는 모험 경로가 펼쳐집니다. 완료한 노드는 체크(✓), 현재 단계엔 캐릭터가 서 있어 **"내가 어디까지 왔는지"** 가 한눈에 보입니다.
 
-<div align="center">
-<img src="docs/screenshots/world-map.png" alt="스킬 모험 월드맵" width="820" />
-</div>
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="docs/screenshots/world-map.png" alt="로드맵 목록 (전체 지도)" /><br/>
+<sub><b>전체 지도</b> — 로드맵마다 하나의 섬(영토)</sub>
+</td>
+<td width="50%" align="center">
+<img src="docs/screenshots/roadmap-detail.png" alt="로드맵 상세 (모험 지도)" /><br/>
+<sub><b>상세 지도</b> — 단계별 마커를 따라가는 모험 경로</sub>
+</td>
+</tr>
+</table>
 
 ### 📝 실무형 퀘스트 & 완료 검증
 
