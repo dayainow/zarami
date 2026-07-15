@@ -345,6 +345,12 @@ export function ManageTreeClient() {
     }
 
     hasAutoSelectedInitialTreeRef.current = true;
+
+    // 이미 불러온 트리가 자동저장 등으로 갱신된 경우에는 뷰나 노드를 덮어쓰지 않음
+    if (loadedTreeIdRef.current === savedTree.id) {
+      return;
+    }
+
     setCurrentTreeTitle(savedTree.title || "새 로드맵");
     setTargetCompany(savedTree.targetCompany || "");
 
