@@ -190,7 +190,7 @@ export function ManageTreeClient() {
   const [targetCompany, setTargetCompany] = useState("");
   const [isEditingTargetCompany, setIsEditingTargetCompany] = useState(false);
   const [targetCompanyInput, setTargetCompanyInput] = useState("");
-  const isMoreMenuOpen = false; // setIsMoreMenuOpen is unused
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
   const hasAutoSelectedInitialTreeRef = useRef(false);
   const loadedTreeIdRef = useRef<string | null>(null);
@@ -351,7 +351,7 @@ export function ManageTreeClient() {
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
       setEdges(savedTree.edges);
-      loadedTreeIdRef.current = savedTree.id;
+      loadedTreeIdRef.current = savedTree.id ?? null;
       window.setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ padding: 0.24, duration: 600 });
       }, 300);
@@ -359,7 +359,7 @@ export function ManageTreeClient() {
       setNodes([]);
       setEdges([]);
       setSelectedNodeId(null);
-      loadedTreeIdRef.current = savedTree.id;
+      loadedTreeIdRef.current = savedTree.id ?? null;
     }
   }, [savedTree, treeList, currentTreeId, setEdges, setNodes, searchParams]);
 
