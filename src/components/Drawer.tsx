@@ -119,8 +119,18 @@ export function Drawer({
   const data = selectedSkill?.data as SkillNodeData | undefined;
   const isCompleted = Boolean(data?.is_completed);
 
+  // 완료 게이팅: 체크리스트(서브 퀘스트)가 있으면 전부 체크해야 완료할 수 있다.
+  // 버튼 한 번으로 끝나지 않게 해서 실제 학습 검증을 강제한다.
+  const checklistItems = data?.checklist ?? [];
+  const checklistTotal = checklistItems.length;
+  const checklistDone = selectedSkillId
+    ? checklistItems.filter((item) => checkedKeys[checklistKey(selectedSkillId, item)]).length
+    : 0;
+  const checklistComplete = checklistTotal === 0 || checklistDone >= checklistTotal;
+  const canComplete = checklistComplete && data?.status !== "locked";
+
   const handleComplete = () => {
-    if (!selectedSkillId || isCompleted || isCompleting) {
+    if (!selectedSkillId || isCompleted || isCompleting || !canComplete) {
       return;
     }
 
@@ -223,15 +233,22 @@ export function Drawer({
                     <button
                       type="button"
                       onClick={handleComplete}
-                      disabled={isCompleting || data?.status === "locked"}
-                      className={["flex w-full items-center justify-center gap-2 rounded-md py-2 text-sm font-bold shadow-sm transition", data?.status === "locked" ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500" : "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500"].join(" ")}
+                      disabled={isCompleting || !canComplete}
+                      className={["flex w-full items-center justify-center gap-2 rounded-md py-2 text-sm font-bold shadow-sm transition", !canComplete ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500" : "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500"].join(" ")}
                     >
                       {data?.status === "locked" ? (
                         <><Lock className="h-4 w-4" /> 잠김 상태</>
+                      ) : !checklistComplete ? (
+                        <><CheckCircle2 className="h-4 w-4" /> 체크리스트 {checklistDone}/{checklistTotal}</>
                       ) : (
                         <><CheckCircle2 className="h-4 w-4" /> 퀘스트 완료하기</>
                       )}
                     </button>
+                    {!checklistComplete && data?.status !== "locked" ? (
+                      <p className="text-center text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        아래 체크리스트를 모두 완료해야 합니다
+                      </p>
+                    ) : null}
                   </div>
                 </>
               )}
@@ -361,18 +378,22 @@ export function Drawer({
             <button
               type="button"
               onClick={handleComplete}
-              disabled={isCompleted || isCompleting || !selectedSkillId}
+              disabled={isCompleted || isCompleting || !selectedSkillId || !canComplete}
               className={[
                 "flex h-12 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition",
                 isCompleted
                   ? "cursor-default bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 dark:bg-emerald-500 dark:text-slate-950"
-                  : "bg-sky-500 text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400 disabled:cursor-wait disabled:opacity-70 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300",
+                  : !canComplete
+                    ? "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    : "bg-sky-500 text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400 disabled:cursor-wait disabled:opacity-70 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300",
               ].join(" ")}
             >
               {isCompleted ? (
                 <>
                   <ShieldCheck className="h-4 w-4" /> 내 스킬셋에 장착되었습니다
                 </>
+              ) : !checklistComplete ? (
+                `체크리스트 완료 필요 (${checklistDone}/${checklistTotal})`
               ) : isCompleting ? "저장 중..." : "내 스킬로 만들기"}
             </button>
             {isOffline ? (
