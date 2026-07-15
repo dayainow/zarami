@@ -82,7 +82,7 @@ export function ProfileClient() {
     const allPostings = matched.flatMap(t => t.sample_postings || []);
     const uniquePostings = Array.from(new Map(allPostings.map(p => [p.url, p])).values());
     
-    return uniquePostings.slice(0, 5); // Show top 5
+    return uniquePostings; // Show all unique matching postings (will scroll)
   }, [trends, stats?.completedSkills]);
 
   useEffect(() => {
@@ -196,38 +196,48 @@ export function ProfileClient() {
           <div className={["grid grid-cols-1 gap-4 md:grid-cols-3", !userId ? "pointer-events-none select-none blur-sm" : ""].join(" ")} aria-hidden={!userId}>
             {/* Top 3 Metrics Row */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:col-span-3">
-              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="group relative flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] cursor-help">
                 <p className="flex items-center gap-2 text-3xl font-black text-rose-500">
                   <Image src="/images/assets/stat_target.png" alt="Target" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
                   {marketFitCoverage}%
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">시장 적합 스킬 커버리지</p>
                 <p className="mt-1 text-[10px] text-slate-500">시장에서 수요가 높은 핵심 기술 달성률</p>
+                <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 z-50 w-max max-w-[220px] -translate-x-1/2 rounded-md bg-slate-800 px-3 py-2 text-[10px] leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                  [산출 근거]<br/>(달성 스킬별 채용 트렌드 가중치 합산)<br/>÷ (전체 트렌드 스킬 가중치 총합)
+                </div>
               </div>
               
-              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="group relative flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] cursor-help">
                 <p className="flex items-center gap-2 text-3xl font-black text-amber-500">
                   <Image src="/images/assets/stat_swords.png" alt="Swords" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
                   {stats?.practicalScore ?? 0}점
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">실전 역량 증명 점수</p>
                 <p className="mt-1 text-[10px] text-slate-500">미니 퀘스트 기반 실전 프로젝트 수행 증명</p>
+                <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 z-50 w-max max-w-[220px] -translate-x-1/2 rounded-md bg-slate-800 px-3 py-2 text-[10px] leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                  [산출 근거]<br/>스킬 노드 완료 시 +10점<br/>GitHub PR 연동 인증 시 +20점 (총 30점)
+                </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="group relative flex flex-col items-center justify-center rounded-xl border border-white/70 bg-white/70 p-5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] cursor-help">
                 <p className="flex items-center gap-2 text-3xl font-black text-indigo-500">
                   <Image src="/images/assets/stat_chest.png" alt="Chest" width={36} height={36} className="rounded-xl shadow-md" style={{ imageRendering: 'pixelated' }} />
                   {portfolioConversionRate}%
                 </p>
                 <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">포트폴리오 전환율</p>
                 <p className="mt-1 text-[10px] text-slate-500">GitHub 등 이력서 실물 자산으로 연결된 비율</p>
+                <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 z-50 w-max max-w-[220px] -translate-x-1/2 rounded-md bg-slate-800 px-3 py-2 text-[10px] leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                  [산출 근거]<br/>(GitHub로 인증된 노드 수)<br/>÷ (전체 완료 노드 수)
+                </div>
               </div>
             </div>
 
-            {/* Middle Row */}
-            <div className="flex flex-col gap-4 md:col-span-1">
-              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">직무 준비도 맵 (스택 분포)</h2>
+            {/* Middle Grid Row: 2x2 layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-3">
+              {/* Box 1: 직무 준비도 맵 */}
+              <div className="flex flex-col h-[280px] rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 overflow-y-auto custom-scrollbar">
+                <h2 className="mb-4 shrink-0 text-sm font-bold text-slate-950 dark:text-white">직무 준비도 맵 (스택 분포)</h2>
                 <div className="space-y-3">
                   {Object.entries(stats?.categoryStats ?? {}).map(([cat, counts]) => (
                     <div key={cat}>
@@ -248,29 +258,32 @@ export function ProfileClient() {
                   )}
                 </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-4 md:col-span-2">
-              
-              <div className="relative rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                <h2 className="text-sm font-bold text-slate-950 dark:text-white">학습 잔디</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">최근 13주간 완료한 날짜별 기록입니다.</p>
-                
-                <div className="mt-3 grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto pb-1">
-                  {heatmapDays.map((day) => (
-                    <div
-                      key={day.date}
-                      title={`${day.date} · ${day.count}건 완료`}
-                      className={`h-3 w-3 shrink-0 rounded-sm ${heatmapCellClassName(day.count)}`}
-                    />
-                  ))}
+              {/* Box 2: 학습 잔디 */}
+              <div className="relative flex flex-col h-[280px] rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 overflow-y-auto custom-scrollbar">
+                <div className="shrink-0">
+                  <h2 className="text-sm font-bold text-slate-950 dark:text-white">학습 잔디</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-500">최근 13주간 완료한 날짜별 기록입니다.</p>
                 </div>
-                {userId && isHeatmapLoading && <p className="mt-2 text-xs text-slate-500">불러오는 중...</p>}
-                {userId && isHeatmapError && <p className="mt-2 text-xs text-red-500">데이터를 불러오지 못했습니다.</p>}
+                
+                <div className="mt-3 flex-1 min-h-0">
+                  <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto pb-1 custom-scrollbar">
+                    {heatmapDays.map((day) => (
+                      <div
+                        key={day.date}
+                        title={`${day.date} · ${day.count}건 완료`}
+                        className={`h-3 w-3 shrink-0 rounded-sm ${heatmapCellClassName(day.count)}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {userId && isHeatmapLoading && <p className="mt-2 text-xs text-slate-500 shrink-0">불러오는 중...</p>}
+                {userId && isHeatmapError && <p className="mt-2 text-xs text-red-500 shrink-0">데이터를 불러오지 못했습니다.</p>}
               </div>
 
-              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">최근 달성 스킬</h2>
+              {/* Box 3: 최근 달성 스킬 */}
+              <div className="flex flex-col h-[280px] rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 overflow-y-auto custom-scrollbar">
+                <h2 className="mb-4 shrink-0 text-sm font-bold text-slate-950 dark:text-white">최근 달성 스킬</h2>
                 <div className="space-y-3">
                   {stats?.recentAchievements?.map((achievement, idx) => (
                     <div key={idx} className="flex items-center gap-3">
@@ -287,9 +300,13 @@ export function ProfileClient() {
                 </div>
               </div>
               
-              <div className="flex-1 rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
-                <h2 className="mb-4 text-sm font-bold text-slate-950 dark:text-white">지금 지원 가능한 포지션</h2>
-                <div className="space-y-4">
+              {/* Box 4: 지금 지원 가능한 포지션 */}
+              <div className="flex flex-col h-[280px] rounded-xl border border-white/70 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 overflow-y-auto custom-scrollbar">
+                <div className="shrink-0 mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-950 dark:text-white">지금 지원 가능한 포지션</h2>
+                  <span className="text-[10px] text-slate-500">최근 공고 매칭</span>
+                </div>
+                <div className="space-y-3 pb-1">
                   {realJobPostings.length > 0 ? (
                     realJobPostings.map((posting, idx) => (
                       <a

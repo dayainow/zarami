@@ -5,14 +5,15 @@ import { usePathname } from "next/navigation";
 
 import { navItems } from "@/components/layout/navItems";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
+import { LogOut } from "lucide-react";
 
 // Sidebar.tsx's fixed left rail relies on mouse hover to reveal labels,
 // which doesn't exist on touch devices - this is the mobile equivalent,
 // shown only below the md breakpoint (see layout.tsx).
 export function MobileTabBar() {
   const pathname = usePathname();
-  const userId = useSupabaseUserId();
+  const { userId, handleLogout } = useMagicLinkAuth();
 
   if (!userId) return null;
 
@@ -44,6 +45,16 @@ export function MobileTabBar() {
           </Link>
         );
       })}
+      <button
+        onClick={handleLogout}
+        className="flex flex-col items-center justify-center gap-1 py-1.5 px-2 min-w-0 transition text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400"
+        title="로그아웃"
+      >
+        <LogOut className="h-5 w-5 shrink-0" aria-hidden />
+        <span className="w-full text-center text-[10px] font-semibold truncate">
+          로그아웃
+        </span>
+      </button>
       <div className="flex flex-col items-center justify-center py-1.5 px-1 min-w-0">
         <ThemeToggle className="!h-8 !w-8 border-none !bg-transparent !shadow-none hover:!bg-transparent dark:!bg-transparent" />
       </div>

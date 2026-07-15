@@ -40,11 +40,13 @@ Output ONLY valid JSON matching this schema:
       "data": {
         "title": "Short title",
         "description": "Brief explanation",
+        "motivation": "A compelling 2-3 sentence Korean explanation of WHY this skill is crucial in the real-world job market. Motivate the user by connecting this skill to actual hiring trends.",
+        "jobApplicationTip": "1-2 sentence Korean practical tip on how to highlight this skill in a resume, portfolio, or during a job interview (e.g., 'Mention your experience with X on Wanted/Jumpit by showing Y').",
         "category": "Core/Action/Goal/etc",
         "level": number (1 for the starting node, 2 for next step, etc. up to 4),
         "estimatedMinutes": number (realistic learning time in minutes, typically between 30 and 300),
         "isTrending": boolean (Set to true ONLY IF this skill is directly related to the high-demand trends provided above),
-        "questMarkdown": "A short Korean practical quest in this exact format: '## 실전 미니 퀘스트\\n\\n(단순히 공부하라는 내용이 아니라, 무엇을 직접 만들어보아야 이 기술을 증명할 수 있는지 구체적인 미니 프로젝트나 구현 과제를 1-2문장으로 제시)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
+        "questMarkdown": "A short Korean practical quest in this exact format: '## 실무형 미니 퀘스트\\n\\n(이론 공부가 아닌, 이 기술을 이력서 포트폴리오에 쓸 수 있도록 증명할 수 있는 실무 밀착형 미니 프로젝트나 구현 과제를 1-2문장으로 제시)\\n\\n### 리뷰 포인트\\n\\n- (review point 1)\\n- (review point 2)\\n- (review point 3)'",
         "checklist": ["2 to 4 short Korean checklist items, each a concrete sub-step toward finishing this skill"]
       }
     }
@@ -102,7 +104,7 @@ export async function POST(req: Request) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-flash-latest",
       systemInstruction: getSystemPrompt(
         trendingSkillsText,
         typeof targetCompany === "string" ? targetCompany.trim() : "",
@@ -116,17 +118,25 @@ export async function POST(req: Request) {
     // Clean up possible markdown wrappers
     const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
 
-    const parsed = JSON.parse(cleanedText) as {
-      title?: string;
-      nodes: { id: string; data: { level?: number; title: string; category?: string; isTrending?: boolean; [key: string]: unknown } }[];
-      edges: { source: string; target: string }[];
-    };
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleanedText);
+      if (!parsed || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+        throw new Error("Invalid schema: missing nodes or edges array");
+      }
+    } catch (parseError) {
+      console.error("JSON parsing error:", parseError, "Raw output:", cleanedText);
+      return NextResponse.json(
+        { error: "AI failed to generate a valid roadmap format. Please try again." },
+        { status: 422 }
+      );
+    }
 
     // Calculate positions based on levels
     const levelCounts: Record<number, number> = {};
     const levelYOffsets: Record<number, number> = {};
 
-    parsed.nodes.forEach((n) => {
+    parsed.nodes.forEach((n: { data: { level?: number } }) => {
       const lvl = Number(n.data.level) || 1;
       levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
     });
@@ -140,7 +150,7 @@ export async function POST(req: Request) {
       levelYOffsets[lvl] = startY;
     });
 
-    const finalNodes: SkillTreeNode[] = parsed.nodes.map((n) => {
+    const finalNodes: SkillTreeNode[] = parsed.nodes.map((n: any) => {
       const lvl = Number(n.data.level) || 1;
       const x = (lvl - 1) * 360;
       const y = levelYOffsets[lvl];
@@ -158,7 +168,7 @@ export async function POST(req: Request) {
       };
     });
 
-    const finalEdges: SkillTreeEdge[] = parsed.edges.map((e) => ({
+    const finalEdges: SkillTreeEdge[] = parsed.edges.map((e: any) => ({
       id: `${e.source}-${e.target}`,
       source: e.source,
       target: e.target,

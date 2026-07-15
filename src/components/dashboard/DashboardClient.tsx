@@ -174,8 +174,8 @@ export function DashboardClient() {
   }, [myTree, nodes]);
 
   const [layoutNodes, setLayoutNodes, onNodesChange] = useNodesState<SkillTreeNode>(nodes);
-  const [layoutEdges, setLayoutEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>(edges);
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+  const [, setLayoutEdges, onEdgesChange] = useEdgesState<SkillTreeEdge>(edges);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
 
   useEffect(() => {
     if (nodes.length > 0 && layoutNodes.length === 0) {
@@ -207,7 +207,7 @@ export function DashboardClient() {
         rfInstance.fitView({ padding: 0.24, duration: 600 });
       }, 100);
     }
-  }, [rfInstance, currentTreeId]); // Trigger fitView when instance is ready or tree changes
+  }, [rfInstance, currentTreeId, layoutNodes.length]); // Trigger fitView when instance is ready or tree changes
 
   useEffect(() => {
     if (edges.length > 0) {
@@ -260,26 +260,18 @@ export function DashboardClient() {
   return (
     <main className="relative min-h-screen flex flex-col overflow-hidden bg-slate-50 mesh-gradient text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
       <div className="z-20 flex-none border-b border-white/40 bg-white/60 px-6 py-4 shadow-[0_4px_30px_rgba(0,0,0,0.05)] backdrop-blur-3xl transition-colors duration-300 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between flex-wrap">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
               Zarami Dashboard
             </p>
-            <div className="mt-1 flex flex-col gap-2 md:flex-row md:items-start md:gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+            <div className="mt-1 flex flex-col gap-2 xl:flex-row xl:items-start xl:gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white shrink-0 whitespace-nowrap">
                 기술트리 성장 캔버스
               </h1>
-            {treeList && treeList.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    {currentTreeId ? (
-                      <button
-                        onClick={() => setCurrentTreeId(null)}
-                        className="group flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80"
-                      >
-                        🗺️ 전체 맵으로
-                      </button>
-                    ) : null}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  {treeList && treeList.length > 0 && (
                     <div className="relative inline-flex items-center">
                       <select
                         className="appearance-none cursor-pointer rounded-xl border border-slate-200/80 bg-white/75 py-2 pl-4 pr-10 text-sm font-bold text-slate-800 shadow-sm backdrop-blur-xl transition-all hover:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-800/80"
@@ -298,28 +290,28 @@ export function DashboardClient() {
                         <ChevronDown className="h-4 w-4" />
                       </div>
                     </div>
-                    <Link
-                      href={myTree ? `/manage-tree?tree=${myTree.id}` : "/manage-tree"}
-                      className="group flex h-9 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/50 px-3 text-xs font-bold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
-                    >
-                      <span className="mr-1 text-base leading-none">+</span> 새 로드맵
-                    </Link>
-                  </div>
-                  {myTree && (
-                    <div className="group relative w-max pl-1">
-                      <span className="cursor-help border-b border-dashed border-slate-300/80 text-[11px] font-semibold text-slate-500 transition-colors hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200">
-                        {`선택한 로드맵: ${myTree.title === "나의 테크트리" ? "나만의 커스텀 트리" : myTree.title} | ${progress}% 완료 | 총 예상 소요 ${formatEstimatedTime(myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0))}`}
-                      </span>
-                      <div className="pointer-events-none absolute left-0 top-full mt-1.5 z-50 w-max rounded-md bg-slate-800 px-2.5 py-1.5 text-[11px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
-                        💡 진행 상태는 로드맵별로 독립적으로 자동 저장됩니다.
-                      </div>
-                    </div>
                   )}
+                  <Link
+                    href={myTree ? `/manage-tree?tree=${myTree.id}` : "/manage-tree"}
+                    className="group flex h-9 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/50 px-3 text-xs font-bold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                  >
+                    <span className="mr-1 text-base leading-none">+</span> 새 로드맵
+                  </Link>
                 </div>
-              )}
+                {treeList && treeList.length > 0 && myTree && (
+                  <div className="group relative w-max pl-1">
+                    <span className="cursor-help border-b border-dashed border-slate-300/80 text-[11px] font-semibold text-slate-500 transition-colors hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200">
+                      {`선택한 로드맵: ${myTree.title === "나의 테크트리" ? "나만의 커스텀 트리" : myTree.title} | ${progress}% 완료 | 총 예상 소요 ${formatEstimatedTime(myTree.nodes.reduce((acc, node) => acc + (typeof node.data.estimatedMinutes === 'number' ? node.data.estimatedMinutes : 0), 0))}`}
+                    </span>
+                    <div className="pointer-events-none absolute left-0 top-full mt-1.5 z-50 w-max max-w-xs whitespace-normal rounded-md bg-slate-800 px-2.5 py-1.5 text-[11px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                      💡 진행 상태는 로드맵별로 독립적으로 자동 저장됩니다.
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap shrink-0">
             <div className="h-3 w-48 overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_20px_rgba(52,211,153,0.6)] transition-all duration-700 ease-out dark:from-emerald-500 dark:to-teal-400"

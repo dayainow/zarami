@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 import { navItems } from "@/components/layout/navItems";
-import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
+import { LogOut } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const userId = useSupabaseUserId();
+  const { userId, handleLogout } = useMagicLinkAuth();
 
   if (!userId) return null;
 
@@ -77,6 +78,20 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="mt-auto pt-4 flex flex-col gap-2 border-t border-slate-200/50 dark:border-white/10">
+          <button
+            onClick={handleLogout}
+            className="flex h-12 w-full items-center gap-3 rounded-xl px-2 text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition duration-200"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center">
+              <LogOut className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="flex min-w-0 flex-col translate-x-2 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100">
+              <span className="whitespace-nowrap">로그아웃</span>
+            </div>
+          </button>
+        </div>
       </div>
     </aside>
   );

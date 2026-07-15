@@ -24,6 +24,7 @@ const TechTreeCanvas = dynamic(
     )
   }
 );
+import TextareaAutosize from "react-textarea-autosize";
 import { useMagicLinkAuth } from "@/hooks/useMagicLinkAuth";
 import {
   useDeleteUserTree,
@@ -40,6 +41,28 @@ import { useSkillTrends } from "@/hooks/useSkillTrends";
 import { getLayoutedElements } from "@/lib/autoLayout";
 import { useStreakStore } from "@/stores/useStreakStore";
 import type { SkillNodeData, SkillTreeEdge, SkillTreeNode } from "@/types/skill-tree";
+
+function parseQuest(markdown: string | undefined) {
+  if (!markdown) return { mission: "", reviewPoints: [] };
+  
+  const reviewMatch = markdown.match(/###.*리뷰 포인트\s*\n([\s\S]*)/i);
+  let reviewPoints: string[] = [];
+  let mission = markdown;
+
+  if (reviewMatch && reviewMatch.index !== undefined) {
+    const reviewText = reviewMatch[1];
+    reviewPoints = reviewText
+      .split('\n')
+      .map(line => line.trim().replace(/^-\s*/, ''))
+      .filter(Boolean);
+    
+    mission = markdown.slice(0, reviewMatch.index).trim();
+  }
+  
+  mission = mission.replace(/^##.*퀘스트\s*\n/, '').trim();
+  
+  return { mission, reviewPoints };
+}
 
 function createBlankRootNode(): SkillTreeNode {
   return {
@@ -111,6 +134,7 @@ export function ManageTreeClient() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [exportState, setExportState] = useState<"idle" | "copied" | "error">("idle");
   const [onboardingGoal, setOnboardingGoal] = useState("");
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [promptInput, setPromptInput] = useState("");
@@ -123,6 +147,7 @@ export function ManageTreeClient() {
   const [jdInput, setJdInput] = useState("");
 
   const [isRecommending, setIsRecommending] = useState(false);
+  const [isGeneratingDetails, setIsGeneratingDetails] = useState(false);
   const [recommendations, setRecommendations] = useState<{ title: string; description: string; category: string }[]>([]);
   const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
 
@@ -165,16 +190,17 @@ export function ManageTreeClient() {
   const [targetCompany, setTargetCompany] = useState("");
   const [isEditingTargetCompany, setIsEditingTargetCompany] = useState(false);
   const [targetCompanyInput, setTargetCompanyInput] = useState("");
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const isMoreMenuOpen = false; // setIsMoreMenuOpen is unused
   const reactFlowInstanceRef = useRef<ReactFlowInstance<SkillTreeNode, SkillTreeEdge> | null>(null);
   const hasAutoSelectedInitialTreeRef = useRef(false);
+  const loadedTreeIdRef = useRef<string | null>(null);
 
   const handleAutoLayout = useCallback(() => {
     setNodes((currentNodes) => getLayoutedElements(currentNodes, edges, "BT").nodes);
     window.setTimeout(() => {
-      reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
-    }, 50);
-  }, [edges, setNodes]);
+      reactFlowInstanceRef.current?.fitView({ padding: 0.24, duration: 600 });
+    }, 300);
+  }, [nodes, edges, setNodes, setEdges]);
 
   const handleRecommendNode = useCallback(async () => {
     if (nodes.length === 0) {
@@ -199,6 +225,8 @@ export function ManageTreeClient() {
     }
   }, [nodes]);
 
+
+
   // `promptOverride` lets the onboarding form pass its typed goal directly;
   // the toolbar's "AI 자동 생성" button opens the custom modal which eventually
   // calls this function with the submitted text. `targetCompanyOverride`
@@ -210,7 +238,7 @@ export function ManageTreeClient() {
     if (!promptText || promptText.trim() === "") return;
     
     if (nodes.length > 0) {
-      if (!window.confirm("기존 로드맵 내용이 모두 지워지고 새 로드맵으로 덮어쓰여집니다. 진행하시겠습니까? (저장되지 않은 변경사항은 사라집니다)")) {
+      if (!window.confirm("현재 편집 중인 로드맵 캔버스를 닫고 새 로드맵을 만드시겠습니까? (저장하지 않은 변경사항은 사라집니다)")) {
         return;
       }
     }
@@ -223,6 +251,7 @@ export function ManageTreeClient() {
     setPromptTargetCompanyInput("");
     setPromptCareerLevel("junior");
     setCurrentTreeId(null); // Create a new tree
+    loadedTreeIdRef.current = null;
     setNodes([]); // Clear canvas
     setEdges([]);
 
@@ -246,8 +275,8 @@ export function ManageTreeClient() {
       setCurrentTreeTitle(data.title || `${promptText} 로드맵`);
       setTargetCompany(targetCompanyText);
       window.setTimeout(() => {
-        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
-      }, 50);
+        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 600 });
+      }, 300);
     } catch (error: unknown) {
       alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
     } finally {
@@ -262,6 +291,7 @@ export function ManageTreeClient() {
     setJdInput("");
     setAiModalTab("general");
     setCurrentTreeId(null); // Create a new tree
+    loadedTreeIdRef.current = null;
     setNodes([]); // Clear canvas
     setEdges([]);
 
@@ -285,8 +315,8 @@ export function ManageTreeClient() {
       setCurrentTreeTitle(data.title || `JD 갭 보완 로드맵`);
       setTargetCompany("JD 갭 분석 로드맵");
       window.setTimeout(() => {
-        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 400 });
-      }, 50);
+        reactFlowInstanceRef.current?.fitView({ padding: 0.2, duration: 600 });
+      }, 300);
     } catch (error: unknown) {
       alert("AI 생성 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : String(error)));
     } finally {
@@ -321,13 +351,15 @@ export function ManageTreeClient() {
     if (savedTree.nodes.length > 0) {
       setNodes(savedTree.nodes);
       setEdges(savedTree.edges);
+      loadedTreeIdRef.current = savedTree.id;
       window.setTimeout(() => {
-        reactFlowInstanceRef.current?.fitView({ padding: 0.24, duration: 400 });
-      }, 50);
+        reactFlowInstanceRef.current?.fitView({ padding: 0.24, duration: 600 });
+      }, 300);
     } else {
       setNodes([]);
       setEdges([]);
       setSelectedNodeId(null);
+      loadedTreeIdRef.current = savedTree.id;
     }
   }, [savedTree, treeList, currentTreeId, setEdges, setNodes, searchParams]);
 
@@ -348,6 +380,38 @@ export function ManageTreeClient() {
     },
     [selectedNodeId, setNodes],
   );
+
+  const handleGenerateDetails = useCallback(async () => {
+    const node = nodes.find(n => n.id === selectedNodeId);
+    if (!node?.data.title) return;
+    
+    setIsGeneratingDetails(true);
+    try {
+      const res = await fetch("/api/generate-node-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          title: node.data.title, 
+          category: node.data.category, 
+          level: node.data.level 
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to generate details");
+      const generated = await res.json();
+      
+      updateSelectedNodeData({
+        description: generated.description,
+        estimatedMinutes: generated.estimatedMinutes,
+        questMarkdown: generated.questMarkdown,
+        checklist: generated.checklist,
+      });
+    } catch (e) {
+      console.error(e);
+      alert("AI 자동 완성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGeneratingDetails(false);
+    }
+  }, [nodes, selectedNodeId, updateSelectedNodeData]);
 
   const handleAddNode = useCallback(() => {
     const nextNode = createGoalNode(nodes.length);
@@ -377,13 +441,19 @@ export function ManageTreeClient() {
   }, [searchParams, authChecked, userId, isGeneratingAI, handleAddTrendNode, router]);
 
   const handleStartBlank = useCallback(() => {
+    if (nodes.length > 0) {
+      if (!window.confirm("현재 편집 중인 로드맵 캔버스를 닫고 빈 로드맵을 새로 만드시겠습니까? (저장하지 않은 변경사항은 유실됩니다)")) {
+        return;
+      }
+    }
     const rootNode = createBlankRootNode();
     setCurrentTreeId(null); // Create a new tree
+    loadedTreeIdRef.current = null;
     setNodes([rootNode]);
     setEdges([]);
     setCurrentTreeTitle("새 로드맵");
     setTargetCompany("");
-  }, [setEdges, setNodes]);
+  }, [nodes.length, setEdges, setNodes]);
 
   const handleStartRename = useCallback(() => {
     setRenameInput(currentTreeTitle);
@@ -439,6 +509,7 @@ export function ManageTreeClient() {
           setCurrentTreeId(remaining[0].id);
         } else {
           setCurrentTreeId(null);
+          loadedTreeIdRef.current = null;
           setNodes([]);
           setEdges([]);
           setCurrentTreeTitle("새 로드맵");
@@ -558,6 +629,13 @@ export function ManageTreeClient() {
       return;
     }
 
+    // Only auto-save if the canvas nodes actually belong to the currently selected tree.
+    // This prevents a stale closure from saving the previous tree's nodes to the new tree's ID
+    // during the brief render cycle before hydration completes.
+    if (currentTreeId && currentTreeId !== loadedTreeIdRef.current) {
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
       saveTree(
         { id: currentTreeId || undefined, title: currentTreeTitle, targetCompany, nodes, edges },
@@ -643,7 +721,7 @@ export function ManageTreeClient() {
   // A brand-new (or emptied) tree leads with AI generation instead of a
   // fixed demo starter - describing a goal is the primary entry point,
   // with "직접 만들기" as the explicit opt-out for manual editing.
-  if (!isTreeLoading && nodes.length === 0) {
+  if (!isTreeLoading && nodes.length === 0 && !isGeneratingAI) {
     return (
       <main className="grid min-h-screen w-full place-items-center bg-slate-50 mesh-gradient px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
         <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/60 bg-white/60 p-10 text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/50 dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)]">
@@ -1031,23 +1109,33 @@ export function ManageTreeClient() {
           </div>
         )}
 
-        <TechTreeCanvas
-          nodes={visibleNodes}
-          edges={edges}
-          interactive
-          onNodeSelect={(node) => setSelectedNodeId(node.id)}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={handleConnect}
-          onConnectStart={onConnectStart}
-          onConnectEnd={onConnectEnd}
-          onAddChild={handleAddChildNode}
-          onDeleteNode={handleDeleteNode}
-          onInit={(instance) => {
-            reactFlowInstanceRef.current = instance;
-          }}
-          className="flex-1 min-h-0"
-        />
+        {isGeneratingAI && nodes.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-4 min-h-[500px]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.5)] glow-sky">
+              <Sparkles className="h-8 w-8 animate-pulse" aria-hidden />
+            </div>
+            <p className="font-semibold text-indigo-500">AI가 맞춤형 로드맵을 심도있게 설계하고 있습니다...</p>
+            <p className="text-sm">약 10초 ~ 20초 정도 소요될 수 있습니다.</p>
+          </div>
+        ) : (
+          <TechTreeCanvas
+            nodes={visibleNodes}
+            edges={edges}
+            interactive
+            onNodeSelect={(node) => setSelectedNodeId(node.id)}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={handleConnect}
+            onConnectStart={onConnectStart}
+            onConnectEnd={onConnectEnd}
+            onAddChild={handleAddChildNode}
+            onDeleteNode={handleDeleteNode}
+            onInit={(instance) => {
+              reactFlowInstanceRef.current = instance;
+            }}
+            className="flex-1 min-h-0"
+          />
+        )}
       </section>
 
       {/* Mobile Backdrop */}
@@ -1059,11 +1147,12 @@ export function ManageTreeClient() {
       )}
 
       <aside className={`
-        flex shrink-0 flex-col bg-white/95 p-5 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-black/30
+        flex shrink-0 flex-col bg-white/95 p-4 md:p-5 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-black/30
         transition-transform duration-300 ease-out
         fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/70 max-h-[85vh]
         ${selectedNodeId ? "translate-y-0" : "translate-y-full"}
-        xl:relative xl:z-auto xl:w-[380px] xl:translate-y-0 xl:rounded-none xl:border-l xl:border-t-0 xl:bg-white/72 xl:dark:bg-slate-900/72
+        xl:relative xl:z-auto xl:w-[380px] xl:max-h-none xl:translate-y-0 xl:rounded-none xl:border-l xl:border-t-0 xl:bg-white/72 xl:dark:bg-slate-900/72
+        pb-[env(safe-area-inset-bottom)]
       `}>
         {/* Mobile handle */}
         <div className="absolute left-1/2 top-2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700 xl:hidden" />
@@ -1081,10 +1170,10 @@ export function ManageTreeClient() {
             </div>
           </div>
           <button 
-            className="xl:hidden p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="xl:hidden p-3 -mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             onClick={() => setSelectedNodeId(null)}
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </button>
         </div>
 
@@ -1092,151 +1181,225 @@ export function ManageTreeClient() {
           <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">
             캔버스에서 노드를 선택하면 목표 정보를 편집할 수 있습니다.
           </p>
-        ) : (
-          <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
-            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 dark:border-white/5 dark:bg-black/20">
-              <label className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                <GitCommit className="h-4 w-4" />
-                GitHub 증빙 링크 (선택)
-              </label>
-              <input
-                type="url"
-                placeholder="https://github.com/.../pull/123"
-                value={data.githubLink || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  updateSelectedNodeData({
-                    githubLink: val,
-                    certified_by_github: !!val.trim(),
-                  });
-                }}
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-black/40 dark:text-white"
-              />
-              <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-                해당 퀘스트를 수행한 PR이나 코드 링크를 첨부하세요. 포트폴리오 전환율 지표가 대폭 상승합니다!
-              </p>
-            </div>
+        ) : (() => {
+          const { mission, reviewPoints } = parseQuest(data.questMarkdown);
 
-            <button
-              type="button"
-              onClick={() => {
-                const willBeCompleted = !data.is_completed;
-                updateSelectedNodeData({
-                  is_completed: willBeCompleted,
-                  completedAt: willBeCompleted ? new Date().toISOString() : undefined,
-                  status: willBeCompleted ? "completed" : "available",
-                });
-                if (willBeCompleted) {
-                  recordActivity();
-                }
-              }}
-              className={[
-                "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition",
-                data.is_completed
-                  ? "border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
-                  : "bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300",
-              ].join(" ")}
-            >
-              <CheckCircle2 className="h-4 w-4" aria-hidden />
-              {data.is_completed ? "완료 취소" : "완료로 표시"}
-            </button>
+          const handleMissionChange = (newMission: string) => {
+            let combined = `## 🎯 실전 미니 퀘스트\n\n${newMission}`;
+            if (reviewPoints.length > 0) {
+              combined += `\n\n### ✅ 리뷰 포인트\n${reviewPoints.map(p => `- ${p}`).join('\n')}`;
+            }
+            updateSelectedNodeData({ questMarkdown: combined });
+          };
 
-            <button
-              type="button"
-              onClick={handleDeleteNode}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50/60 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-              노드 삭제
-            </button>
+          const handleReviewPointsChange = (newPointsText: string) => {
+            const points = newPointsText.split('\n').map(p => p.trim()).filter(Boolean);
+            let combined = `## 🎯 실전 미니 퀘스트\n\n${mission}`;
+            if (points.length > 0) {
+              combined += `\n\n### ✅ 리뷰 포인트\n${points.map(p => `- ${p}`).join('\n')}`;
+            } else if (mission.trim() === "") {
+              combined = ""; // clear if both empty
+            }
+            updateSelectedNodeData({ questMarkdown: combined });
+          };
 
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              목표 제목
-              <input
-                type="text"
-                value={data.title}
-                onChange={(event) => updateSelectedNodeData({ title: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-              />
-            </label>
-
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              설명
-              <textarea
-                value={data.description ?? ""}
-                onChange={(event) => updateSelectedNodeData({ description: event.target.value })}
-                rows={4}
-                className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-              />
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
+          return (
+          <div className="mt-4 md:mt-6 flex flex-col flex-1 min-h-0">
+            <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2 pb-4">
+              
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                분류
-                <select
-                  value={data.category ?? "CORE"}
-                  onChange={(event) => updateSelectedNodeData({ category: event.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                >
-                  {NODE_CATEGORIES.map((category) => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                예상 시간 (분)
+                <div className="flex items-center justify-between">
+                  <span>목표 제목</span>
+                  <button
+                    type="button"
+                    onClick={handleGenerateDetails}
+                    disabled={isGeneratingDetails || !data.title}
+                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-500 disabled:opacity-50 dark:text-indigo-400"
+                  >
+                    {isGeneratingDetails ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    ✨ AI로 자동 완성
+                  </button>
+                </div>
                 <input
-                  type="number"
-                  value={data.estimatedMinutes ?? ""}
-                  onChange={(event) =>
-                    updateSelectedNodeData({
-                      estimatedMinutes: event.target.value === "" ? undefined : Number(event.target.value),
-                    })
-                  }
+                  type="text"
+                  value={data.title}
+                  onChange={(event) => updateSelectedNodeData({ title: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
                 />
               </label>
+
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                설명
+                <TextareaAutosize
+                  value={data.description ?? ""}
+                  onChange={(event) => updateSelectedNodeData({ description: event.target.value })}
+                  minRows={2}
+                  className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white resize-none"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  분류
+                  <select
+                    value={data.category ?? "CORE"}
+                    onChange={(event) => updateSelectedNodeData({ category: event.target.value })}
+                    className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                  >
+                    {NODE_CATEGORIES.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  예상 시간 (분)
+                  <input
+                    type="number"
+                    value={data.estimatedMinutes ?? ""}
+                    onChange={(event) =>
+                      updateSelectedNodeData({
+                        estimatedMinutes: event.target.value === "" ? undefined : Number(event.target.value),
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                  />
+                </label>
+              </div>
+
+              {/* Accordion for Advanced Fields */}
+              <details className="group rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5">
+                <summary className="flex cursor-pointer items-center justify-between p-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5">
+                  부가 정보 설정 (미니퀘스트 등)
+                  <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="space-y-4 border-t border-slate-100 p-3 dark:border-white/10">
+                  
+                  <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-white/5 dark:bg-black/20">
+                    <label className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <GitCommit className="h-4 w-4" />
+                      GitHub 증빙 링크
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://github.com/.../pull/123"
+                      value={data.githubLink || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateSelectedNodeData({
+                          githubLink: val,
+                          certified_by_github: !!val.trim(),
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-white/10 dark:bg-black/40 dark:text-white"
+                    />
+                    <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                      PR이나 코드 링크를 첨부하세요. 포트폴리오 전환율이 대폭 상승합니다!
+                    </p>
+                  </div>
+
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between mb-1">
+                      <span>미니 퀘스트 목표 (자유 작성)</span>
+                    </div>
+                    <TextareaAutosize
+                      value={mission}
+                      onChange={(event) => handleMissionChange(event.target.value)}
+                      minRows={2}
+                      placeholder="예) 직접 토이 프로젝트를 만들어봅니다..."
+                      className="w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white resize-none"
+                    />
+                  </label>
+
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between mb-1">
+                      <span>리뷰 포인트 (줄바꿈 구분)</span>
+                    </div>
+                    <TextareaAutosize
+                      value={reviewPoints.join("\n")}
+                      onChange={(event) => handleReviewPointsChange(event.target.value)}
+                      minRows={2}
+                      placeholder="상태를 전역에서 유연하게 사용했는가&#10;불필요한 렌더링을 최소화했는가..."
+                      className="w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white resize-none"
+                    />
+                  </label>
+
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between mb-1">
+                      <span>체크리스트 (줄바꿈 구분)</span>
+                      <button
+                        type="button"
+                        onClick={() => updateSelectedNodeData({ checklist: ["핵심 개념 이해하기", "관련 도구 설치하기", "간단한 예제 구현하기"] })}
+                        className="text-[10px] font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline underline-offset-2"
+                      >
+                        기본 항목 삽입
+                      </button>
+                    </div>
+                    <TextareaAutosize
+                      value={data.checklist?.join("\n") ?? ""}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        updateSelectedNodeData({
+                          checklist: val ? val.split("\n").map(s => s.trim()).filter(Boolean) : []
+                        });
+                      }}
+                      minRows={3}
+                      placeholder="스토어 설계하기&#10;상태 업데이트 적용하기..."
+                      className="w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white resize-none"
+                    />
+                  </label>
+
+                </div>
+              </details>
+
+              <section className="rounded-xl border border-white/70 bg-white/55 p-3 text-xs text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400">
+                <p className="font-semibold text-slate-950 dark:text-white">자동 저장 안내</p>
+                <p className="mt-1 leading-relaxed">
+                  편집을 멈추면 잠시 후 자동으로 저장됩니다. 상단의 [저장] 버튼을 누르면 즉시 반영됩니다.
+                </p>
+              </section>
             </div>
 
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              실전 미니 퀘스트 (Markdown)
-              <textarea
-                value={data.questMarkdown ?? ""}
-                onChange={(event) => updateSelectedNodeData({ questMarkdown: event.target.value })}
-                rows={5}
-                placeholder="예) ## 실전 퀘스트&#10;직접 토이 프로젝트를 만들어봅니다..."
-                className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white font-mono"
-              />
-            </label>
-
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              체크리스트 (줄바꿈으로 구분)
-              <textarea
-                value={data.checklist?.join("\n") ?? ""}
-                onChange={(event) => {
-                  const val = event.target.value;
+            {/* Sticky Bottom Actions */}
+            <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row gap-2 border-t border-slate-200/50 bg-white/95 pt-3 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/95">
+              <button
+                type="button"
+                onClick={() => {
+                  const willBeCompleted = !data.is_completed;
                   updateSelectedNodeData({
-                    checklist: val ? val.split("\n").map(s => s.trim()).filter(Boolean) : []
+                    is_completed: willBeCompleted,
+                    completedAt: willBeCompleted ? new Date().toISOString() : undefined,
+                    status: willBeCompleted ? "completed" : "available",
                   });
+                  if (willBeCompleted) {
+                    recordActivity();
+                  }
                 }}
-                rows={3}
-                placeholder="스토어 설계하기&#10;상태 업데이트 적용하기..."
-                className="mt-1 w-full rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-              />
-            </label>
+                className={[
+                  "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition",
+                  data.is_completed
+                    ? "border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+                    : "bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-400 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300",
+                ].join(" ")}
+              >
+                <CheckCircle2 className="h-4 w-4" aria-hidden />
+                {data.is_completed ? "완료 취소" : "완료로 표시"}
+              </button>
 
-            <section className="rounded-xl border border-white/70 bg-white/55 p-4 text-sm text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              <p className="font-semibold text-slate-950 dark:text-white">자동 저장 안내</p>
-              <p className="mt-2 leading-6">
-                편집을 멈추면 잠시 후 자동으로 저장됩니다. 바로 저장하고 싶다면 상단의 [저장] 버튼을
-                눌러주세요.
-              </p>
-            </section>
+              <button
+                type="button"
+                onClick={handleDeleteNode}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50/60 px-4 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+                노드 삭제
+              </button>
+            </div>
           </div>
-        )}
+          );
+        })()}
       </aside>
 
       {/* Custom AI Prompt Modal */}

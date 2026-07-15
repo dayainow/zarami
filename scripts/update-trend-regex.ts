@@ -34,14 +34,16 @@ const skillMatchers: Record<string, RegExp> = {
 
 async function main() {
   console.log("Scraping jobs...");
-  const wantedJobs = await scrapeWantedJobs(872, 50); // 50 backend
-  const wantedFrontend = await scrapeWantedJobs(669, 50); // 50 frontend
-  const jumpitJobs = await scrapeJumpitJobs(20); // 20 latest
+  const wantedJobs = await scrapeWantedJobs(872, 100); // 100 backend
+  const wantedFrontend = await scrapeWantedJobs(669, 100); // 100 frontend
+  const jumpitJobs = await scrapeJumpitJobs(1, 100); // 100 backend
+  const jumpitFrontend = await scrapeJumpitJobs(2, 100); // 100 frontend
 
   const allPostings = [
     ...wantedJobs.map(j => ({ ...j, site: 'wanted' as const })),
     ...wantedFrontend.map(j => ({ ...j, site: 'wanted' as const })),
-    ...jumpitJobs.map(j => ({ ...j, site: 'jumpit' as const }))
+    ...jumpitJobs.map(j => ({ ...j, site: 'jumpit' as const })),
+    ...jumpitFrontend.map(j => ({ ...j, site: 'jumpit' as const }))
   ];
 
   console.log(`Total postings scraped: ${allPostings.length}`);

@@ -79,12 +79,12 @@ export function LoginClient() {
         <div className="mb-8 flex flex-col items-center justify-center">
           <Link href="/" className="mb-6">
             <Image
-              src="/images/brand/svg/zarami-logo-vertical.svg"
+              src="/images/brand/svg/zarami-logo-horizontal.svg"
               alt="Zarami"
               width={140}
               height={48}
               priority
-              className="dark:brightness-200 dark:grayscale"
+              className="dark:brightness-200 dark:grayscale object-contain"
             />
           </Link>
           <h1 className="text-center text-2xl font-black tracking-tight text-slate-900 dark:text-white md:text-3xl">

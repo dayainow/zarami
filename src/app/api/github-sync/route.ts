@@ -107,7 +107,7 @@ export async function POST(req: Request) {
 
     // 4. Analyze with Gemini
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-flash-latest",
       systemInstruction: getGithubSyncPrompt()
     });
 

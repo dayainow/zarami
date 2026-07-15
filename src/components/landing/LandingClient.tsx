@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Sparkles, Target, TrendingUp, GitCommit, ChevronRight, ChevronDown, Play, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import type { ReactFlowInstance } from "@xyflow/react";
 
 const TechTreeCanvas = dynamic(
   () => import("@/components/skill-tree/TechTreeCanvas").then((mod) => mod.TechTreeCanvas),
@@ -25,25 +26,17 @@ import { createClient } from "@/utils/supabase/client";
 import type { SkillTreeNode, SkillTreeEdge } from "@/types/skill-tree";
 import { getLayoutedElements } from "@/lib/autoLayout";
 
+// 가장 대표적인 풀스택 로드맵: 웹 기초(맨 아래)에서 서비스 런칭(꼭대기)까지
+// 수직으로 타고 올라가는 트리. 완료/진행중/추천/잠김 상태를 모두 보여준다.
 const demoNodes: SkillTreeNode[] = [
   {
-    id: "goal",
+    id: "base",
     type: "skill",
     position: { x: 0, y: 0 },
     data: {
-      id: "goal",
-      title: "프론트엔드 합격 퀘스트",
-      category: "Goal",
-      status: "completed",
-    },
-  },
-  {
-    id: "ts",
-    type: "skill",
-    position: { x: 0, y: 0 },
-    data: {
-      id: "ts",
-      title: "TypeScript 기반 설계",
+      id: "base",
+      title: "웹 기초 (HTML·CSS·JS)",
+      description: "모든 개발의 출발점",
       category: "Frontend",
       status: "completed",
       certified_by_github: true,
@@ -55,7 +48,8 @@ const demoNodes: SkillTreeNode[] = [
     position: { x: 0, y: 0 },
     data: {
       id: "react",
-      title: "React 코어 아키텍처",
+      title: "React & TypeScript",
+      description: "컴포넌트 설계와 타입 안전성",
       category: "Frontend",
       status: "completed",
       certified_by_github: true,
@@ -63,38 +57,54 @@ const demoNodes: SkillTreeNode[] = [
     },
   },
   {
-    id: "nextjs",
+    id: "node",
     type: "skill",
     position: { x: 0, y: 0 },
     data: {
-      id: "nextjs",
-      title: "Next.js App Router 도입",
+      id: "node",
+      title: "Node.js & Express API",
+      description: "REST API 서버 구축",
+      category: "Backend",
+      status: "completed",
+    },
+  },
+  {
+    id: "next",
+    type: "skill",
+    position: { x: 0, y: 0 },
+    data: {
+      id: "next",
+      title: "Next.js App Router",
+      description: "SSR과 풀스택 프레임워크",
       category: "Frontend",
-      status: "available",
+      status: "in-progress",
       isTrending: true,
       trendScore: "High",
     },
   },
   {
-    id: "zustand",
+    id: "db",
     type: "skill",
     position: { x: 0, y: 0 },
     data: {
-      id: "zustand",
-      title: "Zustand 전역 상태관리",
-      category: "Frontend",
+      id: "db",
+      title: "PostgreSQL & Prisma",
+      description: "데이터 모델링과 ORM",
+      category: "Backend",
       status: "available",
+      isNextAction: true,
       isTrending: true,
     },
   },
   {
-    id: "perf",
+    id: "deploy",
     type: "skill",
     position: { x: 0, y: 0 },
     data: {
-      id: "perf",
-      title: "웹 성능 및 렌더링 최적화",
-      category: "Frontend",
+      id: "deploy",
+      title: "Docker & AWS 배포",
+      description: "컨테이너와 클라우드 인프라",
+      category: "DevOps",
       status: "locked",
     },
   },
@@ -105,23 +115,40 @@ const demoNodes: SkillTreeNode[] = [
     data: {
       id: "cicd",
       title: "GitHub Actions CI/CD",
+      description: "자동 빌드·테스트·배포",
       category: "DevOps",
+      status: "locked",
+    },
+  },
+  {
+    id: "goal",
+    type: "skill",
+    position: { x: 0, y: 0 },
+    data: {
+      id: "goal",
+      title: "풀스택 서비스 런칭 🚀",
+      description: "포트폴리오가 되는 실서비스",
+      category: "Goal",
       status: "locked",
     },
   },
 ];
 
+// source = 선행 스킬(아래), target = 다음 스킬(위) — 화살표가 위로 향한다
 const demoEdges: SkillTreeEdge[] = [
-  { id: "e-goal-ts", source: "goal", target: "ts", type: "custom" },
-  { id: "e-goal-react", source: "goal", target: "react", type: "custom" },
-  { id: "e-ts-nextjs", source: "ts", target: "nextjs", type: "custom" },
-  { id: "e-react-nextjs", source: "react", target: "nextjs", type: "custom", animated: true },
-  { id: "e-react-zustand", source: "react", target: "zustand", type: "custom" },
-  { id: "e-nextjs-perf", source: "nextjs", target: "perf", type: "custom", animated: true },
-  { id: "e-nextjs-cicd", source: "nextjs", target: "cicd", type: "custom" },
+  { id: "e-base-react", source: "base", target: "react", type: "custom" },
+  { id: "e-base-node", source: "base", target: "node", type: "custom" },
+  { id: "e-react-next", source: "react", target: "next", type: "custom", animated: true },
+  { id: "e-node-db", source: "node", target: "db", type: "custom", animated: true },
+  { id: "e-next-deploy", source: "next", target: "deploy", type: "custom" },
+  { id: "e-db-deploy", source: "db", target: "deploy", type: "custom" },
+  { id: "e-db-cicd", source: "db", target: "cicd", type: "custom" },
+  { id: "e-deploy-goal", source: "deploy", target: "goal", type: "custom", animated: true },
+  { id: "e-cicd-goal", source: "cicd", target: "goal", type: "custom" },
 ];
 
-const { nodes: initialLayoutedNodes, edges: initialLayoutedEdges } = getLayoutedElements(demoNodes, demoEdges, "LR");
+// BT: 아래(기초)에서 위(목표)로 자라는 세로 트리 — 앱 본편의 성장 캔버스와 같은 방향
+const { nodes: initialLayoutedNodes, edges: initialLayoutedEdges } = getLayoutedElements(demoNodes, demoEdges, "BT");
 
 export function LandingClient() {
   const router = useRouter();
@@ -133,6 +160,23 @@ export function LandingClient() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number>(0);
+
+  // 데모 카메라 연출: 트리 시작점(웹 기초)에 포커스했다가
+  // 전체 세로 트리가 드러나도록 천천히 줌아웃한다.
+  const demoZoomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (demoZoomTimer.current) clearTimeout(demoZoomTimer.current);
+  }, []);
+  const handleDemoInit = useCallback((instance: ReactFlowInstance<SkillTreeNode, SkillTreeEdge>) => {
+    void instance.fitView({
+      nodes: [{ id: "base" }, { id: "react" }, { id: "node" }],
+      padding: 0.2,
+      maxZoom: 0.9,
+    });
+    demoZoomTimer.current = setTimeout(() => {
+      void instance.fitView({ padding: 0.1, maxZoom: 1.2, duration: 1600 });
+    }, 1200);
+  }, []);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -235,8 +279,8 @@ export function LandingClient() {
           </div>
         </div>
 
-        {/* Bottom: Interactive Canvas Demo (Large) */}
-        <div className="w-full h-[450px] md:h-[500px] lg:h-[600px] rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-sky-900/5 overflow-hidden flex flex-col relative group dark:border-white/10 dark:bg-slate-950 dark:shadow-none transition-transform hover:-translate-y-1 duration-500">
+        {/* Bottom: Interactive Canvas Demo (Large) — 세로 트리라 높이를 넉넉히 잡는다 */}
+        <div className="w-full h-[560px] md:h-[640px] lg:h-[720px] rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-sky-900/5 overflow-hidden flex flex-col relative group dark:border-white/10 dark:bg-slate-950 dark:shadow-none transition-transform hover:-translate-y-1 duration-500">
           
           {/* macOS Style Window Bar */}
           <div className="h-10 w-full flex-none bg-slate-50/80 border-b border-slate-200/80 flex items-center px-4 justify-between backdrop-blur-sm dark:bg-slate-900/80 dark:border-white/5">
@@ -259,6 +303,7 @@ export function LandingClient() {
               edges={layoutedEdges}
               onNodesChange={() => {}}
               onEdgesChange={() => {}}
+              onInit={handleDemoInit}
               interactive={true}
               hideMinimap={true}
               hideControls={true}
@@ -337,20 +382,13 @@ export function LandingClient() {
             <div className="flex items-center gap-2">
               <div className="text-2xl font-black tracking-tighter text-[#00E58B]">jumpit</div>
             </div>
-            {/* Programmers */}
-            <div className="flex items-center gap-2">
-              <div className="text-xl font-bold tracking-tight text-[#000000] dark:text-white flex items-center gap-1">
-                <span className="text-[#0078FF] font-black">P</span>rogrammers
-              </div>
-            </div>
-            {/* RocketPunch */}
-            <div className="flex items-center gap-2">
-              <div className="text-xl font-black tracking-tighter text-[#2188FB]">RocketPunch</div>
-            </div>
             {/* GitHub */}
-            <div className="flex items-center gap-2">
-              <div className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-1">
-                <GitCommit className="w-6 h-6"/> GitHub
+            <div className="flex items-center gap-2 opacity-50 grayscale filter transition hover:opacity-100 hover:grayscale-0 dark:opacity-60 dark:hover:opacity-100 dark:hover:grayscale-0">
+              <div className="flex items-center gap-1.5 text-xl font-bold tracking-tight text-[#24292F] dark:text-white">
+                <svg viewBox="0 0 16 16" width="20" height="20" className="fill-current">
+                  <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                </svg>
+                GitHub
               </div>
             </div>
           </div>

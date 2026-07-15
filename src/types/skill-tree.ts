@@ -13,6 +13,8 @@ export type SkillNodeData = {
   id: string;
   title: string;
   description?: string;
+  motivation?: string;
+  jobApplicationTip?: string;
   category?: string;
   level?: number;
   prerequisiteIds?: string[];

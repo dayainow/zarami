@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { Award, ExternalLink, ShieldCheck, TrendingUp, X, CheckCircle2, Lock } from "lucide-react";
+import { Award, ExternalLink, ShieldCheck, TrendingUp, X, CheckCircle2, Lock, Lightbulb, Briefcase } from "lucide-react";
 import { formatEstimatedTime } from "@/utils/format";
 import { getCategoryColor } from "@/lib/categoryColors";
 
@@ -237,9 +237,33 @@ export function Drawer({
               )}
             </section>
 
+            {data?.motivation ? (
+              <section className="mt-6 rounded-lg border border-orange-200/70 bg-orange-50/60 p-5 shadow-sm backdrop-blur-xl dark:border-orange-900/30 dark:bg-orange-950/20">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-orange-800 dark:text-orange-300">
+                  <Lightbulb className="h-4 w-4" aria-hidden />
+                  왜 이 기술을 배워야 할까요?
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  {data.motivation}
+                </p>
+              </section>
+            ) : null}
+
             {data?.questMarkdown ? (
               <section className="mt-6 rounded-lg border border-white/60 bg-white/55 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
                 <div className="space-y-3">{renderMarkdownScaffold(data.questMarkdown)}</div>
+              </section>
+            ) : null}
+
+            {data?.jobApplicationTip ? (
+              <section className="mt-6 rounded-lg border border-sky-200/70 bg-sky-50/60 p-5 shadow-sm backdrop-blur-xl dark:border-sky-900/30 dark:bg-sky-950/20">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-300">
+                  <Briefcase className="h-4 w-4" aria-hidden />
+                  채용 지원 & 포트폴리오 팁
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  {data.jobApplicationTip}
+                </p>
               </section>
             ) : null}
 

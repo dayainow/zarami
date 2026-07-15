@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   description: "Zarami 스킬 모험 지도",
 };
 
-export default function WorldMapPage() {
-  return <WorldMapClient />;
+export default async function WorldMapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tree?: string }>;
+}) {
+  const { tree } = await searchParams;
+  return <WorldMapClient initialTreeId={tree ?? null} />;
 }

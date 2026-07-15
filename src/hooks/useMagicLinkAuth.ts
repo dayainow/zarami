@@ -72,6 +72,12 @@ export function useMagicLinkAuth() {
     }
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   return {
     userId: sessionUser?.id ?? null,
     userEmail: sessionUser?.email ?? null,
@@ -82,5 +88,6 @@ export function useMagicLinkAuth() {
     emailSent,
     handleLogin,
     handleTestLogin,
+    handleLogout,
   };
 }

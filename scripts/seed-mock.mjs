@@ -1,4 +1,3 @@
-import fs from 'fs';
 
 const SUPABASE_URL = "https://oejkzayunagyhznevzad.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lamt6YXl1bmFneWh6bmV2emFkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mjk3MzYzMywiZXhwIjoyMDk4NTQ5NjMzfQ.dIZRGLvs2dAhPsP7AA0nLvrL1H5iATHDZVEMF9Le2X8";
