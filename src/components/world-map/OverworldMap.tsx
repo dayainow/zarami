@@ -506,6 +506,43 @@ function GroundShadow({ w = 22 }: { w?: number }) {
   return <rect x={-w / 2} y={-2} width={w} height={4} fill="rgba(0,0,0,0.16)" />;
 }
 
+function HeroSprite() {
+  return (
+    <g transform="scale(1.5) translate(0, -2)">
+      <GroundShadow w={16} />
+      {/* Backpack */}
+      <rect x={-9} y={-20} width={18} height={12} fill="#eab308" />
+      
+      {/* Head */}
+      <rect x={-7} y={-32} width={14} height={14} fill="#ffcc99" />
+      
+      {/* Hair */}
+      <rect x={-8} y={-34} width={16} height={6} fill="#4a3123" />
+      <rect x={-8} y={-28} width={3} height={6} fill="#4a3123" />
+      <rect x={5} y={-28} width={3} height={6} fill="#4a3123" />
+      
+      {/* Eyes */}
+      <rect x={-3} y={-26} width={2} height={2} fill="#000" />
+      <rect x={1} y={-26} width={2} height={2} fill="#000" />
+
+      {/* Body / Shirt */}
+      <rect x={-6} y={-18} width={12} height={10} fill="#3b82f6" />
+      
+      {/* Arms */}
+      <rect x={-9} y={-18} width={3} height={8} fill="#ffcc99" />
+      <rect x={6} y={-18} width={3} height={8} fill="#ffcc99" />
+      
+      {/* Pants */}
+      <rect x={-6} y={-8} width={5} height={6} fill="#1e3a8a" />
+      <rect x={1} y={-8} width={5} height={6} fill="#1e3a8a" />
+      
+      {/* Shoes */}
+      <rect x={-7} y={-2} width={6} height={2} fill="#171717" />
+      <rect x={1} y={-2} width={6} height={2} fill="#171717" />
+    </g>
+  );
+}
+
 function TreeSprite() {
   return (
     <g>
@@ -1182,15 +1219,7 @@ function Island({ island, onSelect }: { island: IslandSpec; onSelect: (id: strin
           {/* 최근 작업한 로드맵 섬에는 캐릭터가 서 있다 */}
           {island.heroIcon && island.heroPos && (
             <g transform={`translate(${island.heroPos[0]},${island.heroPos[1]})`}>
-              <rect x={-13} y={-3} width={26} height={5} fill="rgba(0,0,0,0.2)" />
-              <image
-                href={island.heroIcon}
-                x={-32}
-                y={-64}
-                width={64}
-                height={64}
-                style={{ imageRendering: "pixelated" }}
-              />
+              <HeroSprite />
             </g>
           )}
           <IslandBanner island={island} />
@@ -1236,15 +1265,7 @@ function EmptyIsland({ cx, cy, onCreate }: { cx: number; cy: number; onCreate: (
           <g transform="translate(90,60) scale(0.9)"><BushSprite /></g>
           <g transform="translate(-30,90) scale(0.9)"><RockSprite themeId="forest" /></g>
           <g transform="translate(124,52)">
-            <rect x={-13} y={-3} width={26} height={5} fill="rgba(0,0,0,0.2)" />
-            <image
-              href="/images/characters/hero.png"
-              x={-32}
-              y={-64}
-              width={64}
-              height={64}
-              style={{ imageRendering: "pixelated" }}
-            />
+            <HeroSprite />
           </g>
           {/* 표지판 */}
           <g className="ow-flagbob">
