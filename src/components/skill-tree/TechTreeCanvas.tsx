@@ -112,7 +112,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
   return (
     <>
       {data.isInteractive && (
-        <NodeToolbar isVisible={selected} position={Position.Top}>
+        <NodeToolbar isVisible={selected} position={Position.Right} offset={10}>
           <div className="mb-2 flex items-center gap-1 overflow-hidden rounded-xl border border-slate-200/80 bg-white/95 p-1.5 shadow-lg backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-800/95">
             <button
               onClick={() => data.onAddChild?.(data.id)}
@@ -194,7 +194,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       <Handle
         type="target"
         position={Position.Bottom}
-        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
+        className="!h-5 !w-5 !border-2 !border-white !bg-slate-400 hover:!bg-blue-500 hover:scale-110 transition-transform cursor-crosshair z-20"
       />
       
       <div className="flex items-start justify-between gap-3 mt-2">
@@ -233,7 +233,7 @@ const SkillNode = memo(function SkillNode({ data, selected }: NodeProps<SkillTre
       <Handle
         type="source"
         position={Position.Top}
-        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
+        className="!h-5 !w-5 !border-2 !border-white !bg-slate-400 hover:!bg-blue-500 hover:scale-110 transition-transform cursor-crosshair z-20"
       />
       
       {checklistTotal > 0 ? (
@@ -453,8 +453,6 @@ export function TechTreeCanvas({
         edges={visibleEdges}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={edgeOptions}
-        fitView
-        fitViewOptions={fitViewOptions}
         minZoom={0.1}
         maxZoom={1.6}
         panOnDrag={interactive || !isDrawerOpen}
