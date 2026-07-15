@@ -373,7 +373,7 @@ export function ProfileClient() {
                     </div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">채용 트렌드 시각화</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      100건 이상의 실제 채용 공고를 분석하여, 지금 시장에서 가장 많이 찾는 기술을 알려줍니다.
+                      400건 이상의 실제 채용 공고를 분석하여, 지금 시장에서 가장 많이 찾는 기술을 알려줍니다.
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 rounded-xl border border-white/60 bg-white/50 p-5 shadow-sm transition-transform hover:-translate-y-1 dark:border-white/10 dark:bg-white/5">
