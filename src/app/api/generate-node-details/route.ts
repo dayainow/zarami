@@ -3,12 +3,12 @@ import Groq from "groq-sdk";
 
 export const runtime = "edge";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY || "missing",
+    });
+
     const { title, category, level } = await req.json();
 
     if (!title) {

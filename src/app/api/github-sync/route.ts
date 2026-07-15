@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-
 const getGithubSyncPrompt = () => `
 You are an expert tech lead evaluating a developer's GitHub commits.
 You will be provided with:
@@ -39,6 +36,8 @@ export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
     }
+    
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     const { repoUrl, userId } = await req.json();
 

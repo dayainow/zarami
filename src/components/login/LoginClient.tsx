@@ -84,7 +84,7 @@ export function LoginClient() {
               width={140}
               height={48}
               priority
-              className="dark:brightness-200 dark:grayscale object-contain"
+              className="h-auto dark:brightness-200 dark:grayscale object-contain"
             />
           </Link>
           <h1 className="text-center text-2xl font-black tracking-tight text-slate-900 dark:text-white md:text-3xl">

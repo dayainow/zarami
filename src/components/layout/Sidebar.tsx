@@ -39,7 +39,7 @@ export function Sidebar() {
               width={120}
               height={32}
               priority
-              className="opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:brightness-200 dark:grayscale"
+              className="h-auto opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:brightness-200 dark:grayscale"
             />
           </div>
         </Link>

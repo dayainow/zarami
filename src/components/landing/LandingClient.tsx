@@ -136,15 +136,15 @@ const demoNodes: SkillTreeNode[] = [
 
 // source = 선행 스킬(아래), target = 다음 스킬(위) — 화살표가 위로 향한다
 const demoEdges: SkillTreeEdge[] = [
-  { id: "e-base-react", source: "base", target: "react", type: "custom" },
-  { id: "e-base-node", source: "base", target: "node", type: "custom" },
-  { id: "e-react-next", source: "react", target: "next", type: "custom", animated: true },
-  { id: "e-node-db", source: "node", target: "db", type: "custom", animated: true },
-  { id: "e-next-deploy", source: "next", target: "deploy", type: "custom" },
-  { id: "e-db-deploy", source: "db", target: "deploy", type: "custom" },
-  { id: "e-db-cicd", source: "db", target: "cicd", type: "custom" },
-  { id: "e-deploy-goal", source: "deploy", target: "goal", type: "custom", animated: true },
-  { id: "e-cicd-goal", source: "cicd", target: "goal", type: "custom" },
+  { id: "e-base-react", source: "base", target: "react", type: "smoothstep" },
+  { id: "e-base-node", source: "base", target: "node", type: "smoothstep" },
+  { id: "e-react-next", source: "react", target: "next", type: "smoothstep", animated: true },
+  { id: "e-node-db", source: "node", target: "db", type: "smoothstep", animated: true },
+  { id: "e-next-deploy", source: "next", target: "deploy", type: "smoothstep" },
+  { id: "e-db-deploy", source: "db", target: "deploy", type: "smoothstep" },
+  { id: "e-db-cicd", source: "db", target: "cicd", type: "smoothstep" },
+  { id: "e-deploy-goal", source: "deploy", target: "goal", type: "smoothstep", animated: true },
+  { id: "e-cicd-goal", source: "cicd", target: "goal", type: "smoothstep" },
 ];
 
 // BT: 아래(기초)에서 위(목표)로 자라는 세로 트리 — 앱 본편의 성장 캔버스와 같은 방향
@@ -218,7 +218,7 @@ export function LandingClient() {
               width={120}
               height={32}
               priority
-              className="dark:brightness-200 dark:grayscale cursor-pointer"
+              className="h-auto dark:brightness-200 dark:grayscale cursor-pointer"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             />
           </div>
@@ -614,7 +614,7 @@ export function LandingClient() {
                 alt="Zarami"
                 width={120}
                 height={32}
-                className="opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all"
+                className="h-auto opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all"
               />
             </div>
             <p className="text-sm leading-relaxed mb-6 max-w-sm">
