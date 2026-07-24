@@ -198,6 +198,10 @@ export function LandingClient() {
     }
   };
 
+  const handleTry = () => {
+    router.push("/try");
+  };
+
   const topTrends = [...(trends || [])]
     .sort((a, b) => {
       const aTotal = (a.wanted_mentions || 0) + (a.jumpit_mentions || 0);
@@ -228,8 +232,16 @@ export function LandingClient() {
             <a href="#faq" className="hover:text-emerald-500 transition-colors">FAQ</a>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <ThemeToggle className="hidden md:flex" />
+          {!isLoggedIn && (
+            <button
+              onClick={handleTry}
+              className="hidden rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
+            >
+              체험해보기
+            </button>
+          )}
           <button
             onClick={handleStart}
             className="rounded-full bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
@@ -260,7 +272,7 @@ export function LandingClient() {
             <strong className="text-slate-900 dark:text-white">맞춤 퀘스트</strong>로 포트폴리오를 자동 완성합니다.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full sm:w-auto">
             <button
               onClick={handleStart}
               className="w-full sm:w-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40 active:scale-95"
@@ -268,6 +280,14 @@ export function LandingClient() {
               <Play className="h-5 w-5 fill-current" />
               {isLoggedIn ? "대시보드로 가기" : "무료로 내 스킬트리 만들기"}
             </button>
+            {!isLoggedIn && (
+              <button
+                onClick={handleTry}
+                className="w-full sm:w-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl border-2 border-slate-300 bg-white/80 px-8 py-4 text-base font-bold text-slate-800 backdrop-blur transition-all hover:border-emerald-500 hover:text-emerald-700 active:scale-95 dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:hover:border-emerald-400 dark:hover:text-emerald-300"
+              >
+                이메일 없이 체험해보기
+              </button>
+            )}
           </div>
           
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/5">

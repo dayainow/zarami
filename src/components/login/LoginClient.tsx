@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, Wand2 } from "lucide-react";
 
-import { createClient } from "@/utils/supabase/client";
 import { useSupabaseUserId } from "@/hooks/useSupabaseUserId";
+import { buildMagicLinkRedirectTo, TRIAL_EMAIL, TRIAL_PASSWORD } from "@/lib/auth/trial";
+import { createClient } from "@/utils/supabase/client";
 
 export function LoginClient() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export function LoginClient() {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  
+
   // If already logged in, redirect to dashboard
   useEffect(() => {
     if (userId) {
@@ -26,20 +27,19 @@ export function LoginClient() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    
+
     setIsSending(true);
     const supabase = createClient();
-    
-    // Redirect to dashboard after magic link login
-    const redirectUrl = new URL("/dashboard", window.location.origin).href;
-    
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectUrl },
+      options: {
+        emailRedirectTo: buildMagicLinkRedirectTo(window.location.origin, "/dashboard"),
+      },
     });
-    
+
     setIsSending(false);
-    
+
     if (!error) {
       setEmailSent(true);
     } else {
@@ -47,20 +47,8 @@ export function LoginClient() {
     }
   };
 
-  const handleTestLogin = async () => {
-    setIsSending(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: "test@example.com",
-      password: "testpassword123",
-    });
-    setIsSending(false);
-
-    if (error) {
-      alert("테스트 계정 로그인 실패: Supabase 대시보드에서 test@example.com (PW: testpassword123) 계정을 먼저 생성해주세요.");
-    } else {
-      router.replace("/dashboard");
-    }
+  const handleTrialLogin = () => {
+    router.push("/try");
   };
 
   return (
@@ -148,22 +136,30 @@ export function LoginClient() {
           )}
         </div>
         
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-500">
-              이메일만으로 간편하게 시작할 수 있습니다.<br />
-              비밀번호를 기억할 필요가 없어요.
-            </p>
-            <button
-              type="button"
-              onClick={handleTestLogin}
-              disabled={isSending}
-              className="text-[10px] font-semibold text-slate-400 underline underline-offset-4 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-            >
-              개발/테스트용 임시 계정으로 빠른 로그인
-            </button>
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <p className="text-center text-xs font-medium text-slate-500 dark:text-slate-500">
+            이메일만으로 간편하게 시작할 수 있습니다.
+            <br />
+            비밀번호를 기억할 필요가 없어요.
+          </p>
+          <div className="relative flex w-full items-center py-1">
+            <div className="flex-grow border-t border-slate-200 dark:border-white/10" />
+            <span className="shrink-0 px-3 text-xs text-slate-400">또는</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-white/10" />
           </div>
-        )}
+          <button
+            type="button"
+            onClick={handleTrialLogin}
+            disabled={isSending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+          >
+            이메일 없이 체험해보기
+          </button>
+          <p className="text-center text-[10px] font-medium text-slate-400">
+            체험 계정({TRIAL_EMAIL})으로 바로 입장합니다.
+            {process.env.NODE_ENV === "development" ? ` PW: ${TRIAL_PASSWORD}` : ""}
+          </p>
+        </div>
       </div>
     </main>
   );

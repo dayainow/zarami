@@ -7,6 +7,7 @@ import { ExternalLink, Briefcase, FileText, GitCommit, Sparkles, Target, Trendin
 import { buildEmptyHeatmap, useProfileStats } from "@/hooks/useProfileStats";
 import { useSkillTrends, findSkillTrend } from "@/hooks/useSkillTrends";
 import type { SkillTrend } from "@/hooks/useSkillTrends";
+import { buildMagicLinkRedirectTo } from "@/lib/auth/trial";
 import { createClient } from "@/utils/supabase/client";
 
 function heatmapCellClassName(count: number): string {
@@ -143,7 +144,9 @@ export function ProfileClient() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.href },
+      options: {
+        emailRedirectTo: buildMagicLinkRedirectTo(window.location.origin, "/profile"),
+      },
     });
     setIsSending(false);
     if (!error) {

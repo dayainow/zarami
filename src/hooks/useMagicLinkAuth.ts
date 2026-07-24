@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
+import { buildMagicLinkRedirectTo, TRIAL_EMAIL, TRIAL_PASSWORD } from "@/lib/auth/trial";
 import { createClient } from "@/utils/supabase/client";
 
 export type SessionUser = {
@@ -12,7 +13,8 @@ export type SessionUser = {
 // Mirrors the magic-link session/login state already duplicated in
 // ProfileClient and AdminEditorClient - new call sites should use this
 // instead of re-inlining another copy.
-export function useMagicLinkAuth() {
+export function useMagicLinkAuth(options?: { nextPath?: string }) {
+  const nextPath = options?.nextPath ?? "/dashboard";
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -47,7 +49,9 @@ export function useMagicLinkAuth() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email: loginEmail,
-      options: { emailRedirectTo: window.location.href },
+      options: {
+        emailRedirectTo: buildMagicLinkRedirectTo(window.location.origin, nextPath),
+      },
     });
     setIsSending(false);
 
@@ -62,13 +66,15 @@ export function useMagicLinkAuth() {
     setIsSending(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email: "test@example.com",
-      password: "testpassword123",
+      email: TRIAL_EMAIL,
+      password: TRIAL_PASSWORD,
     });
     setIsSending(false);
 
     if (error) {
-      alert("테스트 계정 로그인에 실패했습니다. Supabase 대시보드에서 test@example.com / testpassword123 계정을 생성해주세요.");
+      alert(
+        "체험 계정 로그인에 실패했습니다. Supabase 대시보드에서 test@example.com / testpassword123 계정을 생성해주세요.",
+      );
     }
   };
 

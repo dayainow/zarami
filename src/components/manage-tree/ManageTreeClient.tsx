@@ -110,9 +110,10 @@ export function ManageTreeClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Prefer returning to the editor after magic-link confirmation.
   const { userId, loginEmail, setLoginEmail, isSending, emailSent, handleLogin, handleTestLogin, authChecked } =
-    useMagicLinkAuth();
-  
+    useMagicLinkAuth({ nextPath: "/manage-tree" });
+
   const [currentTreeId, setCurrentTreeId] = useState<string | null>(null);
   const { data: treeList } = useUserTrees(userId);
   const { data: savedTree, isLoading: isTreeLoading } = useUserTree(currentTreeId);
@@ -632,7 +633,15 @@ export function ManageTreeClient() {
 
   const data = selectedNode?.data;
 
-  if (!authChecked || !userId) {
+  if (!authChecked) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-50 px-5 text-slate-950 dark:bg-slate-950 dark:text-white">
+        <p className="text-sm text-slate-500">로그인 상태 확인 중…</p>
+      </main>
+    );
+  }
+
+  if (!userId) {
     return (
       <main className="grid min-h-screen place-items-center bg-slate-50 px-5 text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
         <div className="max-w-sm rounded-xl border border-white/70 bg-white/75 p-6 text-center shadow-xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
@@ -640,52 +649,48 @@ export function ManageTreeClient() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             내 트리는 계정별로 저장됩니다. 로그인 후 이용해주세요.
           </p>
-          {!authChecked ? (
-            <p className="mt-4 text-xs text-slate-500 dark:text-slate-500">확인 중...</p>
-          ) : (
-            <div className="mt-6 flex flex-col items-center">
-              {emailSent ? (
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                  이메일로 로그인 링크를 보냈습니다!
-                </p>
-              ) : (
-                <div className="flex w-full flex-col gap-4">
-                  <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
-                    <input
-                      type="email"
-                      value={loginEmail}
-                      onChange={(event) => setLoginEmail(event.target.value)}
-                      placeholder="이메일 주소 입력"
-                      required
-                      className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSending}
-                      className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
-                    >
-                      {isSending ? "전송 중..." : "매직 링크로 로그인"}
-                    </button>
-                  </form>
-                  
-                  <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
-                    <span className="shrink-0 px-3 text-xs text-slate-400">또는</span>
-                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
-                  </div>
-                  
+          <div className="mt-6 flex flex-col items-center">
+            {emailSent ? (
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                이메일로 로그인 링크를 보냈습니다!
+              </p>
+            ) : (
+              <div className="flex w-full flex-col gap-4">
+                <form onSubmit={handleLogin} className="flex w-full flex-col gap-2">
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(event) => setLoginEmail(event.target.value)}
+                    placeholder="이메일 주소 입력"
+                    required
+                    className="w-full rounded-md border border-slate-200/80 bg-white/75 px-3 py-2 text-sm text-slate-950 shadow-sm backdrop-blur-xl placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-slate-500"
+                  />
                   <button
-                    type="button"
-                    onClick={handleTestLogin}
+                    type="submit"
                     disabled={isSending}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-200 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                    className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 disabled:opacity-50 dark:bg-sky-400 dark:text-slate-950 dark:shadow-sky-950/30 dark:hover:bg-sky-300"
                   >
-                    테스트 계정으로 바로 로그인
+                    {isSending ? "전송 중..." : "매직 링크로 로그인"}
                   </button>
+                </form>
+
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                  <span className="shrink-0 px-3 text-xs text-slate-400">또는</span>
+                  <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
                 </div>
-              )}
-            </div>
-          )}
+
+                <button
+                  type="button"
+                  onClick={handleTestLogin}
+                  disabled={isSending}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-200 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                >
+                  이메일 없이 체험해보기
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     );
